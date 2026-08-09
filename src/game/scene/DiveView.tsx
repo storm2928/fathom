@@ -5,6 +5,7 @@ import type { SessionPlan, SessionResult, SessionState } from '../session/sessio
 import { ScriptedBreathEngine } from '../input/scriptedEngine';
 import { SpacebarBreathEngine } from '../input/spacebarEngine';
 import { DiveScene } from './diveScene';
+import { SurfaceScreen } from '../surface/SurfaceScreen';
 import './DiveView.css';
 
 /**
@@ -90,6 +91,9 @@ export function DiveView() {
       timeScale,
       onState: setState,
       onResult: (finished) => {
+        // Sampling stops with `running`, so take a last reading here or the
+        // readout freezes mid-glide while the canvas carries on easing down.
+        setDepth(scene.depth);
         setResult(finished);
         setRunning(false);
       },
@@ -170,38 +174,11 @@ export function DiveView() {
         </dl>
 
         {result && (
-          <div className="dive-result">
-            <h2>What changed</h2>
-            {result.ending === 'signal-lost' ? (
-              <p>
-                The dive ended early because the signal stopped being readable. Nothing was
-                measured well enough to report, which is worth knowing rather than guessing at.
-              </p>
-            ) : (
-              <>
-                <p>
-                  Your breathing went from{' '}
-                  <strong>{result.baselineRR.toFixed(1)}</strong> to{' '}
-                  <strong>{result.finalRR.toFixed(1)}</strong> breaths per minute
-                  {result.deltaRR > 0.2
-                    ? `, a drop of ${result.deltaRR.toFixed(1)}.`
-                    : '. That is roughly where you started.'}
-                </p>
-                <p className="muted">
-                  {result.downshiftMs === null
-                    ? 'Not enough change to time a downshift this session.'
-                    : `Half of that change had happened ${(result.downshiftMs / 1000).toFixed(0)}s in.`}{' '}
-                  {result.scoredBreaths} breaths measured over{' '}
-                  {(result.durationMs / 1000 / 60).toFixed(1)} minutes
-                  {result.usedFallbackInput ? ', without the microphone' : ''}.
-                </p>
-              </>
-            )}
-            <p className="muted">
-              This measures how your breathing changed during one session. It is not therapy,
-              not diagnosis, and not for a crisis.
-            </p>
-          </div>
+          <SurfaceScreen
+            result={result}
+            inputLabel={source === 'spacebar' ? 'Keyboard' : 'Scripted fixture'}
+            onLeave={() => setResult(null)}
+          />
         )}
 
         <p className="hint">

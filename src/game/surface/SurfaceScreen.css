@@ -1,0 +1,110 @@
+.surface {
+  max-width: 62ch;
+  padding-top: 8px;
+}
+
+.surface h1 {
+  font-size: 28px;
+  margin: 0 0 20px;
+}
+
+.surface-figures {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.surface-figures > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.surface-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+
+.surface-figures strong {
+  font-family: var(--mono);
+  font-size: 44px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--text-h);
+}
+
+.surface-unit {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.surface-arrow {
+  font-size: 28px;
+  opacity: 0.5;
+}
+
+.surface-lead {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.surface-lead strong {
+  font-family: var(--mono);
+  color: var(--text-h);
+}
+
+.surface-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+  margin: 0 0 20px;
+  padding: 16px 0;
+  border-block: 1px solid var(--border);
+}
+
+.surface-detail dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.7;
+}
+
+.surface-detail dd {
+  margin: 2px 0 0;
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--text-h);
+}
+
+.surface-note {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.surface-exit {
+  margin-top: 20px;
+}
+
+.surface-exit p {
+  font-size: 15px;
+  margin-bottom: 10px;
+  color: var(--text-h);
+}
+
+.surface-leave {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 9px 20px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  margin-top: 12px;
+}
