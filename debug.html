@@ -163,15 +163,21 @@
         color: var(--dim);
         font-style: italic;
       }
+      /* Deliberately not styled like the action buttons: it opens a file
+         picker, which in an automated browser is an invisible modal that
+         silently blocks every later click. Easy to hit by mistake otherwise. */
       .filebutton {
         display: inline-block;
         font: inherit;
-        font-weight: 700;
-        background: var(--good);
-        color: #062018;
+        background: transparent;
+        color: var(--accent);
+        border: 1px dashed var(--accent);
         border-radius: 4px;
-        padding: 0.55rem 1.1rem;
+        padding: 0.5rem 1rem;
         cursor: pointer;
+      }
+      .filebutton:hover {
+        background: rgba(34, 211, 238, 0.1);
       }
       .replay-out {
         margin: 0.75rem 0 0;

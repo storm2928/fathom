@@ -438,11 +438,22 @@ downloadButton.addEventListener('click', () => {
   if (!loadedRecording) return;
   const blob = new Blob([JSON.stringify(loadedRecording)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
+  const name = `fathom-breath-${loadedRecording.createdAt.replace(/[:.]/g, '-')}.json`;
   const link = document.createElement('a');
   link.href = url;
-  link.download = `fathom-breath-${loadedRecording.createdAt.replace(/[:.]/g, '-')}.json`;
+  link.download = name;
+  // In the document and revoked late: a detached anchor is ignored by some
+  // browsers, and revoking straight after the click can beat the download to
+  // the blob.
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+
+  recordStatus.className = 'note';
+  recordStatus.textContent =
+    `Saved ${name} (${(blob.size / 1024).toFixed(0)} KB) to wherever this browser puts downloads. ` +
+    `An automated browser keeps them in its own artifacts folder rather than your Downloads.`;
 });
 
 loadInput.addEventListener('change', async () => {
