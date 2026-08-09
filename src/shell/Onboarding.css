@@ -1,0 +1,68 @@
+.onboarding {
+  max-width: 60ch;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  text-align: left;
+}
+
+.onboarding h1 {
+  font-size: 30px;
+  margin: 0 0 16px;
+}
+
+.onboarding h2 {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 28px 0 8px;
+  opacity: 0.85;
+}
+
+.onboarding p {
+  margin-bottom: 12px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.onboarding-lead {
+  font-size: 17px;
+}
+
+.onboarding strong {
+  color: var(--text-h);
+}
+
+.onboarding-cautions {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.onboarding-quiet {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.onboarding .crisis {
+  margin: 28px 0 24px;
+}
+
+.onboarding-begin {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 15px;
+  padding: 11px 22px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.onboarding-begin:hover {
+  border-color: var(--accent);
+}
