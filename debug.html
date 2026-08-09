@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fathom — signal debug</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1418;
+        --panel: #12222a;
+        --line: #1f3a45;
+        --text: #d6e8ee;
+        --dim: #7d9aa6;
+        --good: #4ade80;
+        --bad: #f87171;
+        --warn: #fbbf24;
+      }
+      body {
+        margin: 0;
+        padding: 1.5rem;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      h1 {
+        font-size: 1rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--dim);
+        margin: 0 0 1rem;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        max-width: 46rem;
+      }
+      button {
+        font: inherit;
+        background: var(--good);
+        color: #062018;
+        border: 0;
+        border-radius: 4px;
+        padding: 0.6rem 1.2rem;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      button:disabled {
+        background: var(--line);
+        color: var(--dim);
+        cursor: not-allowed;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 14rem 1fr;
+        gap: 0.35rem 1rem;
+        margin: 0;
+      }
+      dt {
+        color: var(--dim);
+      }
+      dd {
+        margin: 0;
+      }
+      .good {
+        color: var(--good);
+      }
+      .bad {
+        color: var(--bad);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      .meter {
+        height: 2.5rem;
+        background: #081015;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .meter span {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #22d3ee, #4ade80);
+      }
+      .level {
+        font-size: 2.5rem;
+        font-variant-numeric: tabular-nums;
+        margin: 0.5rem 0;
+      }
+      .note {
+        color: var(--dim);
+        max-width: 46rem;
+      }
+      #verdict:empty {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>fathom — signal debug (issue #1: mic capture)</h1>
+
+    <div class="panel">
+      <button id="start" type="button">Start microphone</button>
+      <button id="stop" type="button" disabled>Stop</button>
+      <p id="status" class="note">Idle. Audio starts only from a real click.</p>
+    </div>
+
+    <div class="panel">
+      <div class="level"><span id="dbfs">—</span> <small class="note">dBFS</small></div>
+      <div class="meter"><span id="bar"></span></div>
+      <dl style="margin-top: 1rem">
+        <dt>rms</dt><dd id="rms">—</dd>
+        <dt>peak</dt><dd id="peak">—</dd>
+        <dt>frames received</dt><dd id="frames">0</dd>
+        <dt>frame rate</dt><dd id="fps">—</dd>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <dl>
+        <dt>sample rate</dt><dd id="sr">—</dd>
+        <dt>device</dt><dd id="device">—</dd>
+        <dt>echoCancellation</dt><dd id="ec">—</dd>
+        <dt>noiseSuppression</dt><dd id="ns">—</dd>
+        <dt>autoGainControl</dt><dd id="agc">—</dd>
+      </dl>
+      <p id="verdict" class="note"></p>
+    </div>
+
+    <p class="note">
+      Requested: all three processors off. Reported above is what the browser
+      actually applied. A value of <code>true</code> means the browser overrode
+      us and this machine cannot be trusted for capture.
+    </p>
+
+    <script type="module" src="/src/breath/debug/main.ts"></script>
+  </body>
+</html>
