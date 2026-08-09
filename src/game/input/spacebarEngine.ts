@@ -40,6 +40,14 @@ const ASSUMED_BASELINE_RR = 15;
 
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
+/** Elements for which Space already means something to a keyboard user. */
+const INTERACTIVE = new Set(['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA', 'SUMMARY']);
+
+function isInteractive(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return INTERACTIVE.has(target.tagName) || target.isContentEditable;
+}
+
 export class SpacebarBreathEngine implements BreathEngine {
   readonly usingFallbackInput = true;
 
@@ -139,6 +147,10 @@ export class SpacebarBreathEngine implements BreathEngine {
   private readonly onKeyDown = (event: Event) => {
     const key = event as KeyboardEvent;
     if (key.code !== 'Space' || key.repeat || !this.running) return;
+    // Space is how a keyboard user presses a focused button. Swallowing it
+    // everywhere would make the app unusable without a mouse, which is a steep
+    // price for a breath. Anything focusable keeps its own meaning for Space.
+    if (isInteractive(event.target)) return;
     // Otherwise the page scrolls under the diver on every breath.
     key.preventDefault();
     if (this.holdStartedAt !== null) return;
@@ -156,6 +168,9 @@ export class SpacebarBreathEngine implements BreathEngine {
   private readonly onKeyUp = (event: Event) => {
     const key = event as KeyboardEvent;
     if (key.code !== 'Space' || !this.running) return;
+    // No hold in flight means the keydown was ignored — on a button, say — so
+    // this keyup is not ours to consume either.
+    if (this.holdStartedAt === null) return;
     key.preventDefault();
     this.release();
   };

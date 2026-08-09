@@ -25,7 +25,6 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  opacity: 0.7;
 }
 
 .surface-figures strong {
@@ -38,7 +37,6 @@
 
 .surface-unit {
   font-size: 12px;
-  opacity: 0.7;
 }
 
 .surface-arrow {
@@ -69,7 +67,6 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  opacity: 0.7;
 }
 
 .surface-detail dd {
@@ -81,7 +78,6 @@
 
 .surface-note {
   font-size: 13px;
-  opacity: 0.8;
   margin-bottom: 20px;
   line-height: 1.5;
 }

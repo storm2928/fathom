@@ -15,7 +15,6 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin: 28px 0 8px;
-  opacity: 0.85;
 }
 
 .onboarding p {
@@ -43,7 +42,6 @@
 
 .onboarding-quiet {
   font-size: 13px;
-  opacity: 0.75;
 }
 
 .onboarding .crisis {

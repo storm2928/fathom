@@ -68,7 +68,6 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  opacity: 0.7;
 }
 
 .dive-controls dd {
@@ -121,5 +120,4 @@
 
 .dive-result .muted {
   font-size: 13px;
-  opacity: 0.75;
 }

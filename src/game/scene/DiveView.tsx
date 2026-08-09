@@ -35,6 +35,7 @@ export function DiveView() {
   const [depth, setDepth] = useState(0);
   const [rate, setRate] = useState<number | null>(null);
   const [result, setResult] = useState<SessionResult | null>(null);
+  const [announcement, setAnnouncement] = useState('');
 
   const stopAll = () => {
     machineRef.current?.stop();
@@ -83,13 +84,22 @@ export function DiveView() {
     const machine = new SessionMachine(engine, conductor, {
       plan,
       timeScale,
-      onState: setState,
+      onState: (next) => {
+        setState(next);
+        setAnnouncement(stateLabel(next));
+      },
       onResult: (finished) => {
         // Sampling stops with `running`, so take a last reading here or the
         // readout freezes mid-glide while the canvas carries on easing down.
         setDepth(scene.depth);
         setResult(finished);
         setRunning(false);
+        // Stated as the two measurements rather than as a verdict, so the
+        // announcement stays true whether breathing slowed, held steady or
+        // sped up. The full wording is on the surface screen below it.
+        setAnnouncement(
+          `${t.surface.title}: ${finished.baselineRR.toFixed(1)} → ${finished.finalRR.toFixed(1)} ${t.surface.unit}`,
+        );
       },
     });
 
@@ -114,9 +124,18 @@ export function DiveView() {
   return (
     <div className="dive">
       <div className="dive-stage">
-        <canvas ref={canvasRef} />
+        {/* The scene is decorative: everything it shows is also available as
+            text below and in the live region, so nothing is audio-only or
+            canvas-only. */}
+        <canvas ref={canvasRef} role="presentation" />
         <span className="dive-state">{stateLabel(state)}</span>
       </div>
+
+      {/* Polite, not assertive: a stage change is worth hearing at the next
+          pause, never worth interrupting someone mid-breath. */}
+      <p className="visually-hidden" role="status" aria-live="polite">
+        {announcement}
+      </p>
 
       <div className="dive-controls">
         <div className="row">
