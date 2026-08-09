@@ -6,27 +6,21 @@ import { ScriptedBreathEngine } from '../input/scriptedEngine';
 import { SpacebarBreathEngine } from '../input/spacebarEngine';
 import { DiveScene } from './diveScene';
 import { SurfaceScreen } from '../surface/SurfaceScreen';
+import { useLanguage } from '../../shell/i18n';
+import { fill } from '../../shell/strings';
 import './DiveView.css';
 
 /**
- * Mounts a full session against whichever input source is selected. This is a
- * development shell — the scope screen, onboarding and crisis rail land in #17
- * and #18, and the surface screen proper is #16.
+ * Mounts a full session against whichever input source is selected. This is
+ * still a development shell: it exposes the scripted fixture and a speed
+ * control that no player should ever see.
  */
 
 type Source = 'scripted' | 'spacebar';
 
-const STATE_LABEL: Record<SessionState, string> = {
-  idle: 'Ready',
-  calibrating: 'Reading your baseline',
-  'zone-1': 'Zone 1',
-  'zone-2': 'Zone 2',
-  'zone-3': 'Zone 3',
-  surfacing: 'Surfacing',
-  ended: 'Done',
-};
-
 export function DiveView() {
+  const { t } = useLanguage();
+  const stateLabel = (state: SessionState) => t.state[state];
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<DiveScene | null>(null);
   const teardownRef = useRef<(() => void) | null>(null);
@@ -121,7 +115,7 @@ export function DiveView() {
     <div className="dive">
       <div className="dive-stage">
         <canvas ref={canvasRef} />
-        <span className="dive-state">{STATE_LABEL[state]}</span>
+        <span className="dive-state">{stateLabel(state)}</span>
       </div>
 
       <div className="dive-controls">
@@ -134,25 +128,25 @@ export function DiveView() {
               disabled={running}
               onClick={() => setSource(option)}
             >
-              {option === 'scripted' ? 'Scripted fixture' : 'Spacebar'}
+              {option === 'scripted' ? t.dive.scripted : t.dive.spacebar}
             </button>
           ))}
           {source === 'scripted' && (
             <button type="button" disabled={running} onClick={() => setSpeed(speed === 1 ? 10 : 1)}>
-              {speed}× speed
+              {fill(t.dive.speed, { n: speed })}
             </button>
           )}
           {running ? (
             <button type="button" onClick={handleStop}>
-              Leave
+              {t.dive.leave}
             </button>
           ) : (
             <>
               <button type="button" onClick={() => handleStart('full')}>
-                Dive
+                {t.dive.full}
               </button>
               <button type="button" onClick={() => handleStart('quick')}>
-                Quick dive · 90s
+                {t.dive.quick}
               </button>
             </>
           )}
@@ -160,31 +154,31 @@ export function DiveView() {
 
         <dl>
           <div>
-            <dt>Depth</dt>
+            <dt>{t.dive.depth}</dt>
             <dd>{depth.toFixed(1)} m</dd>
           </div>
           <div>
-            <dt>Rate</dt>
+            <dt>{t.dive.rate}</dt>
             <dd>{rate === null ? '—' : `${rate.toFixed(1)}/min`}</dd>
           </div>
           <div>
-            <dt>Stage</dt>
-            <dd>{STATE_LABEL[state]}</dd>
+            <dt>{t.dive.stage}</dt>
+            <dd>{stateLabel(state)}</dd>
           </div>
         </dl>
 
         {result && (
           <SurfaceScreen
             result={result}
-            inputLabel={source === 'spacebar' ? 'Keyboard' : 'Scripted fixture'}
+            inputLabel={source === 'spacebar' ? t.dive.inputKeyboard : t.dive.inputScripted}
             onLeave={() => setResult(null)}
           />
         )}
 
         <p className="hint">
           {source === 'spacebar'
-            ? 'Hold the spacebar for as long as you are exhaling, following the prompt in the top right of the scene. Longer, steadier exhales carry you further.'
-            : 'The scripted fixture is breathing for you, following the prompt. Switch to the spacebar to drive it yourself.'}
+            ? t.dive.hintSpacebar
+            : t.dive.hintScripted}
         </p>
       </div>
     </div>

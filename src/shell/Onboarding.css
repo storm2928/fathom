@@ -66,3 +66,9 @@
 .onboarding-begin:hover {
   border-color: var(--accent);
 }
+
+.onboarding-top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}

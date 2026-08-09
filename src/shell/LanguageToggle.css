@@ -1,0 +1,26 @@
+.lang {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.lang button {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.lang button:hover {
+  color: var(--text-h);
+}
+
+.lang button.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}

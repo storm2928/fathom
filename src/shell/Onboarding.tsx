@@ -1,4 +1,6 @@
 import { CrisisRail } from './CrisisRail';
+import { LanguageToggle } from './LanguageToggle';
+import { Rich, useLanguage } from './i18n';
 import './Onboarding.css';
 
 /**
@@ -16,74 +18,46 @@ interface OnboardingProps {
 }
 
 export function Onboarding({ onBegin }: OnboardingProps) {
+  const { t } = useLanguage();
+  const o = t.onboarding;
+
   return (
     <section className="onboarding">
-      <h1>Before you dive</h1>
+      <div className="onboarding-top">
+        <LanguageToggle />
+      </div>
 
-      <p className="onboarding-lead">
-        FATHOM is a five-minute breathing exercise you play with your breath. It measures
-        how fast you are breathing at the start, guides you through a slower pattern, and
-        measures again at the end so you can see what changed.
-      </p>
+      <h1>{o.title}</h1>
+      <p className="onboarding-lead">{o.lead}</p>
 
-      <h2>What it is not</h2>
+      <h2>{o.notTitle}</h2>
       <p>
-        It is <strong>not therapy</strong>, <strong>not diagnosis</strong>, and{' '}
-        <strong>not for a crisis</strong>. It does not treat, reduce or cure anxiety or any
-        other condition, and it will never tell you that it has. It trains arousal
-        regulation and shows you a measurement — that is the whole claim.
+        <Rich text={o.not1} />
       </p>
-      <p>
-        There is nothing here that talks to you, remembers you, or scores you against
-        anyone else. No account, no streak, no feed.
-      </p>
+      <p>{o.not2}</p>
 
-      <h2>Take care if</h2>
+      <h2>{o.careTitle}</h2>
       <ul className="onboarding-cautions">
-        <li>
-          You are driving, cycling, swimming, or operating anything that needs your
-          attention. Do this sitting still, somewhere safe.
-        </li>
-        <li>
-          Slow breathing makes you lightheaded. Some people find it does. If that happens,
-          stop and let your breathing return to normal — there is nothing to win here.
-        </li>
-        <li>
-          You have a heart or lung condition, are pregnant, or have a history of fainting
-          or seizures. Worth a word with a clinician before making a habit of it.
-        </li>
+        <li>{o.care1}</li>
+        <li>{o.care2}</li>
+        <li>{o.care3}</li>
       </ul>
-      <p className="onboarding-quiet">
-        You can stop at any point. The session also stops itself.
-      </p>
+      <p className="onboarding-quiet">{o.stopAnyTime}</p>
 
-      <h2>What happens to your voice</h2>
-      <p>
-        If you use the microphone, the audio is processed on your device and never leaves
-        it. Nothing is uploaded, nothing is stored on a server, and no recording is kept —
-        the app only ever looks at how loud and how broad the sound is, moment to moment.
-        You can also play the whole thing with the spacebar and never turn the microphone
-        on at all.
-      </p>
+      <h2>{o.voiceTitle}</h2>
+      <p>{o.voice}</p>
 
-      <h2>What is actually measured</h2>
+      <h2>{o.measuredTitle}</h2>
       <p>
-        Your <strong>exhales</strong> are measured — when they start, how long they last,
-        how steady they are. Your <strong>inhales are not</strong>. An inhale sounds too
-        much like an exhale to tell apart reliably, so the app prompts your inhales on a
-        rhythm and listens only for what follows. Where you see a breathing rate, it was
-        counted from exhales.
+        <Rich text={o.measured} />
       </p>
 
       <CrisisRail />
 
       <button type="button" className="onboarding-begin" onClick={onBegin}>
-        I have read this — continue
+        {o.begin}
       </button>
-      <p className="onboarding-quiet">
-        The next screen lets you choose the microphone or the spacebar. Nothing asks for
-        permission until you pick.
-      </p>
+      <p className="onboarding-quiet">{o.afterBegin}</p>
     </section>
   );
 }

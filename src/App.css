@@ -30,3 +30,11 @@
   border-color: var(--accent-border);
   color: var(--text-h);
 }
+
+.app-nav {
+  align-items: center;
+}
+
+.app-nav-spacer {
+  flex: 1;
+}

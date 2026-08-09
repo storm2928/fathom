@@ -1,5 +1,7 @@
 import type { SessionResult } from '../session/sessionMachine';
 import { CrisisRail } from '../../shell/CrisisRail';
+import { Rich, useLanguage } from '../../shell/i18n';
+import { fill } from '../../shell/strings';
 import './SurfaceScreen.css';
 
 /**
@@ -39,26 +41,22 @@ function formatDuration(ms: number): string {
 }
 
 export function SurfaceScreen({ result, inputLabel, onLeave }: SurfaceScreenProps) {
+  const { t } = useLanguage();
+  const s = t.surface;
   const { baselineRR, finalRR, deltaRR, downshiftMs, ending } = result;
   const slowed = deltaRR >= MEANINGFUL_DELTA_RR;
   const sped = deltaRR <= -MEANINGFUL_DELTA_RR;
-  const input = inputLabel ?? (result.usedFallbackInput ? 'Keyboard' : 'Microphone');
+  const input = inputLabel ?? (result.usedFallbackInput ? t.dive.inputKeyboard : t.dive.inputMicrophone);
 
   if (ending === 'signal-lost') {
     return (
       <section className="surface">
-        <h1>The dive ended early</h1>
-        <p className="surface-lead">
-          The signal stopped being readable, so there is nothing measured well enough to
-          show you. A number here would be invented, and an invented number is worse than
-          none.
-        </p>
-        <p className="surface-note">
-          A quieter room, or the spacebar instead of the microphone, will usually fix it.
-        </p>
+        <h1>{s.lostTitle}</h1>
+        <p className="surface-lead">{s.lostBody}</p>
+        <p className="surface-note">{s.lostFix}</p>
         <CrisisRail />
         <button type="button" className="surface-leave" onClick={onLeave}>
-          Close
+          {s.close}
         </button>
       </section>
     );
@@ -66,85 +64,71 @@ export function SurfaceScreen({ result, inputLabel, onLeave }: SurfaceScreenProp
 
   return (
     <section className="surface">
-      <h1>What changed</h1>
+      <h1>{s.title}</h1>
 
       <div className="surface-figures">
         <div>
-          <span className="surface-label">Before</span>
+          <span className="surface-label">{s.before}</span>
           <strong>{baselineRR.toFixed(1)}</strong>
-          <span className="surface-unit">breaths/min</span>
+          <span className="surface-unit">{s.unit}</span>
         </div>
         <div className="surface-arrow" aria-hidden="true">
           →
         </div>
         <div>
-          <span className="surface-label">After</span>
+          <span className="surface-label">{s.after}</span>
           <strong>{finalRR.toFixed(1)}</strong>
-          <span className="surface-unit">breaths/min</span>
+          <span className="surface-unit">{s.unit}</span>
         </div>
       </div>
 
       {slowed && (
         <p className="surface-lead">
-          Your breathing slowed by <strong>{deltaRR.toFixed(1)}</strong> breaths per minute
-          over this session.
+          <Rich text={fill(s.slowed, { delta: deltaRR.toFixed(1) })} />
           {downshiftMs !== null && (
-            <> Half of that change had happened {formatDuration(downshiftMs)} in.</>
+            <> {fill(s.halfway, { time: formatDuration(downshiftMs) })}</>
           )}
         </p>
       )}
 
-      {!slowed && !sped && (
-        <p className="surface-lead">
-          Your breathing finished about where it started. That happens, and it is worth
-          seeing rather than being told otherwise — some days the body does not downshift,
-          and a session that reported one anyway would not be measuring anything.
-        </p>
-      )}
+      {!slowed && !sped && <p className="surface-lead">{s.unchanged}</p>}
 
       {sped && (
         <p className="surface-lead">
-          Your breathing was <strong>{Math.abs(deltaRR).toFixed(1)}</strong> breaths per
-          minute faster at the end than at the start. Reporting it the other way round
-          would be flattering and false.
+          <Rich text={fill(s.sped, { delta: Math.abs(deltaRR).toFixed(1) })} />
         </p>
       )}
 
       <dl className="surface-detail">
         <div>
-          <dt>Breaths measured</dt>
+          <dt>{s.breaths}</dt>
           <dd>{result.scoredBreaths}</dd>
         </div>
         <div>
-          <dt>Time in the water</dt>
+          <dt>{s.duration}</dt>
           <dd>{formatDuration(result.durationMs)}</dd>
         </div>
         <div>
-          <dt>Input</dt>
+          <dt>{s.input}</dt>
           <dd>{input}</dd>
         </div>
         <div>
-          <dt>Signal</dt>
+          <dt>{s.signal}</dt>
           <dd>{result.worstSignal}</dd>
         </div>
       </dl>
 
       <p className="surface-note">
-        This is a measurement of how fast you were breathing, before and after. It trains
-        arousal regulation and shows you the result live — it does not treat, diagnose or
-        cure anything, and one session is not evidence about your health. Your exhales
-        were measured; the inhales were prompted by the rhythm rather than sensed.
-        {result.usedFallbackInput
-          ? ` This session was driven by ${input.toLowerCase()} rather than the microphone, so the timing is what was reported rather than what was heard.`
-          : ''}
+        {s.note}
+        {result.usedFallbackInput ? fill(s.noteFallback, { input: input.toLowerCase() }) : ''}
       </p>
 
       <CrisisRail />
 
       <div className="surface-exit">
-        <p>That is the whole session. Go and do the thing you came here to do.</p>
+        <p>{s.exit}</p>
         <button type="button" className="surface-leave" onClick={onLeave}>
-          Leave
+          {s.leave}
         </button>
       </div>
     </section>

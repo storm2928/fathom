@@ -1,3 +1,4 @@
+import { useLanguage } from './i18n';
 import './CrisisRail.css';
 
 /**
@@ -7,30 +8,33 @@ import './CrisisRail.css';
  * a score was low or because someone typed something worrying — there is
  * nothing here that reads what anyone types, and inferring distress from a
  * breathing measurement would be exactly the kind of overreach this project is
- * built to avoid. It is simply always on the screen where a session ends.
+ * built to avoid. It is simply always on the screens where someone might need
+ * it: the scope screen at the start, and the surface screen at the end.
  *
  * The wording routes to a person. Nothing here should suggest this app is one,
  * or that finishing a dive is a substitute for calling someone.
+ *
+ * The numbers themselves are not translated — 988 is 988 in both languages, and
+ * a mistranslated helpline number is the worst bug this file could have.
  */
 export function CrisisRail() {
+  const { t } = useLanguage();
+
   return (
-    <aside className="crisis" aria-label="Crisis support">
-      <p className="crisis-lead">
-        If you are in crisis or thinking about harming yourself, please talk to a person.
-        This app is not one.
-      </p>
+    <aside className="crisis" aria-label={t.crisis.label}>
+      <p className="crisis-lead">{t.crisis.lead}</p>
       <ul>
         <li>
-          <a href="tel:988">988</a> — Suicide &amp; Crisis Lifeline, United States. Call or text.
+          <a href="tel:988">988</a> — {t.crisis.usBody}
         </li>
         <li>
-          <a href="tel:988">9-8-8</a> — Suicide Crisis Helpline, Canada. Call or text.
+          <a href="tel:988">9-8-8</a> — {t.crisis.caBody}
         </li>
         <li>
           <a href="https://findahelpline.com" target="_blank" rel="noreferrer">
             findahelpline.com
           </a>{' '}
-          — free, confidential lines in over 130 countries.
+          — {t.crisis.intlBody}
         </li>
       </ul>
     </aside>
