@@ -103,7 +103,7 @@
     </style>
   </head>
   <body>
-    <h1>fathom — signal debug (issue #1: mic capture)</h1>
+    <h1>fathom — signal debug</h1>
 
     <div class="panel">
       <button id="start" type="button">Start microphone</button>
@@ -115,11 +115,20 @@
       <div class="level"><span id="dbfs">—</span> <small class="note">dBFS</small></div>
       <div class="meter"><span id="bar"></span></div>
       <dl style="margin-top: 1rem">
-        <dt>rms</dt><dd id="rms">—</dd>
+        <dt>level (above rumble)</dt><dd id="level">—</dd>
+        <dt>voice band</dt><dd id="voice">—</dd>
+        <dt>high band</dt><dd id="high">—</dd>
+        <dt>high / voice</dt><dd id="ratio">—</dd>
+        <dt>zero-crossing rate</dt><dd id="zcr">—</dd>
         <dt>peak</dt><dd id="peak">—</dd>
         <dt>frames received</dt><dd id="frames">0</dd>
         <dt>frame rate</dt><dd id="fps">—</dd>
       </dl>
+      <p class="note" style="margin-bottom: 0">
+        Breath is broadband, so high / voice should sit above 1 on an exhale.
+        Talking near the mic pushes it well below 1. That gap is what stops the
+        game being played with speech.
+      </p>
     </div>
 
     <div class="panel">

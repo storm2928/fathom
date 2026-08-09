@@ -6,7 +6,7 @@
  * entry point stays untouched. Issue #4 grows this into the tuning meter.
  */
 
-import { createMicCapture, isProcessorOn } from '../capture.ts';
+import { bandRatio, createMicCapture, isProcessorOn } from '../capture.ts';
 import type { AppliedSettings, CaptureFrame, ReportedSetting } from '../capture.ts';
 
 function el<T extends HTMLElement>(id: string): T {
@@ -20,7 +20,11 @@ const stopButton = el<HTMLButtonElement>('stop');
 const status = el('status');
 const dbfsOut = el('dbfs');
 const bar = el('bar');
-const rmsOut = el('rms');
+const levelOut = el('level');
+const voiceOut = el('voice');
+const highOut = el('high');
+const ratioOut = el('ratio');
+const zcrOut = el('zcr');
 const peakOut = el('peak');
 const framesOut = el('frames');
 const fpsOut = el('fps');
@@ -88,10 +92,20 @@ function onFrame(frame: CaptureFrame): void {
     windowFrames = 0;
   }
 
-  const dbfs = toDbfs(frame.rms);
+  const dbfs = toDbfs(frame.level);
   dbfsOut.textContent = dbfs === -Infinity ? '−∞' : dbfs.toFixed(1);
-  rmsOut.textContent = frame.rms.toFixed(5);
+  levelOut.textContent = frame.level.toFixed(5);
+  voiceOut.textContent = frame.voice.toFixed(5);
+  highOut.textContent = frame.high.toFixed(5);
+  zcrOut.textContent = frame.zcr.toFixed(3);
   framesOut.textContent = String(frameCount);
+
+  const ratio = bandRatio(frame);
+  ratioOut.textContent = Number.isFinite(ratio) ? ratio.toFixed(2) : '∞';
+  // Only worth colouring once there is something to judge; at the noise floor
+  // the ratio is measuring room tone, not a person.
+  const audible = frame.level > 0.002;
+  ratioOut.className = audible ? (ratio >= 1 ? 'good' : 'warn') : '';
 
   const clipping = frame.peak >= 0.99;
   peakOut.textContent = frame.peak.toFixed(3) + (clipping ? '  CLIPPING' : '');

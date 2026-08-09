@@ -8,14 +8,35 @@
  * cannot support, and that is a fact worth surfacing loudly and early.
  */
 
-/** One hop of measured audio. Detection logic lives downstream, not here. */
+/**
+ * One hop of measured audio, ~20ms. Measurements only — thresholds and the
+ * phase machine live downstream in code that can be tuned and tested.
+ */
 export interface CaptureFrame {
-  /** milliseconds on the audio clock */
+  /** milliseconds on the audio clock, counted in samples so it stays exact */
   t: number;
-  /** 0–1 RMS over the frame */
-  rms: number;
-  /** 0–1 peak magnitude over the frame, for clip detection */
+  /** 0–1 raw peak magnitude, taken pre-filter so clipping stays visible */
   peak: number;
+  /** RMS above the rumble cutoff. This is the level detection works on. */
+  level: number;
+  /** RMS within the voice band, where speech and hum sit */
+  voice: number;
+  /** RMS above the voice band, where the turbulence of a breath sits */
+  high: number;
+  /** zero-crossing rate, 0–1. A cheap stand-in for spectral centroid. */
+  zcr: number;
+}
+
+/**
+ * How much of the level sits in the breath band rather than the speech band.
+ * Above ~1 the sound is broadband and breath-like; well below, someone is
+ * talking near the microphone. Derived here rather than on the audio thread so
+ * the worklet stays a pure measurement stage.
+ */
+export function bandRatio(frame: CaptureFrame): number {
+  // Guard the silent case: 0/0 is not a ratio, it is an absence of evidence.
+  if (frame.voice <= 0) return frame.high > 0 ? Infinity : 0;
+  return frame.high / frame.voice;
 }
 
 /**
