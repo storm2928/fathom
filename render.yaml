@@ -1,0 +1,32 @@
+# Render deployment for the static build.
+#
+# Connecting the repository to a Render account is a one-time manual step that
+# has to be done by a human with the account. This file is what makes everything
+# after that repeatable from a push rather than from somebody's laptop.
+#
+# The app is entirely static: there is no server, no database and no API, because
+# all of the audio work happens on the device. Render serves the built files over
+# HTTPS, which is not a nicety — getUserMedia refuses to hand over a microphone
+# on a plain HTTP origin, so a deploy without TLS would silently reduce the whole
+# product to its keyboard fallback.
+services:
+  - type: web
+    name: fathom
+    runtime: static
+    # `npm ci` rather than `npm install`, so a deploy builds the dependency tree
+    # the lockfile pins instead of quietly resolving something newer.
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    headers:
+      # The microphone is same-origin only. Nothing here embeds anything, and
+      # nothing should be able to embed us and inherit the permission.
+      - path: /*
+        name: Permissions-Policy
+        value: microphone=(self), camera=(), geolocation=()
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
