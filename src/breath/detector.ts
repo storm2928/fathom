@@ -116,6 +116,8 @@ type InternalState = 'idle' | 'candidate' | 'open' | 'hangover' | 'lockout';
 export interface ExhaleDetector {
   push(frame: CaptureFrame): DetectorFrameResult;
   reset(): void;
+  /** Retune while running. The debug meter drives this so tuning needs no rebuild. */
+  setOptions(next: Partial<DetectorOptions>): void;
   readonly options: DetectorOptions;
   readonly noiseFloor: number;
 }
@@ -313,6 +315,9 @@ export function createExhaleDetector(
     },
 
     reset,
+    setOptions(next: Partial<DetectorOptions>) {
+      Object.assign(options, next);
+    },
     options,
     get noiseFloor() {
       return noiseFloor;

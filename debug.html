@@ -16,13 +16,17 @@
         --good: #4ade80;
         --bad: #f87171;
         --warn: #fbbf24;
+        --accent: #22d3ee;
+      }
+      * {
+        box-sizing: border-box;
       }
       body {
         margin: 0;
         padding: 1.5rem;
         background: var(--bg);
         color: var(--text);
-        font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       }
       h1 {
         font-size: 1rem;
@@ -31,13 +35,22 @@
         color: var(--dim);
         margin: 0 0 1rem;
       }
+      h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--dim);
+        margin: 0 0 0.75rem;
+      }
+      .wrap {
+        max-width: 68rem;
+      }
       .panel {
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 6px;
         padding: 1rem;
         margin-bottom: 1rem;
-        max-width: 46rem;
       }
       button {
         font: inherit;
@@ -45,7 +58,7 @@
         color: #062018;
         border: 0;
         border-radius: 4px;
-        padding: 0.6rem 1.2rem;
+        padding: 0.55rem 1.1rem;
         cursor: pointer;
         font-weight: 700;
       }
@@ -54,10 +67,80 @@
         color: var(--dim);
         cursor: not-allowed;
       }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .stat {
+        background: #0d1a20;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 0.5rem 0.7rem;
+      }
+      .stat b {
+        display: block;
+        font-size: 1.4rem;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+      .stat span {
+        color: var(--dim);
+        font-size: 0.75rem;
+      }
+      canvas {
+        width: 100%;
+        height: 200px;
+        display: block;
+        background: #081015;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+        gap: 0.5rem 1.5rem;
+      }
+      .control {
+        display: grid;
+        grid-template-columns: 1fr 4.5rem;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .control label {
+        color: var(--dim);
+        grid-column: 1 / -1;
+        font-size: 0.75rem;
+      }
+      .control input[type='range'] {
+        width: 100%;
+        accent-color: var(--accent);
+      }
+      .control output {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      th {
+        text-align: left;
+        color: var(--dim);
+        font-weight: 400;
+        border-bottom: 1px solid var(--line);
+        padding: 0.3rem 0.5rem 0.3rem 0;
+      }
+      td {
+        padding: 0.25rem 0.5rem 0.25rem 0;
+        border-bottom: 1px solid #17303a;
+      }
       dl {
         display: grid;
         grid-template-columns: 14rem 1fr;
-        gap: 0.35rem 1rem;
+        gap: 0.3rem 1rem;
         margin: 0;
       }
       dt {
@@ -66,87 +149,88 @@
       dd {
         margin: 0;
       }
-      .good {
-        color: var(--good);
-      }
-      .bad {
-        color: var(--bad);
-      }
-      .warn {
-        color: var(--warn);
-      }
-      .meter {
-        height: 2.5rem;
-        background: #081015;
-        border: 1px solid var(--line);
-        border-radius: 4px;
-        overflow: hidden;
-      }
-      .meter span {
-        display: block;
-        height: 100%;
-        width: 0;
-        background: linear-gradient(90deg, #22d3ee, #4ade80);
-      }
-      .level {
-        font-size: 2.5rem;
-        font-variant-numeric: tabular-nums;
-        margin: 0.5rem 0;
-      }
+      .good { color: var(--good); }
+      .bad { color: var(--bad); }
+      .warn { color: var(--warn); }
       .note {
         color: var(--dim);
-        max-width: 46rem;
       }
-      #verdict:empty {
+      #verdict:empty,
+      #configWarning:empty {
         display: none;
+      }
+      .empty {
+        color: var(--dim);
+        font-style: italic;
       }
     </style>
   </head>
   <body>
-    <h1>fathom — signal debug</h1>
+    <div class="wrap">
+      <h1>fathom — signal debug</h1>
 
-    <div class="panel">
-      <button id="start" type="button">Start microphone</button>
-      <button id="stop" type="button" disabled>Stop</button>
-      <p id="status" class="note">Idle. Audio starts only from a real click.</p>
+      <div class="panel">
+        <button id="start" type="button">Start microphone</button>
+        <button id="stop" type="button" disabled>Stop</button>
+        <button id="resetDetector" type="button">Reset detector</button>
+        <p id="status" class="note">Idle. Audio starts only from a real click.</p>
+      </div>
+
+      <div class="panel">
+        <div class="stats">
+          <div class="stat"><b id="dbfs">—</b><span>dBFS level</span></div>
+          <div class="stat"><b id="snr">—</b><span>dB over floor</span></div>
+          <div class="stat"><b id="ratio">—</b><span>high / voice</span></div>
+          <div class="stat"><b id="zcr">—</b><span>zero-crossing</span></div>
+          <div class="stat"><b id="phase">idle</b><span>phase</span></div>
+          <div class="stat"><b id="conf">—</b><span>confidence</span></div>
+          <div class="stat"><b id="clip">ok</b><span>clip</span></div>
+          <div class="stat"><b id="fps">—</b><span>frame rate</span></div>
+        </div>
+        <canvas id="trace"></canvas>
+        <p class="note" style="margin-bottom: 0">
+          Last 15 seconds. Bright line is level, dim line is the adaptive noise
+          floor, dashed line is the open threshold. Shaded spans are exhales the
+          detector believed.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h2>Thresholds — live, no rebuild</h2>
+        <div class="controls" id="controls"></div>
+        <p id="configWarning" class="bad" style="margin-bottom: 0"></p>
+      </div>
+
+      <div class="panel">
+        <h2>Detected exhales</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>at</th>
+              <th>duration</th>
+              <th>quality</th>
+              <th>confidence</th>
+              <th>outcome</th>
+            </tr>
+          </thead>
+          <tbody id="exhales">
+            <tr><td colspan="5" class="empty">nothing yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h2>What the browser actually applied</h2>
+        <dl>
+          <dt>sample rate</dt><dd id="sr">—</dd>
+          <dt>device</dt><dd id="device">—</dd>
+          <dt>echoCancellation</dt><dd id="ec">—</dd>
+          <dt>noiseSuppression</dt><dd id="ns">—</dd>
+          <dt>autoGainControl</dt><dd id="agc">—</dd>
+        </dl>
+        <p id="verdict" class="note"></p>
+      </div>
     </div>
-
-    <div class="panel">
-      <div class="level"><span id="dbfs">—</span> <small class="note">dBFS</small></div>
-      <div class="meter"><span id="bar"></span></div>
-      <dl style="margin-top: 1rem">
-        <dt>level (above rumble)</dt><dd id="level">—</dd>
-        <dt>voice band</dt><dd id="voice">—</dd>
-        <dt>high band</dt><dd id="high">—</dd>
-        <dt>high / voice</dt><dd id="ratio">—</dd>
-        <dt>zero-crossing rate</dt><dd id="zcr">—</dd>
-        <dt>peak</dt><dd id="peak">—</dd>
-        <dt>frames received</dt><dd id="frames">0</dd>
-        <dt>frame rate</dt><dd id="fps">—</dd>
-      </dl>
-      <p class="note" style="margin-bottom: 0">
-        Breath is broadband, so high / voice should sit above 1 on an exhale.
-        Talking near the mic pushes it well below 1. That gap is what stops the
-        game being played with speech.
-      </p>
-    </div>
-
-    <div class="panel">
-      <dl>
-        <dt>sample rate</dt><dd id="sr">—</dd>
-        <dt>device</dt><dd id="device">—</dd>
-        <dt>echoCancellation</dt><dd id="ec">—</dd>
-        <dt>noiseSuppression</dt><dd id="ns">—</dd>
-        <dt>autoGainControl</dt><dd id="agc">—</dd>
-      </dl>
-      <p id="verdict" class="note"></p>
-    </div>
-
-    <p class="note">
-      Requested: all three processors off. Reported above is what the browser
-      actually applied. A value of <code>true</code> means the browser overrode
-      us and this machine cannot be trusted for capture.
-    </p>
 
     <script type="module" src="/src/breath/debug/main.ts"></script>
   </body>
