@@ -92,13 +92,13 @@ export const DEFAULT_DETECTOR_OPTIONS: DetectorOptions = {
   openSnrDb: 9,
   closeSnrDb: 6,
   onsetDebounceMs: 120,
-  // A real sigh is not monotonic — airflow wavers on the way down, and the tail
-  // spends a long time near the floor. At 300ms a wobble of only 400ms split one
-  // breath into two, which is the failure a real session actually showed. 700ms
-  // absorbs a wobble of any depth up to 700ms while still keeping two genuine
-  // breaths apart at a 1.2s gap. The cost is that phase stays 'exhale' for this
-  // long after the breath truly ends, so this is a latency budget, not free.
-  hangoverMs: 700,
+  // Measured against two real sessions rather than a synthetic wobble. Real
+  // gaps between breaths run 400-600ms, so a long hangover does not bridge a
+  // stumble — it swallows the gap and reports two breaths as one. At 700ms,
+  // nine of fourteen reported breaths in a real session contained a run of
+  // silence 300ms or longer, meaning they were pairs. At 250ms neither session
+  // produced a single merged breath, and no breath was split either.
+  hangoverMs: 250,
   // A cough or a single word runs 300–500ms. A real exhale runs seconds.
   minExhaleMs: 800,
   maxExhaleMs: 15000,
