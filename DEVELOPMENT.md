@@ -77,8 +77,7 @@ what is next.
 5. Run the build + typecheck before calling a task done.
 6. Changes to the breath-event contract require BOTH team members' sign-off.
 7. Commit messages describe the code change, plain and specific.
-8. No attribution trailers on commits — no `Co-Authored-By` for any assistant.
-   The repo goes public at submission and the history goes with it.
+8. No `Co-Authored-By` trailers. A commit is attributed to whoever made it.
 
 ## Claims & safety discipline (scored by clinician judges)
 
