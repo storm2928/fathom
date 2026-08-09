@@ -26,8 +26,8 @@ rubric punishes chatbots/trackers and two judges are clinicians.
 
 ## Team
 
-- **storm2928 (Max)** — lane TBD
-- **cjasink** — lane TBD
+- **storm2928 (Max)** — experience layer
+- **cjasink** — signal engine
 
 Two lanes, one seam:
 - **Signal engine** (`src/breath/`): AudioWorklet mic capture, DSP exhale
@@ -39,6 +39,26 @@ Two lanes, one seam:
 
 The seam is `src/breath/types.ts`. The engine emits events; the game consumes
 them. Neither lane edits the other's folders without asking in chat first.
+
+## The work queue
+
+All work lives in GitHub issues. We coordinate through them, not through chat
+scrollback — either of us should be able to open the repo cold and know exactly
+what is next.
+
+- **Milestones are the week gates.** W1 The Spike (Aug 14) · W2 Session Arc
+  (Aug 21) · W3 Product Shell (Aug 28) · W4 Submission (Sep 3).
+- **Labels mark ownership.** `lane:signal` is cjasink's, `lane:experience` is
+  Max's, `lane:shared` needs both of us. `gate` means the milestone fails if it
+  slips. `risk` means do it early. `safety` means a clinician judge will read it.
+- **Your queue is your lane's open issues in the current milestone.** Take them
+  roughly top down; the ones that unblock the other person come first.
+- **Do not open work outside your lane.** If a `lane:shared` issue needs doing,
+  say so in the issue before starting.
+- **Reference the issue in the commit** (`Closes #7`) so the queue stays true
+  without anyone tidying it.
+- **New work becomes an issue before it becomes a commit.** If it is worth an
+  hour, it is worth three lines of scope first.
 
 ## Commands
 
