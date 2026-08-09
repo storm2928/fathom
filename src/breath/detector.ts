@@ -80,8 +80,17 @@ export interface DetectorOptions {
 }
 
 export const DEFAULT_DETECTOR_OPTIONS: DetectorOptions = {
-  openSnrDb: 8,
-  closeSnrDb: 3,
+  // Measured against a real 47s session on a Blue Yeti X in a quiet room. The
+  // level there never returned to the floor between breaths — it sat 2-8dB
+  // above it — so a close threshold under that band meant the exhale simply
+  // stopped closing, and one span ran 14.5s. 6dB sits above that residual band.
+  //
+  // 9dB open was picked over 10 because it found ten breaths against eight and
+  // the intervals came out *more* regular, not less (relative deviation 0.333
+  // against 0.389): at 10dB the median gap jumped from 3.5s to 5.7s, which is
+  // the signature of breaths being missed and two cycles read as one.
+  openSnrDb: 9,
+  closeSnrDb: 6,
   onsetDebounceMs: 120,
   // A real sigh is not monotonic — airflow wavers on the way down, and the tail
   // spends a long time near the floor. At 300ms a wobble of only 400ms split one
@@ -170,6 +179,10 @@ export function createExhaleDetector(
     const falling = level < noiseFloor;
     // While an exhale is open the floor may follow the level down but never up:
     // otherwise a long breath teaches the detector that the breath is silence.
+    // A level that never returns under the close threshold would hold this
+    // frozen forever, which is what the ceiling and the lockout after it exist
+    // to break — letting the floor rise here instead would make a running fan
+    // register as one long breath rather than being thrown away.
     const exhaling = state === 'open' || state === 'hangover' || state === 'candidate';
     if (!falling && exhaling && !warmup) return;
 
