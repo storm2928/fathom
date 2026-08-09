@@ -3,7 +3,10 @@ import type { BreathPhase, CalibrationResult, SignalQuality } from '../../../bre
 import { BreathConductor } from '../../session/conductor';
 import type { PromptStep } from '../../session/conductor';
 import { ScriptedBreathEngine } from '../scriptedEngine';
+import { SpacebarBreathEngine } from '../spacebarEngine';
 import './ScriptedEnginePanel.css';
+
+type Source = 'scripted' | 'spacebar';
 
 /**
  * Development harness for the scripted engine. Not product surface — this is
@@ -22,9 +25,13 @@ const LOG_LIMIT = 40;
 const SIGNAL_LEVELS: SignalQuality[] = ['good', 'degraded', 'unusable'];
 
 export function ScriptedEnginePanel() {
-  const engineRef = useRef<ScriptedBreathEngine | null>(null);
+  const engineRef = useRef<ScriptedBreathEngine | SpacebarBreathEngine | null>(null);
   const conductorRef = useRef<BreathConductor | null>(null);
   const lineId = useRef(0);
+
+  /** Knobs only exist on the fixture; the spacebar is driven by a person. */
+  const scripted = () =>
+    engineRef.current instanceof ScriptedBreathEngine ? engineRef.current : null;
 
   const [running, setRunning] = useState(false);
   const [phase, setPhase] = useState<BreathPhase>('idle');
@@ -42,6 +49,7 @@ export function ScriptedEnginePanel() {
   const [exhaleScale, setExhaleScale] = useState(1);
   const [signal, setSignal] = useState<SignalQuality>('good');
 
+  const [source, setSource] = useState<Source>('scripted');
   const [followPrompt, setFollowPrompt] = useState(true);
   const [step, setStep] = useState<PromptStep>('inhale');
   const [expected, setExpected] = useState(true);
@@ -64,13 +72,13 @@ export function ScriptedEnginePanel() {
 
   // Live knobs — these reach the running engine without restarting the session.
   useEffect(() => {
-    engineRef.current?.setQuality(quality);
+    scripted()?.setQuality(quality);
   }, [quality]);
   useEffect(() => {
-    engineRef.current?.setExhaleScale(exhaleScale);
+    scripted()?.setExhaleScale(exhaleScale);
   }, [exhaleScale]);
   useEffect(() => {
-    engineRef.current?.setSignalQuality(signal);
+    scripted()?.setSignalQuality(signal);
   }, [signal]);
 
   const handleStart = async () => {
@@ -82,14 +90,22 @@ export function ScriptedEnginePanel() {
 
     // The conductor is built first because the engine may follow it, then the
     // gate is attached back the other way — see BreathConductor.attach.
-    const conductor = new BreathConductor({ targetRR, timeScale });
-    const engine = new ScriptedBreathEngine({
-      seed,
-      timeScale,
-      quality,
-      signalQuality: signal,
-      follow: followPrompt ? conductor : undefined,
+    const conductor = new BreathConductor({
+      targetRR,
+      // A person cannot be fast-forwarded, so the prompt runs in real time
+      // whenever a human is the one supplying the breaths.
+      timeScale: source === 'spacebar' ? 1 : timeScale,
     });
+    const engine: ScriptedBreathEngine | SpacebarBreathEngine =
+      source === 'spacebar'
+        ? new SpacebarBreathEngine()
+        : new ScriptedBreathEngine({
+            seed,
+            timeScale,
+            quality,
+            signalQuality: signal,
+            follow: followPrompt ? conductor : undefined,
+          });
     conductor.attach(engine);
     conductorRef.current = conductor;
     engineRef.current = engine;
@@ -162,15 +178,37 @@ export function ScriptedEnginePanel() {
   return (
     <div className="panel">
       <header>
-        <h1>Scripted breath engine</h1>
+        <h1>Breath input harness</h1>
         <p>
-          Development harness. No microphone is involved and breathing at this page does
-          nothing — it replays a generated cyclic-sighing pattern so the dive can be built
-          before the signal engine lands.
+          Development surface for the two input paths the experience layer owns. No
+          microphone is involved in either — breathing at this page does nothing. The
+          scripted fixture replays a generated cyclic-sighing pattern; the spacebar is
+          the real fallback controller, driven by you.
         </p>
       </header>
 
       <section className="controls">
+        <div className="row">
+          {(['scripted', 'spacebar'] as Source[]).map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={option === source ? 'active' : ''}
+              disabled={running}
+              onClick={() => setSource(option)}
+            >
+              {option === 'scripted' ? 'Scripted fixture' : 'Spacebar'}
+            </button>
+          ))}
+        </div>
+        {source === 'spacebar' && (
+          <small className="note">
+            Hold the spacebar for as long as you are exhaling. Follow the prompt readout
+            below: hold through the exhale beat, release when it moves on. Holds under
+            400ms count as taps and are discarded.
+          </small>
+        )}
+
         <div className="row">
           <button type="button" onClick={running ? handleStop : handleStart}>
             {running ? 'Stop' : 'Start'}
@@ -180,6 +218,8 @@ export function ScriptedEnginePanel() {
           </button>
         </div>
 
+        {source === 'scripted' && (
+          <>
         <label>
           Seed <span className="val">{seed}</span>
           <input
@@ -253,6 +293,11 @@ export function ScriptedEnginePanel() {
           >
             {followPrompt ? 'Following the prompt' : 'Free-running'}
           </button>
+        </div>
+          </>
+        )}
+
+        <div className="row">
           <button type="button" disabled={!running} onClick={() => handleRetarget(targetRR - 1)}>
             Slow to {targetRR - 1}/min
           </button>

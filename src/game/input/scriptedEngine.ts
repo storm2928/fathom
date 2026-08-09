@@ -7,6 +7,7 @@ import type {
 import { MIN_EXHALE_MS, cycleForPeriod, periodForRate } from '../session/cycleShape';
 import type { PromptWindow } from '../session/conductor';
 import { BreathEmitter } from './emitter';
+import { RateEstimator } from './rateEstimator';
 
 /**
  * A BreathEngine that produces a plausible cyclic-sighing pattern with no
@@ -88,16 +89,7 @@ const DEFAULTS: Required<Omit<ScriptedEngineOptions, 'script' | 'follow'>> = {
   timeScale: 1,
 };
 
-/** Exhale onsets averaged into a reported rate. */
-const RR_WINDOW = 5;
-
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = sorted.length >> 1;
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-}
 
 /** Small, fast, seedable. Any deterministic generator would do. */
 function mulberry32(seed: number): () => number {
@@ -127,7 +119,7 @@ export class ScriptedBreathEngine implements BreathEngine {
   private startedAt = 0;
   private cycle = 0;
   private timers: ReturnType<typeof setTimeout>[] = [];
-  private onsets: number[] = [];
+  private readonly rate = new RateEstimator();
   private unfollow: (() => void) | null = null;
   private signal: SignalQuality;
   private exhaleScale = 1;
@@ -149,7 +141,7 @@ export class ScriptedBreathEngine implements BreathEngine {
     this.running = true;
     this.startedAt = performance.now();
     this.cycle = 0;
-    this.onsets = [];
+    this.rate.reset();
     this.rand = mulberry32(this.cfg.seed);
     this.emitter.emit('signal-quality', { level: this.signal });
 
@@ -272,38 +264,23 @@ export class ScriptedBreathEngine implements BreathEngine {
     // longest, best exhales, the exact behaviour the protocol trains. The window
     // rejects detections that begin during an inhale prompt, and nothing else.
     this.exhaleWasExpected = this.expected;
-    this.onsets.push(this.elapsed());
-    if (this.onsets.length > RR_WINDOW + 1) this.onsets.shift();
+    this.rate.mark(this.elapsed());
     this.emitter.emit('phase-change', { phase: 'exhale', at: this.elapsed() });
   }
 
   private endExhale(durationMs: number, quality: number): void {
     if (this.exhaleWasExpected) {
       this.emitter.emit('exhale-end', { durationMs, quality });
-      this.reportRate();
+      const breathsPerMin = this.rate.breathsPerMin();
+      if (breathsPerMin !== null) {
+        this.emitter.emit('rr-update', { breathsPerMin, confidence: this.confidence() });
+      }
     } else {
       // Not a scored breath, so it must not enter the rate estimate either —
       // counting unprompted detections is what overstated the rate by 65% (#27).
-      this.onsets.pop();
+      this.rate.unmark();
     }
     this.emitter.emit('phase-change', { phase: 'idle', at: this.elapsed() });
-  }
-
-  /**
-   * Onset to onset, by median. Counting every detection as a breath is what
-   * inflated the reported rate by 65% in #27; a median over cycle intervals is
-   * what the real estimator settled on, so the fixture uses it too.
-   */
-  private reportRate(): void {
-    if (this.onsets.length < 2) return;
-    const intervals: number[] = [];
-    for (let i = 1; i < this.onsets.length; i += 1) {
-      intervals.push(this.onsets[i] - this.onsets[i - 1]);
-    }
-    this.emitter.emit('rr-update', {
-      breathsPerMin: 60_000 / median(intervals),
-      confidence: this.confidence(),
-    });
   }
 
   /** Follow mode: the simulated person is doing what the prompt asked. */
