@@ -81,9 +81,15 @@ export interface DetectorOptions {
 
 export const DEFAULT_DETECTOR_OPTIONS: DetectorOptions = {
   openSnrDb: 8,
-  closeSnrDb: 4,
+  closeSnrDb: 3,
   onsetDebounceMs: 120,
-  hangoverMs: 300,
+  // A real sigh is not monotonic — airflow wavers on the way down, and the tail
+  // spends a long time near the floor. At 300ms a wobble of only 400ms split one
+  // breath into two, which is the failure a real session actually showed. 700ms
+  // absorbs a wobble of any depth up to 700ms while still keeping two genuine
+  // breaths apart at a 1.2s gap. The cost is that phase stays 'exhale' for this
+  // long after the breath truly ends, so this is a latency budget, not free.
+  hangoverMs: 700,
   // A cough or a single word runs 300–500ms. A real exhale runs seconds.
   minExhaleMs: 800,
   maxExhaleMs: 15000,

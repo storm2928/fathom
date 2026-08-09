@@ -99,7 +99,7 @@ const CONTROL_SPECS: ControlSpec[] = [
   { key: 'openSnrDb', label: 'open threshold (dB over floor)', min: 2, max: 45, step: 0.5 },
   { key: 'closeSnrDb', label: 'close threshold (dB over floor)', min: 1, max: 40, step: 0.5 },
   { key: 'onsetDebounceMs', label: 'onset debounce (ms)', min: 0, max: 600, step: 10 },
-  { key: 'hangoverMs', label: 'release hangover (ms)', min: 0, max: 1500, step: 10 },
+  { key: 'hangoverMs', label: 'release hangover (ms)', min: 0, max: 2500, step: 10 },
   { key: 'minExhaleMs', label: 'min exhale (ms)', min: 200, max: 3000, step: 50 },
   { key: 'maxExhaleMs', label: 'ceiling (ms)', min: 3000, max: 30000, step: 500 },
   { key: 'minBandRatio', label: 'min high / voice ratio', min: 0, max: 3, step: 0.05 },

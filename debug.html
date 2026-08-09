@@ -224,6 +224,13 @@
           <div class="stat"><b id="clip">ok</b><span>clip</span></div>
           <div class="stat"><b id="fps">—</b><span>frame rate</span></div>
         </div>
+        <p class="note" style="margin-top: 0">
+          <strong>Phase never reads "inhale", and that is not a fault.</strong>
+          FATHOM does not sense the inhale — it is rhythm-prompted by the game,
+          not read from the microphone. Only the exhale is detected here, so
+          phase moves between <code>idle</code> and <code>exhale</code> and
+          nothing else. The README and the video say the same thing.
+        </p>
         <canvas id="trace"></canvas>
         <p class="note" style="margin-bottom: 0">
           Last 15 seconds. Bright line is level, dim line is the adaptive noise
