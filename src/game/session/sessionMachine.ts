@@ -47,7 +47,16 @@ export interface SessionResult {
   worstSignal: SignalQuality;
 }
 
+/**
+ * `quick` is the ninety-second version for the ten minutes before an exam or a
+ * race. It is the same machine with one zone instead of three — not a separate
+ * path — so the arc, the one-way slowing and the before/after measurement
+ * cannot drift apart between the two modes.
+ */
+export type SessionPlan = 'full' | 'quick';
+
 export interface SessionOptions {
+  plan?: SessionPlan;
   /** compress the whole arc for development; 1 is real time */
   timeScale?: number;
   onState?: (state: SessionState) => void;
@@ -57,15 +66,22 @@ export interface SessionOptions {
 /** Each zone asks for a slower rate than the last, as a share of baseline. */
 const ZONE_FACTORS = [0.85, 0.72, 0.62];
 
+const PLANS: Record<SessionPlan, { factors: number[]; zoneMs: number; surfacingMs: number }> = {
+  // ~10s calibration + 3x100s + 20s = five and a half minutes.
+  full: { factors: ZONE_FACTORS, zoneMs: 100_000, surfacingMs: 20_000 },
+  // ~10s calibration + 65s + 15s = ninety seconds. One zone, and a gentler
+  // target than the full dive ends on: ninety seconds is not long enough to
+  // settle into a deep pace, and asking for one would set someone up to fail
+  // right before the thing they are nervous about.
+  quick: { factors: [0.8], zoneMs: 65_000, surfacingMs: 15_000 },
+};
+
 /**
  * The prompt will not ask for anything slower than this however low the
  * baseline was. Six breaths a minute is already a deliberate, trained pace;
  * chasing lower would be pushing rather than settling.
  */
 const TARGET_FLOOR_RR = 6;
-
-const ZONE_MS = 100_000;
-const SURFACING_MS = 20_000;
 
 const ZONE_STATES: SessionState[] = ['zone-1', 'zone-2', 'zone-3'];
 
@@ -79,6 +95,9 @@ export class SessionMachine {
   private readonly engine: BreathEngine;
   private readonly conductor: BreathConductor;
   private readonly timeScale: number;
+  private readonly plan: { factors: number[]; zoneMs: number; surfacingMs: number };
+  /** The zone whose rates count as the "after" measurement. */
+  private readonly finalZoneState: SessionState;
   private readonly onState?: (state: SessionState) => void;
   private readonly onResult?: (result: SessionResult) => void;
 
@@ -101,6 +120,8 @@ export class SessionMachine {
     this.engine = engine;
     this.conductor = conductor;
     this.timeScale = options.timeScale ?? 1;
+    this.plan = PLANS[options.plan ?? 'full'];
+    this.finalZoneState = ZONE_STATES[this.plan.factors.length - 1];
     this.onState = options.onState;
     this.onResult = options.onResult;
   }
@@ -144,7 +165,7 @@ export class SessionMachine {
     this.off.push(
       this.engine.on('rr-update', ({ breathsPerMin }) => {
         this.latestRR = breathsPerMin;
-        if (this.state === 'zone-3') this.finalZoneRates.push(breathsPerMin);
+        if (this.state === this.finalZoneState) this.finalZoneRates.push(breathsPerMin);
         this.checkDownshift(breathsPerMin);
       }),
     );
@@ -169,7 +190,8 @@ export class SessionMachine {
   private checkDownshift(breathsPerMin: number): void {
     if (this.downshiftMs !== null || this.baselineRR === 0) return;
     if (this.halfwayTarget === null) {
-      const slowest = Math.max(TARGET_FLOOR_RR, this.baselineRR * ZONE_FACTORS[2]);
+      const { factors } = this.plan;
+      const slowest = Math.max(TARGET_FLOOR_RR, this.baselineRR * factors[factors.length - 1]);
       this.halfwayTarget = (this.baselineRR + slowest) / 2;
     }
     if (breathsPerMin <= this.halfwayTarget) {
@@ -191,18 +213,18 @@ export class SessionMachine {
 
   private runZone(index: number): void {
     if (this.finished) return;
-    if (index >= ZONE_STATES.length) {
+    if (index >= this.plan.factors.length) {
       this.enter('surfacing');
-      this.after(SURFACING_MS, () => this.finish('completed'));
+      this.after(this.plan.surfacingMs, () => this.finish('completed'));
       return;
     }
 
     this.enter(ZONE_STATES[index]);
     // Derived from the measured baseline, floored, and handed to a conductor
     // that will refuse it outright if it is not slower than the current target.
-    const target = Math.max(TARGET_FLOOR_RR, this.baselineRR * ZONE_FACTORS[index]);
+    const target = Math.max(TARGET_FLOOR_RR, this.baselineRR * this.plan.factors[index]);
     this.conductor.slowTo(target);
-    this.after(ZONE_MS, () => this.runZone(index + 1));
+    this.after(this.plan.zoneMs, () => this.runZone(index + 1));
   }
 
   private finish(ending: SessionEnding): void {

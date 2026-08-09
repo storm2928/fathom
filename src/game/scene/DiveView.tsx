@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BreathConductor } from '../session/conductor';
 import { SessionMachine } from '../session/sessionMachine';
-import type { SessionResult, SessionState } from '../session/sessionMachine';
+import type { SessionPlan, SessionResult, SessionState } from '../session/sessionMachine';
 import { ScriptedBreathEngine } from '../input/scriptedEngine';
 import { SpacebarBreathEngine } from '../input/spacebarEngine';
 import { DiveScene } from './diveScene';
@@ -64,7 +64,7 @@ export function DiveView() {
     return () => clearInterval(id);
   }, [running]);
 
-  const handleStart = async () => {
+  const handleStart = async (plan: SessionPlan) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     stopAll();
@@ -86,6 +86,7 @@ export function DiveView() {
     engine.on('rr-update', ({ breathsPerMin }) => setRate(breathsPerMin));
 
     const machine = new SessionMachine(engine, conductor, {
+      plan,
       timeScale,
       onState: setState,
       onResult: (finished) => {
@@ -137,9 +138,20 @@ export function DiveView() {
               {speed}× speed
             </button>
           )}
-          <button type="button" onClick={running ? handleStop : handleStart}>
-            {running ? 'Leave' : 'Dive'}
-          </button>
+          {running ? (
+            <button type="button" onClick={handleStop}>
+              Leave
+            </button>
+          ) : (
+            <>
+              <button type="button" onClick={() => handleStart('full')}>
+                Dive
+              </button>
+              <button type="button" onClick={() => handleStart('quick')}>
+                Quick dive · 90s
+              </button>
+            </>
+          )}
         </div>
 
         <dl>
