@@ -4,6 +4,8 @@ import type {
   CalibrationResult,
   SignalQuality,
 } from '../../breath/types';
+import { MIN_EXHALE_MS, cycleForPeriod, periodForRate } from '../session/cycleShape';
+import type { PromptWindow } from '../session/conductor';
 import { BreathEmitter } from './emitter';
 
 /**
@@ -11,28 +13,39 @@ import { BreathEmitter } from './emitter';
  * microphone involved.
  *
  * It exists so the dive scene, the session arc and the surface screen can be
- * built, demoed and tested before the signal engine lands — and afterwards, as
- * the fixture the real detector gets compared against. It is a development
+ * built, demoed and tested before a real session is available — and afterwards,
+ * as the fixture the real detector gets compared against. It is a development
  * harness, never a product surface: a person breathing has no effect on it.
  *
- * Determinism: every number comes from a seeded generator, so the same seed and
- * the same knob settings replay the same session. Event payloads carry the
+ * Fidelity rules it has to keep, or it stops being useful as a fixture:
+ *   - It emits only `idle` and `exhale`. The real engine has no code path that
+ *     emits `inhale` and never will, because an audible inhale is broadband
+ *     noise the detector cannot separate from an exhale. Inhales are prompted by
+ *     the conductor, not reported by an engine.
+ *   - It honours `setExhaleExpected`, so anything relying on the #27 gate
+ *     behaves the same here as it will in production.
+ *   - Respiratory rate is measured exhale-onset to exhale-onset, by median —
+ *     the same method the real estimator uses.
+ *
+ * Determinism: durations come from a seeded generator, and payloads carry the
  * scheduled duration rather than a measured one, so a timer that fires late
- * cannot change what the game sees.
+ * cannot change what the game sees. Passing an explicit `script` fixes a run
+ * exactly.
  */
 
-/** One breath cycle. Durations are in real milliseconds, before `timeScale`. */
+/** One breath cycle. Durations are in protocol milliseconds. */
 export interface ScriptedBreath {
-  /** first inhale */
   inhaleMs: number;
-  /** the second, shorter inhale stacked on top — the sigh */
   topUpMs: number;
-  /** the long exhale that drives the dive */
   exhaleMs: number;
-  /** the pause at the bottom before the next cycle */
   restMs: number;
   /** 0–1, reported on `exhale-end` */
   quality: number;
+}
+
+/** The conductor, or anything else that plays prompt windows. */
+export interface PromptSource {
+  on(handler: (window: PromptWindow) => void): () => void;
 }
 
 export interface ScriptedEngineOptions {
@@ -48,15 +61,22 @@ export interface ScriptedEngineOptions {
   /** spread applied to durations and quality, 0–1 */
   jitter?: number;
   signalQuality?: SignalQuality;
-  /** how long `calibrate()` takes, before `timeScale` */
+  /** how long `calibrate()` takes, in protocol time */
   calibrationMs?: number;
-  /** run the whole session faster; 10 makes a five-minute arc take thirty seconds */
+  /** run faster; 10 makes a five-minute arc take thirty seconds */
   timeScale?: number;
-  /** a fixed cycle sequence, looped — overrides the generator entirely */
+  /** a fixed cycle sequence, looped — overrides the generator */
   script?: ScriptedBreath[];
+  /**
+   * Follow a conductor's prompt instead of free-running. This models a person
+   * who is actually doing the exercise, which is the case worth testing against:
+   * a fixture drifting against the prompt would spend most of its exhales
+   * suppressed by the #27 gate and tell us nothing.
+   */
+  follow?: PromptSource;
 }
 
-const DEFAULTS: Required<Omit<ScriptedEngineOptions, 'script'>> = {
+const DEFAULTS: Required<Omit<ScriptedEngineOptions, 'script' | 'follow'>> = {
   seed: 1,
   startRR: 15,
   settledRR: 8,
@@ -68,25 +88,16 @@ const DEFAULTS: Required<Omit<ScriptedEngineOptions, 'script'>> = {
   timeScale: 1,
 };
 
-/**
- * Cycle shape. The inhale side grows only weakly with the cycle length, so as
- * someone downshifts the exhale absorbs almost all of the extra time: at 15
- * breaths/min the exhale is a little longer than the inhale, and by 8 it is
- * roughly twice as long. That widening ratio is the thing the protocol trains,
- * so the generated pattern has to show it.
- */
-const SHAPE = {
-  inhale: { base: 700, ofPeriod: 0.1 },
-  topUp: { base: 350, ofPeriod: 0.06 },
-  rest: { base: 250, ofPeriod: 0.04 },
-};
-
-/** Shortest exhale the generator will produce, however fast the target rate. */
-const MIN_EXHALE_MS = 1_200;
-/** Cycles averaged into a reported respiratory rate. */
-const RR_WINDOW = 3;
+/** Exhale onsets averaged into a reported rate. */
+const RR_WINDOW = 5;
 
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
 
 /** Small, fast, seedable. Any deterministic generator would do. */
 function mulberry32(seed: number): () => number {
@@ -107,22 +118,27 @@ export class ScriptedBreathEngine implements BreathEngine {
   readonly usingFallbackInput = true;
 
   private readonly emitter = new BreathEmitter();
-  private readonly cfg: Required<Omit<ScriptedEngineOptions, 'script'>>;
+  private readonly cfg: Required<Omit<ScriptedEngineOptions, 'script' | 'follow'>>;
   private readonly script?: ScriptedBreath[];
+  private readonly follow?: PromptSource;
 
   private rand: () => number;
   private running = false;
   private startedAt = 0;
   private cycle = 0;
   private timers: ReturnType<typeof setTimeout>[] = [];
-  private recentPeriods: number[] = [];
+  private onsets: number[] = [];
+  private unfollow: (() => void) | null = null;
   private signal: SignalQuality;
   private exhaleScale = 1;
   private qualityBias: number;
+  private expected = true;
+  private exhaleWasExpected = true;
 
   constructor(options: ScriptedEngineOptions = {}) {
     this.cfg = { ...DEFAULTS, ...options };
     this.script = options.script;
+    this.follow = options.follow;
     this.rand = mulberry32(this.cfg.seed);
     this.signal = this.cfg.signalQuality;
     this.qualityBias = this.cfg.quality;
@@ -133,10 +149,15 @@ export class ScriptedBreathEngine implements BreathEngine {
     this.running = true;
     this.startedAt = performance.now();
     this.cycle = 0;
-    this.recentPeriods = [];
+    this.onsets = [];
     this.rand = mulberry32(this.cfg.seed);
     this.emitter.emit('signal-quality', { level: this.signal });
-    this.runCycle();
+
+    if (this.follow) {
+      this.unfollow = this.follow.on((window) => this.onPrompt(window));
+    } else {
+      this.runCycle();
+    }
     return Promise.resolve();
   }
 
@@ -144,13 +165,15 @@ export class ScriptedBreathEngine implements BreathEngine {
     if (!this.running) return;
     this.running = false;
     this.clearTimers();
+    this.unfollow?.();
+    this.unfollow = null;
     this.emitter.emit('phase-change', { phase: 'idle', at: this.elapsed() });
   }
 
   /**
-   * The guided baseline read. Resolves after `calibrationMs` with the rate the
-   * generator is currently producing, which is what a working detector would
-   * have measured over the same window.
+   * The guided baseline read. Resolves with the rate the generator is currently
+   * producing, which is what a working detector would have measured over the
+   * same window.
    */
   calibrate(): Promise<CalibrationResult> {
     const baselineRR = this.cfg.startRR;
@@ -181,6 +204,15 @@ export class ScriptedBreathEngine implements BreathEngine {
     return this.emitter.on(event, handler);
   }
 
+  /**
+   * The #27 gate. Detections outside the prompted window are not scored — the
+   * phase still moves, because that is observation rather than measurement, but
+   * nothing reaches `exhale-end` or the rate estimate.
+   */
+  setExhaleExpected(expected: boolean): void {
+    this.expected = expected;
+  }
+
   // ---- knobs, for exercising states that are hard to produce on purpose ----
 
   /** Mean exhale quality reported from here on, 0–1. */
@@ -189,9 +221,9 @@ export class ScriptedBreathEngine implements BreathEngine {
   }
 
   /**
-   * Stretches or shortens exhales relative to the target rate. Below 1 this
-   * simulates someone breathing faster than the protocol asks for, which is the
-   * case the scene and the scoring need to handle without rewarding it.
+   * Stretches or shortens exhales. Below 1 this simulates someone breathing
+   * faster than the protocol asks for, which the scene and the scoring have to
+   * handle without rewarding it.
    */
   setExhaleScale(scale: number): void {
     this.exhaleScale = Math.max(0.2, scale);
@@ -208,9 +240,7 @@ export class ScriptedBreathEngine implements BreathEngine {
 
   /**
    * Protocol time, not wall-clock. Every duration this engine reports is in the
-   * timescale a real session runs at; `timeScale` only compresses playback. So a
-   * session watched at 10× still reports the exhale lengths and the settling
-   * curve that a real five-minute dive would have produced.
+   * timescale a real session runs at; `timeScale` only compresses playback.
    */
   private elapsed(): number {
     return (performance.now() - this.startedAt) * this.cfg.timeScale;
@@ -221,14 +251,77 @@ export class ScriptedBreathEngine implements BreathEngine {
     return this.signal === 'degraded' ? 0.55 : 0.9;
   }
 
-  private after(realMs: number, fn: () => void): void {
-    const handle = setTimeout(fn, realMs / this.cfg.timeScale);
-    this.timers.push(handle);
+  private after(protocolMs: number, fn: () => void): void {
+    this.timers.push(setTimeout(fn, protocolMs / this.cfg.timeScale));
   }
 
   private clearTimers(): void {
     for (const handle of this.timers) clearTimeout(handle);
     this.timers = [];
+  }
+
+  private nextQuality(): number {
+    return clamp01(this.qualityBias + (this.rand() - 0.5) * this.cfg.jitter * 0.8);
+  }
+
+  /** Shared by both modes: the exhale opens, and the rate clock ticks on onset. */
+  private beginExhale(): void {
+    // Whether this breath counts is decided by where it STARTED, and the answer
+    // is latched here. Reading the gate again at the end would throw away an
+    // exhale that began when prompted and ran on past the window — which is the
+    // longest, best exhales, the exact behaviour the protocol trains. The window
+    // rejects detections that begin during an inhale prompt, and nothing else.
+    this.exhaleWasExpected = this.expected;
+    this.onsets.push(this.elapsed());
+    if (this.onsets.length > RR_WINDOW + 1) this.onsets.shift();
+    this.emitter.emit('phase-change', { phase: 'exhale', at: this.elapsed() });
+  }
+
+  private endExhale(durationMs: number, quality: number): void {
+    if (this.exhaleWasExpected) {
+      this.emitter.emit('exhale-end', { durationMs, quality });
+      this.reportRate();
+    } else {
+      // Not a scored breath, so it must not enter the rate estimate either —
+      // counting unprompted detections is what overstated the rate by 65% (#27).
+      this.onsets.pop();
+    }
+    this.emitter.emit('phase-change', { phase: 'idle', at: this.elapsed() });
+  }
+
+  /**
+   * Onset to onset, by median. Counting every detection as a breath is what
+   * inflated the reported rate by 65% in #27; a median over cycle intervals is
+   * what the real estimator settled on, so the fixture uses it too.
+   */
+  private reportRate(): void {
+    if (this.onsets.length < 2) return;
+    const intervals: number[] = [];
+    for (let i = 1; i < this.onsets.length; i += 1) {
+      intervals.push(this.onsets[i] - this.onsets[i - 1]);
+    }
+    this.emitter.emit('rr-update', {
+      breathsPerMin: 60_000 / median(intervals),
+      confidence: this.confidence(),
+    });
+  }
+
+  /** Follow mode: the simulated person is doing what the prompt asked. */
+  private onPrompt(window: PromptWindow): void {
+    if (!this.running || window.step !== 'exhale') return;
+
+    const compliance = 1 + (this.rand() - 0.5) * this.cfg.jitter * 0.5;
+    const durationMs = Math.max(
+      MIN_EXHALE_MS,
+      window.durationMs * compliance * this.exhaleScale,
+    );
+    const quality = this.nextQuality();
+
+    this.beginExhale();
+    this.after(durationMs, () => {
+      if (!this.running) return;
+      this.endExhale(durationMs, quality);
+    });
   }
 
   private nextBreath(): ScriptedBreath {
@@ -237,67 +330,35 @@ export class ScriptedBreathEngine implements BreathEngine {
     }
 
     // Rate relaxes exponentially from the starting rate toward the settled one.
-    // The inhale side of the cycle stays roughly constant — as in the protocol,
-    // it is the exhale that lengthens as someone downshifts.
-    const t = this.elapsed();
     const { startRR, settledRR, settleMs, jitter } = this.cfg;
-    const targetRR = settledRR + (startRR - settledRR) * Math.exp(-t / settleMs);
-    const period = 60_000 / targetRR;
+    const targetRR =
+      settledRR + (startRR - settledRR) * Math.exp(-this.elapsed() / settleMs);
 
     const spread = () => 1 + (this.rand() - 0.5) * jitter * 0.5;
-    const part = (s: { base: number; ofPeriod: number }) =>
-      (s.base + period * s.ofPeriod) * spread();
-    const inhaleMs = part(SHAPE.inhale);
-    const topUpMs = part(SHAPE.topUp);
-    const restMs = part(SHAPE.rest);
-    const exhaleMs =
-      Math.max(MIN_EXHALE_MS, period - inhaleMs - topUpMs - restMs) * this.exhaleScale;
+    const shape = cycleForPeriod(periodForRate(targetRR), spread);
 
     return {
-      inhaleMs,
-      topUpMs,
-      exhaleMs,
-      restMs,
-      quality: clamp01(this.qualityBias + (this.rand() - 0.5) * jitter * 0.8),
+      ...shape,
+      exhaleMs: shape.exhaleMs * this.exhaleScale,
+      quality: this.nextQuality(),
     };
   }
 
+  /** Free-running mode: the fixture keeps its own rhythm. */
   private runCycle(): void {
     if (!this.running) return;
 
     const breath = this.nextBreath();
     const period = breath.inhaleMs + breath.topUpMs + breath.exhaleMs + breath.restMs;
+    const exhaleAt = breath.inhaleMs + breath.topUpMs;
 
-    this.emitter.emit('phase-change', { phase: 'inhale', at: this.elapsed() });
-
-    // The second inhale arrives as a repeated 'inhale' transition. The contract
-    // in src/breath/types.ts has no way to say "double inhale", and the double
-    // inhale is the distinctive half of cyclic sighing — the scene needs it to
-    // charge the dive light twice. Raised on issue #6; until the contract gains
-    // a way to express it, a repeat of the same phase is the signal.
-    this.after(breath.inhaleMs, () => {
-      this.emitter.emit('phase-change', { phase: 'inhale', at: this.elapsed() });
-    });
-
-    this.after(breath.inhaleMs + breath.topUpMs, () => {
-      this.emitter.emit('phase-change', { phase: 'exhale', at: this.elapsed() });
-    });
-
-    this.after(breath.inhaleMs + breath.topUpMs + breath.exhaleMs, () => {
-      this.emitter.emit('exhale-end', {
-        durationMs: breath.exhaleMs,
-        quality: breath.quality,
-      });
-      this.emitter.emit('phase-change', { phase: 'idle', at: this.elapsed() });
-
-      this.recentPeriods.push(period);
-      if (this.recentPeriods.length > RR_WINDOW) this.recentPeriods.shift();
-      const mean =
-        this.recentPeriods.reduce((sum, p) => sum + p, 0) / this.recentPeriods.length;
-      this.emitter.emit('rr-update', {
-        breathsPerMin: 60_000 / mean,
-        confidence: this.confidence(),
-      });
+    // No inhale events. The real engine emits only `idle` and `exhale`, so a
+    // fixture that announced inhales would teach the game to depend on
+    // something that never arrives in production. Inhales come from the
+    // conductor.
+    this.after(exhaleAt, () => this.beginExhale());
+    this.after(exhaleAt + breath.exhaleMs, () => {
+      this.endExhale(breath.exhaleMs, breath.quality);
     });
 
     this.after(period, () => {

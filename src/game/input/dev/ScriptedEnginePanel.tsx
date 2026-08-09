@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { BreathPhase, CalibrationResult, SignalQuality } from '../../../breath/types';
+import { BreathConductor } from '../../session/conductor';
+import type { PromptStep } from '../../session/conductor';
 import { ScriptedBreathEngine } from '../scriptedEngine';
 import './ScriptedEnginePanel.css';
 
@@ -21,6 +23,7 @@ const SIGNAL_LEVELS: SignalQuality[] = ['good', 'degraded', 'unusable'];
 
 export function ScriptedEnginePanel() {
   const engineRef = useRef<ScriptedBreathEngine | null>(null);
+  const conductorRef = useRef<BreathConductor | null>(null);
   const lineId = useRef(0);
 
   const [running, setRunning] = useState(false);
@@ -39,6 +42,11 @@ export function ScriptedEnginePanel() {
   const [exhaleScale, setExhaleScale] = useState(1);
   const [signal, setSignal] = useState<SignalQuality>('good');
 
+  const [followPrompt, setFollowPrompt] = useState(true);
+  const [step, setStep] = useState<PromptStep>('inhale');
+  const [expected, setExpected] = useState(true);
+  const [targetRR, setTargetRR] = useState(12);
+
   const push = (kind: string, detail: string) => {
     lineId.current += 1;
     const line = { id: lineId.current, at: performance.now(), kind, detail };
@@ -46,6 +54,8 @@ export function ScriptedEnginePanel() {
   };
 
   const teardown = () => {
+    conductorRef.current?.stop();
+    conductorRef.current = null;
     engineRef.current?.stop();
     engineRef.current = null;
   };
@@ -70,8 +80,27 @@ export function ScriptedEnginePanel() {
     setLastExhale(null);
     setCalibration(null);
 
-    const engine = new ScriptedBreathEngine({ seed, timeScale, quality, signalQuality: signal });
+    // The conductor is built first because the engine may follow it, then the
+    // gate is attached back the other way — see BreathConductor.attach.
+    const conductor = new BreathConductor({ targetRR, timeScale });
+    const engine = new ScriptedBreathEngine({
+      seed,
+      timeScale,
+      quality,
+      signalQuality: signal,
+      follow: followPrompt ? conductor : undefined,
+    });
+    conductor.attach(engine);
+    conductorRef.current = conductor;
     engineRef.current = engine;
+
+    conductor.on((window) => {
+      setStep(window.step);
+      setExpected(window.exhaleExpected);
+      if (window.step === 'inhale' || window.step === 'exhale') {
+        push('prompt', `${window.step} · scoring ${window.exhaleExpected ? 'open' : 'closed'}`);
+      }
+    });
 
     engine.on('phase-change', ({ phase: next, at }) => {
       setPhase(next);
@@ -90,8 +119,22 @@ export function ScriptedEnginePanel() {
     });
 
     await engine.start();
+    conductor.start();
     setRunning(true);
     setExhaleScale(1);
+  };
+
+  const handleRetarget = (breathsPerMin: number) => {
+    const conductor = conductorRef.current;
+    if (!conductor) return;
+    const accepted = conductor.slowTo(breathsPerMin);
+    setTargetRR(conductor.targetRR);
+    push(
+      'target',
+      accepted
+        ? `slowed to ${conductor.targetRR.toFixed(0)}/min`
+        : `refused ${breathsPerMin.toFixed(0)}/min — the target may only ever slow`,
+    );
   };
 
   const handleStop = () => {
@@ -200,6 +243,28 @@ export function ScriptedEnginePanel() {
             </button>
           ))}
         </div>
+
+        <div className="row">
+          <button
+            type="button"
+            className={followPrompt ? 'active' : ''}
+            disabled={running}
+            onClick={() => setFollowPrompt((v) => !v)}
+          >
+            {followPrompt ? 'Following the prompt' : 'Free-running'}
+          </button>
+          <button type="button" disabled={!running} onClick={() => handleRetarget(targetRR - 1)}>
+            Slow to {targetRR - 1}/min
+          </button>
+          <button type="button" disabled={!running} onClick={() => handleRetarget(targetRR + 1)}>
+            Try to speed up
+          </button>
+        </div>
+        <small className="note">
+          Free-running lets the fixture drift against the prompt, so exhales landing in the
+          inhale window get refused rather than scored — that is the gate from #27 doing its
+          job. Speeding the target up is refused by design.
+        </small>
       </section>
 
       <section className="readout">
@@ -222,6 +287,18 @@ export function ScriptedEnginePanel() {
           <strong>
             {calibration === null ? '—' : `${calibration.baselineRR.toFixed(1)}/min`}
           </strong>
+        </div>
+        <div>
+          <span className="label">Prompt</span>
+          <strong data-phase={step === 'exhale' ? 'exhale' : undefined}>{step}</strong>
+        </div>
+        <div>
+          <span className="label">Scoring</span>
+          <strong data-gate={expected ? 'open' : 'closed'}>{expected ? 'open' : 'closed'}</strong>
+        </div>
+        <div>
+          <span className="label">Target</span>
+          <strong>{targetRR.toFixed(0)}/min</strong>
         </div>
       </section>
 

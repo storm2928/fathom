@@ -147,3 +147,15 @@
   font-size: 14px;
   opacity: 0.7;
 }
+
+.readout strong[data-gate='closed'] {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.panel small.note {
+  display: block;
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 4px;
+}
