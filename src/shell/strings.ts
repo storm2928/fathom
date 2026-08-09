@@ -76,6 +76,9 @@ const en = {
       'The signal stopped being readable, so there is nothing measured well enough to show you. A number here would be invented, and an invented number is worse than none.',
     lostFix: 'A quieter room, or the spacebar instead of the microphone, will usually fix it.',
     close: 'Close',
+    save: 'Save dive log',
+    saveNote:
+      'Downloads a small file to this device. Nothing is uploaded, and nothing is kept here once you leave.',
   },
 
   dive: {
@@ -165,6 +168,9 @@ const fr: Strings = {
       "Le signal est devenu illisible : rien n'a été mesuré assez bien pour vous être montré. Un chiffre ici serait inventé, et un chiffre inventé vaut moins que pas de chiffre du tout.",
     lostFix: "Une pièce plus calme, ou la barre d'espace plutôt que le microphone, règle généralement le problème.",
     close: 'Fermer',
+    save: 'Enregistrer le journal',
+    saveNote:
+      "Télécharge un petit fichier sur cet appareil. Rien n'est téléversé, et rien n'est conservé ici après votre départ.",
   },
 
   dive: {

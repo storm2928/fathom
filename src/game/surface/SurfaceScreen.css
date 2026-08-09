@@ -104,3 +104,27 @@
   cursor: pointer;
   margin-top: 12px;
 }
+
+.surface-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.surface-save {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 9px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.surface-save:hover {
+  border-color: var(--accent-border);
+}

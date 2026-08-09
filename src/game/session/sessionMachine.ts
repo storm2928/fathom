@@ -29,6 +29,8 @@ export type SessionEnding = 'completed' | 'signal-lost' | 'stopped';
 
 export interface SessionResult {
   ending: SessionEnding;
+  /** which mode was run, so an exported log says what it was */
+  plan: SessionPlan;
   /** breaths/min measured before the dive */
   baselineRR: number;
   /** breaths/min measured over the final zone */
@@ -95,6 +97,7 @@ export class SessionMachine {
   private readonly engine: BreathEngine;
   private readonly conductor: BreathConductor;
   private readonly timeScale: number;
+  private readonly planName: SessionPlan;
   private readonly plan: { factors: number[]; zoneMs: number; surfacingMs: number };
   /** The zone whose rates count as the "after" measurement. */
   private readonly finalZoneState: SessionState;
@@ -120,7 +123,8 @@ export class SessionMachine {
     this.engine = engine;
     this.conductor = conductor;
     this.timeScale = options.timeScale ?? 1;
-    this.plan = PLANS[options.plan ?? 'full'];
+    this.planName = options.plan ?? 'full';
+    this.plan = PLANS[this.planName];
     this.finalZoneState = ZONE_STATES[this.plan.factors.length - 1];
     this.onState = options.onState;
     this.onResult = options.onResult;
@@ -242,6 +246,7 @@ export class SessionMachine {
     this.enter('ended');
     this.onResult?.({
       ending,
+      plan: this.planName,
       baselineRR: this.baselineRR,
       finalRR,
       deltaRR: this.baselineRR - finalRR,

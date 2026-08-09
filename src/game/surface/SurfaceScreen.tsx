@@ -2,6 +2,7 @@ import type { SessionResult } from '../session/sessionMachine';
 import { CrisisRail } from '../../shell/CrisisRail';
 import { Rich, useLanguage } from '../../shell/i18n';
 import { fill } from '../../shell/strings';
+import { buildDiveLog, downloadDiveLog } from './diveLog';
 import './SurfaceScreen.css';
 
 /**
@@ -127,9 +128,21 @@ export function SurfaceScreen({ result, inputLabel, onLeave }: SurfaceScreenProp
 
       <div className="surface-exit">
         <p>{s.exit}</p>
-        <button type="button" className="surface-leave" onClick={onLeave}>
-          {s.leave}
-        </button>
+        <div className="surface-actions">
+          <button
+            type="button"
+            className="surface-save"
+            onClick={() =>
+              downloadDiveLog(buildDiveLog(result, { plan: result.plan, input }))
+            }
+          >
+            {s.save}
+          </button>
+          <button type="button" className="surface-leave" onClick={onLeave}>
+            {s.leave}
+          </button>
+        </div>
+        <p className="surface-note">{s.saveNote}</p>
       </div>
     </section>
   );
