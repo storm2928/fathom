@@ -13,6 +13,8 @@ import { bandRatio, createMicCapture, isProcessorOn } from '../capture.ts';
 import type { AppliedSettings, CaptureFrame, ReportedSetting } from '../capture.ts';
 import { createExhaleDetector } from '../detector.ts';
 import type { DetectorOptions, DetectorFrameResult } from '../detector.ts';
+import { buildRecording, parseRecording, replayRecording } from '../recording.ts';
+import type { BreathRecording } from '../recording.ts';
 
 function el<T extends HTMLElement>(id: string): T {
   const found = document.getElementById(id);
@@ -29,6 +31,12 @@ const controls = el('controls');
 const configWarning = el('configWarning');
 const exhaleRows = el('exhales');
 const verdict = el('verdict');
+const recordButton = el<HTMLButtonElement>('record');
+const downloadButton = el<HTMLButtonElement>('download');
+const loadInput = el<HTMLInputElement>('loadFile');
+const replayButton = el<HTMLButtonElement>('replay');
+const recordStatus = el('recordStatus');
+const replayOut = el('replayOut');
 
 const out = {
   dbfs: el('dbfs'),
@@ -66,6 +74,10 @@ let windowStart = 0;
 let windowFrames = 0;
 let exhaleCount = 0;
 
+/** Non-null while recording. Raw frames only — detection is re-derived on replay. */
+let capturedFrames: CaptureFrame[] | null = null;
+let loadedRecording: BreathRecording | null = null;
+
 function toDbfs(value: number): number {
   return value > 0 ? 20 * Math.log10(value) : BOTTOM_DBFS;
 }
@@ -81,8 +93,11 @@ interface ControlSpec {
 }
 
 const CONTROL_SPECS: ControlSpec[] = [
-  { key: 'openSnrDb', label: 'open threshold (dB over floor)', min: 2, max: 24, step: 0.5 },
-  { key: 'closeSnrDb', label: 'close threshold (dB over floor)', min: 1, max: 20, step: 0.5 },
+  // A breath in a quiet room clears the floor by 30dB and more, so these have
+  // to reach past that or the upper half of the tuning range is unreachable —
+  // which is exactly where you go to suppress false positives in a quiet room.
+  { key: 'openSnrDb', label: 'open threshold (dB over floor)', min: 2, max: 45, step: 0.5 },
+  { key: 'closeSnrDb', label: 'close threshold (dB over floor)', min: 1, max: 40, step: 0.5 },
   { key: 'onsetDebounceMs', label: 'onset debounce (ms)', min: 0, max: 600, step: 10 },
   { key: 'hangoverMs', label: 'release hangover (ms)', min: 0, max: 1500, step: 10 },
   { key: 'minExhaleMs', label: 'min exhale (ms)', min: 200, max: 3000, step: 50 },
@@ -205,6 +220,13 @@ function logExhale(
 function onFrame(frame: CaptureFrame): void {
   const result = detector.push(frame);
   latest = { ...result, frame };
+
+  if (capturedFrames) {
+    capturedFrames.push(frame);
+    recordStatus.textContent = `Recording — ${capturedFrames.length} frames, ${(
+      capturedFrames.length / FRAME_HZ
+    ).toFixed(1)}s.`;
+  }
 
   windowFrames++;
   if (windowStart === 0) windowStart = frame.t;
@@ -375,4 +397,120 @@ resetButton.addEventListener('click', () => {
   detector.reset();
   trace.length = 0;
   latest = null;
+});
+
+/* --------------------------------------------------------- record & replay */
+
+function clearExhaleTable(): void {
+  exhaleCount = 0;
+  const empty = document.createElement('tr');
+  const cell = document.createElement('td');
+  cell.colSpan = 5;
+  cell.className = 'empty';
+  cell.textContent = 'nothing yet';
+  empty.append(cell);
+  exhaleRows.replaceChildren(empty);
+}
+
+recordButton.addEventListener('click', () => {
+  if (capturedFrames) {
+    const frames = capturedFrames;
+    capturedFrames = null;
+    recordButton.textContent = 'Start recording';
+    recordButton.classList.remove('recording');
+    downloadButton.disabled = frames.length === 0;
+    loadedRecording = buildRecording(frames, detector.options, capture.settings);
+    replayButton.disabled = false;
+    recordStatus.textContent = `Recorded ${frames.length} frames (${(
+      frames.length / FRAME_HZ
+    ).toFixed(1)}s). Download it, or replay it at different thresholds.`;
+    return;
+  }
+
+  capturedFrames = [];
+  recordButton.textContent = 'Stop recording';
+  recordButton.classList.add('recording');
+  downloadButton.disabled = true;
+  recordStatus.textContent = 'Recording — 0 frames.';
+});
+
+downloadButton.addEventListener('click', () => {
+  if (!loadedRecording) return;
+  const blob = new Blob([JSON.stringify(loadedRecording)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `fathom-breath-${loadedRecording.createdAt.replace(/[:.]/g, '-')}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+loadInput.addEventListener('change', async () => {
+  const file = loadInput.files?.[0];
+  if (!file) return;
+  try {
+    loadedRecording = parseRecording(await file.text());
+    replayButton.disabled = false;
+    downloadButton.disabled = false;
+    recordStatus.className = 'note';
+    recordStatus.textContent =
+      `Loaded ${loadedRecording.frames.length} frames from ${file.name} — ` +
+      `${loadedRecording.sampleRate}Hz, ${loadedRecording.device}, ` +
+      `processing ${loadedRecording.processingVerdict}.`;
+  } catch (error) {
+    loadedRecording = null;
+    replayButton.disabled = true;
+    recordStatus.className = 'bad';
+    recordStatus.textContent = error instanceof Error ? error.message : String(error);
+  }
+  loadInput.value = '';
+});
+
+replayButton.addEventListener('click', () => {
+  const recording = loadedRecording;
+  if (!recording) return;
+
+  const summary = replayRecording(recording, detector.options);
+
+  // Re-run through the live path too, so the trace and table show the replay
+  // rather than whatever the microphone was doing a moment ago.
+  detector.reset();
+  trace.length = 0;
+  clearExhaleTable();
+  const wasRecording = capturedFrames;
+  capturedFrames = null;
+  for (const frame of recording.frames) onFrame(frame);
+  capturedFrames = wasRecording;
+
+  const rr = summary.respiration;
+  const rejectCounts = summary.rejects.reduce<Record<string, number>>((acc, r) => {
+    acc[r.reason] = (acc[r.reason] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  replayOut.textContent = [
+    `${summary.frames} frames · ${(summary.durationMs / 1000).toFixed(1)}s · floor ${(
+      20 * Math.log10(summary.noiseFloorAtEnd)
+    ).toFixed(1)} dBFS`,
+    `exhales: ${summary.exhales.length}` +
+      (summary.meanQuality === null
+        ? ''
+        : `  ·  mean quality ${summary.meanQuality.toFixed(3)}`),
+    summary.exhales.length
+      ? `durations: ${summary.exhales.map((e) => (e.durationMs / 1000).toFixed(2) + 's').join(', ')}`
+      : 'durations: —',
+    summary.exhales.length
+      ? `qualities: ${summary.exhales.map((e) => e.quality.toFixed(2)).join(', ')}`
+      : 'qualities: —',
+    `rejected: ${
+      Object.keys(rejectCounts).length
+        ? Object.entries(rejectCounts).map(([k, v]) => `${k} x${v}`).join(', ')
+        : 'none'
+    }`,
+    rr
+      ? `respiratory rate: ${rr.breathsPerMin.toFixed(2)} bpm (confidence ${rr.confidence.toFixed(
+          2
+        )}, ${rr.intervalsUsed} intervals)`
+      : 'respiratory rate: not enough intervals',
+  ].join('\n');
 });

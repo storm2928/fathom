@@ -163,6 +163,29 @@
         color: var(--dim);
         font-style: italic;
       }
+      .filebutton {
+        display: inline-block;
+        font: inherit;
+        font-weight: 700;
+        background: var(--good);
+        color: #062018;
+        border-radius: 4px;
+        padding: 0.55rem 1.1rem;
+        cursor: pointer;
+      }
+      .replay-out {
+        margin: 0.75rem 0 0;
+        white-space: pre-wrap;
+        color: var(--text);
+        font: inherit;
+      }
+      .replay-out:empty {
+        display: none;
+      }
+      button.recording {
+        background: var(--bad);
+        color: #2a0a0a;
+      }
     </style>
   </head>
   <body>
@@ -174,6 +197,20 @@
         <button id="stop" type="button" disabled>Stop</button>
         <button id="resetDetector" type="button">Reset detector</button>
         <p id="status" class="note">Idle. Audio starts only from a real click.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Record &amp; replay — tune against a real breath</h2>
+        <button id="record" type="button">Start recording</button>
+        <button id="download" type="button" disabled>Download recording</button>
+        <label class="filebutton" for="loadFile">Load recording</label>
+        <input id="loadFile" type="file" accept="application/json,.json" hidden />
+        <button id="replay" type="button" disabled>Replay at current thresholds</button>
+        <p id="recordStatus" class="note">
+          Recording stores raw frames only, so the same session can be replayed
+          at any threshold setting without breathing again.
+        </p>
+        <pre id="replayOut" class="replay-out"></pre>
       </div>
 
       <div class="panel">
