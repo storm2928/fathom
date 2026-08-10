@@ -137,7 +137,13 @@ npm run dev        # development server
 npm run build      # production build into dist/
 npx tsc -b         # typecheck
 npx oxlint         # lint
+
+node src/game/testing/run.ts   # tests — no build step, no dependencies
 ```
+
+The tests cover the parts where being wrong is both expensive and silent: the
+respiratory-rate estimate, the descent scoring that enforces "slower always
+wins", and the prompt geometry.
 
 Deployment is declared in [`render.yaml`](render.yaml) as a static site. HTTPS is
 required, not optional: browsers refuse microphone access on an insecure origin.
