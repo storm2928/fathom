@@ -3,6 +3,7 @@ import { CrisisRail } from '../../shell/CrisisRail';
 import { Rich, useLanguage } from '../../shell/i18n';
 import { fill } from '../../shell/strings';
 import { buildDiveLog, downloadDiveLog } from './diveLog';
+import type { InputCode } from './diveLog';
 import './SurfaceScreen.css';
 
 /**
@@ -31,6 +32,8 @@ interface SurfaceScreenProps {
    * the same small dishonesty this screen exists to avoid.
    */
   inputLabel?: string;
+  /** Stable code for the export, kept apart from the label people read (#32). */
+  inputCode: InputCode;
   onLeave: () => void;
 }
 
@@ -41,7 +44,7 @@ function formatDuration(ms: number): string {
   return `${minutes}m ${String(seconds % 60).padStart(2, '0')}s`;
 }
 
-export function SurfaceScreen({ result, inputLabel, onLeave }: SurfaceScreenProps) {
+export function SurfaceScreen({ result, inputLabel, inputCode, onLeave }: SurfaceScreenProps) {
   const { t } = useLanguage();
   const s = t.surface;
   const { baselineRR, finalRR, deltaRR, downshiftMs, ending } = result;
@@ -115,7 +118,7 @@ export function SurfaceScreen({ result, inputLabel, onLeave }: SurfaceScreenProp
         </div>
         <div>
           <dt>{s.signal}</dt>
-          <dd>{result.worstSignal}</dd>
+          <dd>{t.signal[result.worstSignal]}</dd>
         </div>
       </dl>
 
@@ -133,7 +136,7 @@ export function SurfaceScreen({ result, inputLabel, onLeave }: SurfaceScreenProp
             type="button"
             className="surface-save"
             onClick={() =>
-              downloadDiveLog(buildDiveLog(result, { plan: result.plan, input }))
+              downloadDiveLog(buildDiveLog(result, { plan: result.plan, input: inputCode }))
             }
           >
             {s.save}

@@ -276,9 +276,10 @@ export class ScriptedBreathEngine implements BreathEngine {
         this.emitter.emit('rr-update', { breathsPerMin, confidence: this.confidence() });
       }
     } else {
-      // Not a scored breath, so it must not enter the rate estimate either —
-      // counting unprompted detections is what overstated the rate by 65% (#27).
-      this.rate.unmark();
+      // A breath that happened but is not being counted. Skipped rather than
+      // discarded, so the estimator refuses to measure across it instead of
+      // reading a two-cycle span as one cycle and halving the rate (#29).
+      this.rate.skip();
     }
     this.emitter.emit('phase-change', { phase: 'idle', at: this.elapsed() });
   }

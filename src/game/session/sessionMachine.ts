@@ -154,6 +154,13 @@ export class SessionMachine {
     this.baselineRR = calibration.baselineRR;
     this.latestRR = calibration.baselineRR;
     this.divingFrom = performance.now();
+
+    // The prompt starts here and not a moment earlier. Calibration is a
+    // free-breathing read: nobody is entrained to a rhythm they have not been
+    // shown yet, so a conductor already gating during it would refuse the very
+    // breaths the baseline is made of and anchor the whole session to a rate
+    // nobody was breathing at (#29).
+    this.conductor.start();
     this.runZone(0);
   }
 
@@ -238,6 +245,9 @@ export class SessionMachine {
     this.timers = [];
     for (const off of this.off) off();
     this.off = [];
+    // Reopens the scoring gate as it stops, so anything that runs after a
+    // session is not left deaf.
+    this.conductor.stop();
 
     const finalRR = this.finalZoneRates.length
       ? this.finalZoneRates.reduce((sum, r) => sum + r, 0) / this.finalZoneRates.length

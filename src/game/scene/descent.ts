@@ -61,14 +61,13 @@ export function metresForExhale(durationMs: number, quality: number): number {
   return METRES_AT_REFERENCE * lengthFactor * qualityFactor;
 }
 
-/** Zones, in metres from the surface. The session arc owns progression (#9). */
-export const ZONE_DEPTHS = [0, 60, 150, 280];
-
-/** Which zone a depth falls in, 0-indexed, clamped to the last. */
-export function zoneAt(metres: number): number {
-  let zone = 0;
-  for (let i = 1; i < ZONE_DEPTHS.length; i += 1) {
-    if (metres >= ZONE_DEPTHS[i]) zone = i;
-  }
-  return zone;
-}
+/**
+ * Depth at which the water is as dark as it gets. Purely a lighting number:
+ * it drives how the background fades with depth and nothing else.
+ *
+ * These used to be called zones and be read as a progression, which put a depth
+ * band on the canvas contradicting the session's actual stage (#30) — a Quick
+ * Dive has one zone, but crossing 60m made the scene claim zone 2. Zones belong
+ * to the session arc; the scene only knows how deep and therefore how dark.
+ */
+export const DARKEST_AT_METRES = 360;

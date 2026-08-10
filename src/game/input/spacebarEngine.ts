@@ -59,8 +59,6 @@ export class SpacebarBreathEngine implements BreathEngine {
   private running = false;
   private startedAt = 0;
   private holdStartedAt: number | null = null;
-  private expected = true;
-  private exhaleWasExpected = true;
   private scored = 0;
 
   constructor(options: SpacebarEngineOptions = {}) {
@@ -128,9 +126,21 @@ export class SpacebarBreathEngine implements BreathEngine {
     return this.emitter.on(event, handler);
   }
 
-  /** The #27 gate, honoured the same way every other input source honours it. */
-  setExhaleExpected(expected: boolean): void {
-    this.expected = expected;
+  /**
+   * Deliberately inert, and that is the point.
+   *
+   * The #27 gate exists to stop an *acoustic* false positive: an audible inhale
+   * is broadband noise the detector cannot tell from an exhale, so detections
+   * during the inhale prompt are refused. A keyboard cannot produce that false
+   * positive — the person says when the exhale starts and when it ends. Applying
+   * the filter here would only throw away real breaths, which is what reported a
+   * breather at half their true rate in #29.
+   *
+   * The method stays so the conductor can attach to any input without asking
+   * what kind it is.
+   */
+  setExhaleExpected(): void {
+    // Intentionally does nothing. See above.
   }
 
   /** Exhales accepted so far, for a shell that wants to confirm input is landing. */
@@ -157,10 +167,6 @@ export class SpacebarBreathEngine implements BreathEngine {
 
     const at = this.elapsed();
     this.holdStartedAt = at;
-    // Latched at onset, not read again at release: an exhale that begins when
-    // prompted and runs past the window is the behaviour being trained, and
-    // must not be thrown away for finishing late.
-    this.exhaleWasExpected = this.expected;
     this.rate.mark(at);
     this.emitter.emit('phase-change', { phase: 'exhale', at });
   };
@@ -190,27 +196,23 @@ export class SpacebarBreathEngine implements BreathEngine {
     const durationMs = at - startedAt;
 
     if (durationMs < this.cfg.minHoldMs) {
-      // A tap, not a breath. Rewind the rate clock so a fidget cannot make the
-      // reported rate look faster than the person is actually breathing.
-      this.rate.unmark();
+      // A tap, not a breath. Discarded rather than skipped: nothing happened
+      // here, so the breaths either side of it are still adjacent.
+      this.rate.discard();
       this.emitter.emit('phase-change', { phase: 'idle', at });
       return;
     }
 
-    if (this.exhaleWasExpected) {
-      this.scored += 1;
-      this.emitter.emit('exhale-end', {
-        durationMs,
-        quality: clamp01(durationMs / this.cfg.targetExhaleMs),
-      });
-      const breathsPerMin = this.rate.breathsPerMin();
-      if (breathsPerMin !== null) {
-        // Confidence is high because there is nothing to misread — the person
-        // said when the exhale started and when it ended.
-        this.emitter.emit('rr-update', { breathsPerMin, confidence: 0.95 });
-      }
-    } else {
-      this.rate.unmark();
+    this.scored += 1;
+    this.emitter.emit('exhale-end', {
+      durationMs,
+      quality: clamp01(durationMs / this.cfg.targetExhaleMs),
+    });
+    const breathsPerMin = this.rate.breathsPerMin();
+    if (breathsPerMin !== null) {
+      // Confidence is high because there is nothing to misread — the person
+      // said when the exhale started and when it ended.
+      this.emitter.emit('rr-update', { breathsPerMin, confidence: 0.95 });
     }
 
     this.emitter.emit('phase-change', { phase: 'idle', at });
@@ -220,7 +222,8 @@ export class SpacebarBreathEngine implements BreathEngine {
   private abandonHold(): void {
     if (this.holdStartedAt === null) return;
     this.holdStartedAt = null;
-    this.rate.unmark();
+    // Abandoned on stop, so no breath was completed to measure.
+    this.rate.discard();
     this.emitter.emit('phase-change', { phase: 'idle', at: this.elapsed() });
   }
 }

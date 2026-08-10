@@ -109,6 +109,9 @@ const en = {
     surfacing: 'Surfacing',
     ended: 'Done',
   },
+
+  /** The value, not just the label. See #32. */
+  signal: { good: 'good', degraded: 'degraded', unusable: 'unusable' },
 };
 
 /** Translated with the same care as the English, because it is read as closely. */
@@ -201,6 +204,8 @@ const fr: Strings = {
     surfacing: 'Remontée',
     ended: 'Terminé',
   },
+
+  signal: { good: 'bon', degraded: 'dégradé', unusable: 'inutilisable' },
 };
 
 /** The shape every language must satisfy. */

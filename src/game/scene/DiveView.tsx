@@ -77,7 +77,7 @@ export function DiveView() {
         : new ScriptedBreathEngine({ follow: conductor, timeScale });
     conductor.attach(engine);
 
-    const scene = new DiveScene(canvas);
+    const scene = new DiveScene(canvas, { timeScale });
     teardownRef.current = scene.attach(engine, conductor);
     engine.on('rr-update', ({ breathsPerMin }) => setRate(breathsPerMin));
 
@@ -110,7 +110,7 @@ export function DiveView() {
 
     scene.start();
     await engine.start();
-    conductor.start();
+    // The machine starts the conductor once calibration is done — see #29.
     setRunning(true);
     void machine.start();
   };
@@ -190,6 +190,7 @@ export function DiveView() {
           <SurfaceScreen
             result={result}
             inputLabel={source === 'spacebar' ? t.dive.inputKeyboard : t.dive.inputScripted}
+            inputCode={source === 'spacebar' ? 'keyboard' : 'scripted'}
             onLeave={() => setResult(null)}
           />
         )}

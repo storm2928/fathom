@@ -16,6 +16,8 @@ import type { SessionResult } from '../session/sessionMachine';
 /** Bumped if the shape changes, so an old file is still readable later. */
 const LOG_VERSION = 1;
 
+export type InputCode = 'microphone' | 'keyboard' | 'scripted';
+
 export interface DiveLogEntry {
   version: number;
   /** ISO 8601, local clock, so a row can be placed in someone's day */
@@ -28,7 +30,12 @@ export interface DiveLogEntry {
   downshiftSeconds: number | null;
   durationSeconds: number;
   scoredBreaths: number;
-  input: string;
+  /**
+   * A stable code, never a translated label. A field whose value changes with
+   * the UI language makes two logs from the same person incomparable, and the
+   * whole point of the export is that it opens somewhere else (#32).
+   */
+  input: InputCode;
   signal: SessionResult['worstSignal'];
   /** Travels with the file so the numbers cannot be read as more than they are. */
   measurementNote: string;
@@ -41,7 +48,7 @@ const MEASUREMENT_NOTE =
 
 export function buildDiveLog(
   result: SessionResult,
-  options: { plan: string; input: string; now?: Date },
+  options: { plan: string; input: InputCode; now?: Date },
 ): DiveLogEntry {
   return {
     version: LOG_VERSION,

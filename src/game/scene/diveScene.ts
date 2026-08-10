@@ -1,6 +1,6 @@
 import type { BreathEngine } from '../../breath/types';
 import type { BreathConductor, PromptWindow } from '../session/conductor';
-import { metresForExhale, zoneAt, ZONE_DEPTHS } from './descent';
+import { metresForExhale, DARKEST_AT_METRES } from './descent';
 
 /**
  * The dive, drawn with untextured shapes.
@@ -43,12 +43,19 @@ const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 export interface DiveSceneOptions {
   /** Honour the viewer's motion preference; defaults to reading the media query. */
   reducedMotion?: boolean;
+  /**
+   * Matches the session's playback compression. The glide is wall-clock, so
+   * without this a session run at 10x earns depth ten times faster than the
+   * easing can draw it and the diver falls a long way behind (#31).
+   */
+  timeScale?: number;
 }
 
 export class DiveScene {
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
   private readonly reducedMotion: boolean;
+  private readonly timeScale: number;
 
   private motes: Mote[] = [];
   private detach: (() => void)[] = [];
@@ -80,6 +87,7 @@ export class DiveScene {
     this.reducedMotion =
       options.reducedMotion ??
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.timeScale = options.timeScale ?? 1;
     this.resize();
     this.seedMotes();
   }
@@ -144,13 +152,20 @@ export class DiveScene {
     this.release();
   }
 
-  /** Metres descended so far, for a HUD or the surface screen. */
+  /**
+   * Metres earned, including the breath currently in progress. This is the
+   * number to report: it is true the moment the breath earns it, whereas the
+   * drawn depth is a visual easing that can still be catching up when a session
+   * ends — which is how the readout and the canvas came to disagree by 50m in
+   * #31. It is monotonic, so it never counts anything back.
+   */
   get depth(): number {
-    return this.shownDepth;
+    return this.targetDepth;
   }
 
-  get zone(): number {
-    return zoneAt(this.shownDepth);
+  /** What is on screen right now. Trails `depth` while the glide settles. */
+  get drawnDepth(): number {
+    return this.shownDepth;
   }
 
   // ------------------------------------------------------------- internals
@@ -183,7 +198,9 @@ export class DiveScene {
         this.depthAtExhaleStart + metresForExhale(elapsed, this.lastQuality);
     }
 
-    const catchUp = this.reducedMotion ? 1 : 1 - Math.exp(-GLIDE_PER_SECOND * dt);
+    const catchUp = this.reducedMotion
+      ? 1
+      : 1 - Math.exp(-GLIDE_PER_SECOND * dt * this.timeScale);
     this.shownDepth = lerp(this.shownDepth, this.targetDepth, catchUp);
 
     if (!this.reducedMotion) {
@@ -242,8 +259,7 @@ export class DiveScene {
 
   /** Darkens with depth. The only thing telling you how far down you are. */
   private drawWater(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-    const deepest = ZONE_DEPTHS[ZONE_DEPTHS.length - 1] + 80;
-    const t = clamp01(this.shownDepth / deepest);
+    const t = clamp01(this.shownDepth / DARKEST_AT_METRES);
     const gradient = ctx.createLinearGradient(0, 0, 0, h);
     gradient.addColorStop(0, `hsl(200 70% ${Math.max(2, 16 - t * 14)}%)`);
     gradient.addColorStop(1, `hsl(215 80% ${Math.max(1, 7 - t * 6)}%)`);
@@ -300,9 +316,10 @@ export class DiveScene {
     ctx.font = '500 13px ui-monospace, Consolas, monospace';
     ctx.textAlign = 'left';
     ctx.fillText(`${this.shownDepth.toFixed(1)} m`, 16, 26);
-    ctx.fillStyle = 'hsl(185 30% 70% / 0.5)';
-    ctx.fillText(`zone ${this.zone + 1}`, 16, 44);
+    // No zone here. The session's stage is shown beside the scene; a depth band
+    // drawn as a zone contradicted it (#30).
     ctx.textAlign = 'right';
+    ctx.fillStyle = 'hsl(185 30% 70% / 0.6)';
     ctx.fillText(this.promptStep, w - 16, 26);
     ctx.fillText(`light ${(this.light * 100).toFixed(0)}%`, w - 16, 44);
     ctx.textAlign = 'left';
