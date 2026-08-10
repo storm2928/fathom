@@ -15,12 +15,12 @@
 
 interface Case {
   name: string;
-  fn: () => void;
+  fn: () => void | Promise<void>;
 }
 
 const cases: Case[] = [];
 
-export function test(name: string, fn: () => void): void {
+export function test(name: string, fn: () => void | Promise<void>): void {
   cases.push({ name, fn });
 }
 
@@ -36,13 +36,13 @@ export function equal(actual: unknown, expected: unknown, message?: string): voi
   }
 }
 
-/** Runs everything registered so far. Throws if any case failed. */
-export function runAll(): void {
+/** Runs everything registered so far, in order. Throws if any case failed. */
+export async function runAll(): Promise<void> {
   const failures: { name: string; error: unknown }[] = [];
 
   for (const { name, fn } of cases) {
     try {
-      fn();
+      await fn();
       console.log(`  ok   ${name}`);
     } catch (error) {
       failures.push({ name, error });
