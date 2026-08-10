@@ -8,7 +8,7 @@ import { MIN_EXHALE_MS, cycleDuration, cycleForPeriod, periodForRate } from './c
  * change that flattened it would quietly turn the prompt into ordinary slow
  * breathing while every number still looked fine.
  *
- * Run: node src/game/testing/run.ts
+ * Run: node --import ./src/game/testing/resolve.mjs src/game/testing/run.ts
  */
 
 const at = (breathsPerMin: number) => cycleForPeriod(periodForRate(breathsPerMin));

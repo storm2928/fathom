@@ -68,7 +68,12 @@ export interface SessionOptions {
 /** Each zone asks for a slower rate than the last, as a share of baseline. */
 const ZONE_FACTORS = [0.85, 0.72, 0.62];
 
-const PLANS: Record<SessionPlan, { factors: number[]; zoneMs: number; surfacingMs: number }> = {
+/**
+ * Exported so the advertised lengths can be checked. "Five minutes" and
+ * "90s" are claims made in the UI and the README, and they are made of these
+ * numbers.
+ */
+export const PLANS: Record<SessionPlan, { factors: number[]; zoneMs: number; surfacingMs: number }> = {
   // ~10s calibration + 3x100s + 20s = five and a half minutes.
   full: { factors: ZONE_FACTORS, zoneMs: 100_000, surfacingMs: 20_000 },
   // ~10s calibration + 65s + 15s = ninety seconds. One zone, and a gentler

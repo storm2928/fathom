@@ -9,7 +9,7 @@ import { metresForExhale, REFERENCE_EXHALE_MS } from './descent.ts';
  * and will make to clinician judges. A claim that rests on nobody having changed
  * a constant is not a claim. These fail if someone does.
  *
- * Run: node src/game/testing/run.ts
+ * Run: node --import ./src/game/testing/resolve.mjs src/game/testing/run.ts
  */
 
 const QUALITY = 0.8;

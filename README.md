@@ -138,7 +138,7 @@ npm run build      # production build into dist/
 npx tsc -b         # typecheck
 npx oxlint         # lint
 
-node src/game/testing/run.ts   # tests — no build step, no dependencies
+node --import ./src/game/testing/resolve.mjs src/game/testing/run.ts   # tests — no build step, no dependencies
 ```
 
 The tests cover the parts where being wrong is both expensive and silent: the

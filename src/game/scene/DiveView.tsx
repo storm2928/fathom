@@ -92,6 +92,9 @@ export function DiveView() {
         // Sampling stops with `running`, so take a last reading here or the
         // readout freezes mid-glide while the canvas carries on easing down.
         setDepth(scene.depth);
+        // Let the descent come to rest, then the scene stops itself rather than
+        // animating underneath the surface screen for as long as it is open.
+        scene.settle();
         setResult(finished);
         setRunning(false);
         // Stated as the two measurements rather than as a verdict, so the

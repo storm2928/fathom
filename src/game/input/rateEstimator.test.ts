@@ -7,7 +7,7 @@ import { RateEstimator } from './rateEstimator.ts';
  * product rests on, so it is the one thing in this lane worth pinning down with
  * assertions rather than a careful reading.
  *
- * Run: node src/game/testing/run.ts
+ * Run: node --import ./src/game/testing/resolve.mjs src/game/testing/run.ts
  */
 
 const FOUR_SECOND_CYCLE = [0, 4_000, 8_000, 12_000]; // 15 breaths/min

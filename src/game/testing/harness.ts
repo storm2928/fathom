@@ -6,7 +6,7 @@
  * shared-file changes that need sign-off from the other lane. This needs
  * neither, imports nothing, and runs on the TypeScript directly:
  *
- *     node src/game/testing/run.ts
+ *     node --import ./src/game/testing/resolve.mjs src/game/testing/run.ts
  *
  * It throws on failure, so the process exits non-zero and CI or a shell can tell
  * whether it passed. If we later agree to add a real runner, the test files

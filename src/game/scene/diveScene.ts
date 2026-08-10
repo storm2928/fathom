@@ -62,6 +62,7 @@ export class DiveScene {
   private frame = 0;
   private lastFrameAt = 0;
   private observer: ResizeObserver | null = null;
+  private settling = false;
 
   /** Depth earned by completed breaths, in metres. */
   private earnedDepth = 0;
@@ -127,6 +128,7 @@ export class DiveScene {
 
   start(): void {
     if (this.frame) return;
+    this.settling = false;
     this.lastFrameAt = performance.now();
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(this.canvas);
@@ -135,9 +137,29 @@ export class DiveScene {
       this.lastFrameAt = now;
       this.update(dt, now);
       this.draw();
+      if (this.settling && this.atRest()) {
+        this.stop();
+        return;
+      }
       this.frame = requestAnimationFrame(loop);
     };
     this.frame = requestAnimationFrame(loop);
+  }
+
+  /**
+   * Finish the current motion, then stop on its own.
+   *
+   * Called when the session ends. Cutting the loop dead there would freeze the
+   * diver mid-glide, and leaving it running burns a frame every 16ms for as long
+   * as someone reads their result — the surface screen is where people linger.
+   * This lets the descent come to rest and then stops.
+   */
+  settle(): void {
+    this.settling = true;
+    // Stop charging too. If the session happened to end mid-inhale the light
+    // would otherwise keep filling, the rest condition would never be met, and
+    // "settle" would mean "run forever".
+    this.charging = false;
   }
 
   stop(): void {
@@ -169,6 +191,11 @@ export class DiveScene {
   }
 
   // ------------------------------------------------------------- internals
+
+  /** Close enough that another frame would not change a pixel. */
+  private atRest(): boolean {
+    return Math.abs(this.targetDepth - this.shownDepth) < 0.05 && this.light < 0.02;
+  }
 
   private release(): void {
     for (const off of this.detach) off();
