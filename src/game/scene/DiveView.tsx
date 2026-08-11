@@ -4,7 +4,7 @@ import { SessionMachine } from '../session/sessionMachine';
 import type { SessionPlan, SessionResult, SessionState } from '../session/sessionMachine';
 import { ScriptedBreathEngine } from '../input/scriptedEngine';
 import { SpacebarBreathEngine } from '../input/spacebarEngine';
-import { DiveScene } from './diveScene';
+import { DiveScene, createDiveRenderer } from './diveScene';
 import { SurfaceScreen } from '../surface/SurfaceScreen';
 import { useLanguage } from '../../shell/i18n';
 import { fill } from '../../shell/strings';
@@ -17,6 +17,17 @@ import './DiveView.css';
  */
 
 type Source = 'scripted' | 'spacebar';
+
+/** Which visual zone each stage of the arc belongs to. */
+const ZONE_INDEX: Partial<Record<SessionState, number>> = {
+  calibrating: 0,
+  'zone-1': 0,
+  'zone-2': 1,
+  'zone-3': 2,
+  // Surfacing deliberately absent: it holds whatever zone the dive reached.
+  // Mapping it to the deepest look turned a one-zone Quick Dive the colour of
+  // zone three on its way out.
+};
 
 export function DiveView() {
   const { t } = useLanguage();
@@ -77,7 +88,8 @@ export function DiveView() {
         : new ScriptedBreathEngine({ follow: conductor, timeScale });
     conductor.attach(engine);
 
-    const scene = new DiveScene(canvas, { timeScale });
+    const renderer = await createDiveRenderer(canvas);
+    const scene = new DiveScene(renderer, canvas, { timeScale });
     teardownRef.current = scene.attach(engine, conductor);
     engine.on('rr-update', ({ breathsPerMin }) => setRate(breathsPerMin));
 
@@ -87,6 +99,10 @@ export function DiveView() {
       onState: (next) => {
         setState(next);
         setAnnouncement(stateLabel(next));
+        // The arc tells the scene which zone it is in; the scene does not guess
+        // from depth, which is what contradicted it in #30.
+        const zone = ZONE_INDEX[next];
+        if (zone !== undefined) scene.setZone(zone);
       },
       onResult: (finished) => {
         // Sampling stops with `running`, so take a last reading here or the
