@@ -6,6 +6,8 @@
  *
  * Add a new suite by importing it here. Exits non-zero when anything fails.
  */
+import './../../breath/exhaleGate.test.ts';
+import './../../breath/engine.test.ts';
 import './../input/rateEstimator.test.ts';
 import './../scene/descent.test.ts';
 import './../session/cycleShape.test.ts';

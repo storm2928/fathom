@@ -19,9 +19,10 @@ import type {
   SignalQuality,
 } from './types.ts';
 import { createMicCapture } from './capture.ts';
-import type { AppliedSettings, CaptureFrame } from './capture.ts';
+import type { AppliedSettings, CaptureFrame, MicCapture } from './capture.ts';
 import { createExhaleDetector } from './detector.ts';
 import type { DetectorOptions } from './detector.ts';
+import { createExhaleGate } from './exhaleGate.ts';
 import { createCalibrator, createRespirationEstimator } from './respiration.ts';
 import type { CalibrationOptions } from './respiration.ts';
 
@@ -30,6 +31,13 @@ type Handler<K extends keyof BreathEventMap> = (payload: BreathEventMap[K]) => v
 export interface BreathEngineOptions {
   detector?: Partial<DetectorOptions>;
   calibration?: Partial<CalibrationOptions>;
+  /**
+   * Substitute the capture source. Production leaves this alone and gets the
+   * microphone; tests pass a stand-in so the assembled engine can be driven by
+   * synthesised frames, which is the only way the wiring between the detector,
+   * the gate and the rate estimator gets covered.
+   */
+  capture?: MicCapture;
 }
 
 /**
@@ -56,9 +64,10 @@ export interface RealBreathEngine extends BreathEngine {
 export function createBreathEngine(
   options: BreathEngineOptions = {}
 ): RealBreathEngine {
-  const capture = createMicCapture();
+  const capture = options.capture ?? createMicCapture();
   const detector = createExhaleDetector(options.detector);
   const estimator = createRespirationEstimator();
+  const gate = createExhaleGate();
 
   const handlers: { [K in keyof BreathEventMap]: Set<Handler<K>> } = {
     'phase-change': new Set(),
@@ -141,11 +150,31 @@ export function createBreathEngine(
   function onFrame(frame: CaptureFrame): void {
     const result = detector.push(frame);
 
+    // Read the prompt window once, here, as the breath opens — before setPhase
+    // moves lastPhase out from under the comparison. Reading it again when the
+    // breath ends would refuse every exhale that outlasted the prompt, which is
+    // the longest and best ones. exhaleGate.ts has the measurements.
+    if (result.phase === 'exhale' && lastPhase !== 'exhale') gate.onset();
+
     setPhase(result.phase, frame.t);
     assessQuality(frame, result.confidence, result.noiseFloor);
 
     if (result.exhale) {
-      recordExhale(result.exhale.startedAt, result.exhale.durationMs, result.exhale.quality);
+      // A refused detection is dropped whole: no exhale-end, and its onset
+      // never reaches the estimator. That last part is what keeps the rate
+      // honest. The gate closes over the prompted inhale, so what it refuses is
+      // an audible inhale — a sound that happens *inside* a breath cycle rather
+      // than starting one. Leaving it out therefore leaves the exhales either
+      // side correctly adjacent, one true cycle apart.
+      //
+      // The alternative — treating it as a real breath that merely went
+      // uncounted, and so breaking the interval chain — would be right if the
+      // refused sound were an exhale. It is not, and doing that would break the
+      // chain on every single cycle and report no rate at all for precisely the
+      // breathers this gate was built for.
+      if (gate.resolve()) {
+        recordExhale(result.exhale.startedAt, result.exhale.durationMs, result.exhale.quality);
+      }
     }
 
     if (calibrator) {
@@ -183,6 +212,9 @@ export function createBreathEngine(
       if (running) return;
       detector.reset();
       estimator.reset();
+      // Back to free-breathing. A window left closed by the previous session
+      // would gate the next one's calibration shut and fail it silently.
+      gate.reset();
       lastPhase = 'idle';
       lastQuality = null;
       lowConfidenceSince = null;
@@ -231,9 +263,17 @@ export function createBreathEngine(
       };
     },
 
+    setExhaleExpected(expected: boolean): void {
+      gate.setExpected(expected);
+    },
+
     pushFallbackExhale(startedAt: number, endedAt: number): void {
       const durationMs = endedAt - startedAt;
       if (durationMs <= 0) return;
+      // Deliberately ungated. The window exists to reject an acoustic false
+      // positive — an audible inhale the detector cannot tell from an exhale —
+      // and a keypress cannot produce one. Gating here would only discard real
+      // input from someone using the keyboard exactly as intended.
       setPhase('exhale', startedAt);
       setPhase('idle', endedAt);
       // Quality from length alone: a key press has no smoothness to measure,

@@ -51,6 +51,26 @@ export interface BreathEngine {
     event: K,
     handler: (payload: BreathEventMap[K]) => void
   ): () => void;
+  /**
+   * The session arc tells the engine when it is prompting an exhale. Detections
+   * that BEGIN outside that window are not scored and do not reach the rate
+   * estimate — an audible inhale is spectrally too close to an exhale to
+   * separate by sound, and counting it overstated the reported rate by ~65%.
+   *
+   * Required rather than optional, because "detections outside the prompted
+   * window are not scored" is a correctness property that has to hold for every
+   * engine, including the scripted fixture. An optional method invites a silent
+   * no-op on exactly the number the product rests on.
+   *
+   * The window is read ONCE, at the onset of a breath, and that answer follows
+   * the breath however long it runs. Re-reading it at the end would refuse
+   * exhales that outlasted the prompt — the longest ones, which are the whole
+   * point of the protocol.
+   *
+   * Defaults to expected, so free-breathing stretches (calibration, quiet time)
+   * accept everything without having to opt in. See #27.
+   */
+  setExhaleExpected(expected: boolean): void;
   /** keyboard fallback: spacebar hold = exhale. Always available. */
   readonly usingFallbackInput: boolean;
 }
