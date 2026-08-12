@@ -23,6 +23,7 @@ import type { AppliedSettings, CaptureFrame, MicCapture } from './capture.ts';
 import { createExhaleDetector } from './detector.ts';
 import type { DetectorOptions } from './detector.ts';
 import { createExhaleGate } from './exhaleGate.ts';
+import { createExhaleTarget } from './exhaleTarget.ts';
 import { createCalibrator, createRespirationEstimator } from './respiration.ts';
 import type { CalibrationOptions } from './respiration.ts';
 
@@ -57,6 +58,19 @@ export interface RealBreathEngine extends BreathEngine {
    * experience layer's spacebar input, not part of the shared contract.
    */
   pushFallbackExhale(startedAt: number, endedAt: number): void;
+  /**
+   * The exhale the diver is currently being prompted for, so quality is scored
+   * against what they were actually asked to do (#15). Raises the target and
+   * can never lower it — the one-way rule is enforced in exhaleTarget.ts.
+   *
+   * Deliberately outside the BreathEngine interface for now. Putting it on the
+   * contract needs storm2928's sign-off under working agreement 6, and it is
+   * proposed on #15; feature-detect it until then, the way the conductor
+   * already does for the #27 gate.
+   */
+  setExhaleTarget(ms: number): void;
+  /** Current target in ms. For the debug meter and for tests. */
+  readonly exhaleTargetMs: number;
   /** What the browser actually applied to the track, once started. */
   readonly appliedSettings: AppliedSettings | null;
 }
@@ -68,6 +82,16 @@ export function createBreathEngine(
   const detector = createExhaleDetector(options.detector);
   const estimator = createRespirationEstimator();
   const gate = createExhaleGate();
+  const exhaleTarget = createExhaleTarget();
+
+  /**
+   * The target lives in exhaleTarget.ts, which owns the one-way rule; the
+   * detector holds the copy that scoring actually reads. Pushed through one
+   * function so the two can never disagree about what a good breath is.
+   */
+  function applyExhaleTarget(): void {
+    detector.setOptions({ targetExhaleMs: exhaleTarget.ms });
+  }
 
   const handlers: { [K in keyof BreathEventMap]: Set<Handler<K>> } = {
     'phase-change': new Set(),
@@ -184,6 +208,12 @@ export function createBreathEngine(
         calibrator = null;
         settleCalibration = null;
         failCalibration = null;
+        // Place the starting yardstick where this diver actually is. A failed
+        // read leaves it at the gentlest target rather than inventing one.
+        if (outcome.ok) {
+          exhaleTarget.seed(outcome.baselineRR);
+          applyExhaleTarget();
+        }
         settle?.({
           baselineRR: outcome.baselineRR,
           noiseFloor: outcome.noiseFloor,
@@ -215,6 +245,9 @@ export function createBreathEngine(
       // Back to free-breathing. A window left closed by the previous session
       // would gate the next one's calibration shut and fail it silently.
       gate.reset();
+      // A new dive starts where this diver is, not where the last one ended.
+      exhaleTarget.reset();
+      applyExhaleTarget();
       lastPhase = 'idle';
       lastQuality = null;
       lowConfidenceSince = null;
@@ -267,6 +300,11 @@ export function createBreathEngine(
       gate.setExpected(expected);
     },
 
+    setExhaleTarget(ms: number): void {
+      exhaleTarget.request(ms);
+      applyExhaleTarget();
+    },
+
     pushFallbackExhale(startedAt: number, endedAt: number): void {
       const durationMs = endedAt - startedAt;
       if (durationMs <= 0) return;
@@ -285,6 +323,10 @@ export function createBreathEngine(
 
     get usingFallbackInput() {
       return fallback;
+    },
+
+    get exhaleTargetMs() {
+      return exhaleTarget.ms;
     },
 
     get appliedSettings() {

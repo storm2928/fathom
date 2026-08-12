@@ -206,3 +206,74 @@ test('an engine that is never told about the window scores everything', async ()
 
   equal(scored.length, 5);
 });
+
+/* ------------------------------------------------------------------ #15 ---- */
+
+/** A breather at 8/min: onsets 7.5s apart, three of them. */
+const SLOW_EXHALES: Sound[] = [
+  { from: 1000, to: 4000 },
+  { from: 8500, to: 11500 },
+  { from: 16000, to: 19000 },
+];
+
+test('calibration sets the exhale target from the measured baseline', async () => {
+  const capture = createFakeCapture();
+  const engine = createBreathEngine({ capture });
+
+  await engine.start();
+  const pending = engine.calibrate();
+  play(capture, SLOW_EXHALES, 20000, () => {});
+  const result = await pending;
+
+  equal(result.ok, true, 'the fixture should produce a readable baseline');
+  equal(Math.round(result.baselineRR), 8, `baseline read as ${result.baselineRR}`);
+  // 8/min is a 7.5s cycle, and the starting yardstick is half of it.
+  equal(engine.exhaleTargetMs, 3750);
+});
+
+test('the same breath scores lower against a longer target', async () => {
+  // What #15 is actually for. With the target hardcoded this number could not
+  // move, so a slow breather got full marks for doing nothing.
+  async function qualityWithTarget(targetMs: number): Promise<number> {
+    const capture = createFakeCapture();
+    const engine = createBreathEngine({ capture });
+    const scores: number[] = [];
+    engine.on('exhale-end', ({ quality }) => scores.push(quality));
+
+    await engine.start();
+    engine.setExhaleTarget(targetMs);
+    play(capture, [{ from: 1000, to: 3500 }], 5000, () => {});
+    engine.stop();
+
+    return scores[0];
+  }
+
+  const easy = await qualityWithTarget(3000);
+  const hard = await qualityWithTarget(9000);
+
+  equal(easy > hard, true, `expected ${easy} > ${hard}`);
+});
+
+test('#15: the engine refuses to have its target shortened', async () => {
+  const capture = createFakeCapture();
+  const engine = createBreathEngine({ capture });
+  await engine.start();
+
+  engine.setExhaleTarget(9000);
+  engine.setExhaleTarget(4000);
+
+  equal(engine.exhaleTargetMs, 9000, 'a shorter prompt must not speed the target up');
+});
+
+test('#15: a new session does not inherit the last one’s target', async () => {
+  const capture = createFakeCapture();
+  const engine = createBreathEngine({ capture });
+
+  await engine.start();
+  engine.setExhaleTarget(11000);
+  engine.stop();
+
+  await engine.start();
+
+  equal(engine.exhaleTargetMs < 11000, true, 'the ratchet should not survive a session');
+});
