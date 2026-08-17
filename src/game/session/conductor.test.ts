@@ -125,3 +125,51 @@ test('a plan target always produces a workable cycle', () => {
     }
   }
 });
+
+test('the prompted exhale length is handed to whatever wants it', async () => {
+  const targets: number[] = [];
+  const conductor = new BreathConductor({ targetRR: 12, timeScale: 200 });
+  conductor.attach({
+    setExhaleExpected: () => {},
+    setExhaleTarget: (ms: number) => targets.push(ms),
+  });
+  conductor.start();
+  await new Promise((r) => setTimeout(r, 120));
+  conductor.stop();
+
+  assert(targets.length > 0, 'no exhale target was ever sent');
+  // It must be the number the prompt is actually asking for, not a constant.
+  const expected = conductor.currentCycle().exhaleMs;
+  assert(
+    Math.abs(targets[0] - expected) < 1,
+    `sent ${targets[0]}ms but the prompt asks for ${expected}ms`,
+  );
+});
+
+test('a slower target sends a longer exhale to the engine', async () => {
+  const targets: number[] = [];
+  const conductor = new BreathConductor({ targetRR: 15, timeScale: 200 });
+  conductor.attach({
+    setExhaleExpected: () => {},
+    setExhaleTarget: (ms: number) => targets.push(ms),
+  });
+  conductor.start();
+  await new Promise((r) => setTimeout(r, 90));
+  conductor.slowTo(8);
+  await new Promise((r) => setTimeout(r, 140));
+  conductor.stop();
+
+  assert(targets.length >= 2, 'not enough cycles to compare');
+  assert(
+    targets[targets.length - 1] > targets[0],
+    `target did not lengthen when the rate slowed: ${targets[0]} -> ${targets[targets.length - 1]}`,
+  );
+});
+
+test('an engine without the target method is simply not told', () => {
+  const conductor = new BreathConductor({ targetRR: 12 });
+  // Feature detection, so an older engine keeps working rather than throwing.
+  conductor.attach({ setExhaleExpected: () => {} });
+  conductor.start();
+  conductor.stop();
+});

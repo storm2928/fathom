@@ -34,6 +34,31 @@ export interface ExhaleGate {
   setExhaleExpected(expected: boolean): void;
 }
 
+/**
+ * Anything that can be told how long the prompted exhale is.
+ *
+ * Quality is scored against a target, and until now the engine worked its own
+ * out from the baseline while the conductor worked out another from the same
+ * baseline. Two numbers that agree today and drift the moment either rule
+ * changes — and a diver scored against something other than what the prompt
+ * asked for. The prompt owns the number; the engine is told it.
+ *
+ * The target itself is not invented here. It comes from the cycle geometry,
+ * derived from the rate the person was actually measured at and floored so the
+ * prompt never chases an implausibly slow pace.
+ */
+export interface ExhaleTargetSink {
+  setExhaleTarget(ms: number): void;
+}
+
+export function isExhaleTargetSink(value: unknown): value is ExhaleTargetSink {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as ExhaleTargetSink).setExhaleTarget === 'function'
+  );
+}
+
 export function isExhaleGate(value: unknown): value is ExhaleGate {
   return (
     typeof value === 'object' &&
@@ -69,6 +94,7 @@ const ORDER: PromptStep[] = ['inhale', 'top-up', 'exhale', 'rest'];
 
 export class BreathConductor {
   private gate: ExhaleGate | null;
+  private targetSink: ExhaleTargetSink | null = null;
   private readonly timeScale: number;
 
   private handlers = new Set<(window: PromptWindow) => void>();
@@ -113,6 +139,9 @@ export class BreathConductor {
   attach(value: unknown): boolean {
     this.gate = isExhaleGate(value) ? value : null;
     if (this.gate) this.gate.setExhaleExpected(this.expected);
+    // Feature-detected separately: an engine may honour the scoring gate
+    // without wanting to be told the target, or the other way round.
+    this.targetSink = isExhaleTargetSink(value) ? value : null;
     return this.gate !== null;
   }
 
@@ -200,6 +229,9 @@ export class BreathConductor {
         if (!this.running) return;
         this.current = step;
         this.setExpected(EXPECTED_DURING[step]);
+        // Sent as the exhale is asked for, so the engine scores the breath
+        // against the length that was actually prompted for it.
+        if (step === 'exhale') this.targetSink?.setExhaleTarget(spans.exhale);
         const window: PromptWindow = {
           step,
           at: this.elapsed(),
