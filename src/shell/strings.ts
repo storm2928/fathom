@@ -95,6 +95,10 @@ const en = {
       'Hold the spacebar for as long as you are exhaling, following the prompt in the top right of the scene. Longer, steadier exhales carry you further.',
     hintScripted:
       'The scripted fixture is breathing for you, following the prompt. Switch to the spacebar to drive it yourself.',
+    hintMic:
+      'Breathe out audibly through your mouth, following the prompt in the top right of the scene. Longer, steadier exhales carry you further. The inhale is prompted on a rhythm rather than listened for, and the audio never leaves your device.',
+    micRefused:
+      'The microphone was not available, so the spacebar is driving this dive instead — hold it for as long as you are exhaling. ({reason})',
     inputKeyboard: 'Keyboard',
     inputMicrophone: 'Microphone',
     inputScripted: 'Scripted fixture',
@@ -190,6 +194,10 @@ const fr: Strings = {
       "Maintenez la barre d'espace aussi longtemps que vous expirez, en suivant le repère en haut à droite de la scène. Des expirations plus longues et plus régulières vous portent plus loin.",
     hintScripted:
       "La séquence scriptée respire à votre place, en suivant le rythme. Passez à la barre d'espace pour piloter vous-même.",
+    hintMic:
+      "Expirez de façon audible par la bouche, en suivant le repère en haut à droite de la scène. Des expirations plus longues et plus régulières vous portent plus loin. L'inspiration est guidée par le rythme plutôt qu'écoutée, et l'audio ne quitte jamais votre appareil.",
+    micRefused:
+      "Le microphone n'était pas disponible : c'est donc la barre d'espace qui pilote cette plongée — maintenez-la aussi longtemps que vous expirez. ({reason})",
     inputKeyboard: 'Clavier',
     inputMicrophone: 'Microphone',
     inputScripted: 'Séquence scriptée',

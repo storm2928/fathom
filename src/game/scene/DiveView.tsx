@@ -4,10 +4,16 @@ import { SessionMachine } from '../session/sessionMachine';
 import type { SessionPlan, SessionResult, SessionState } from '../session/sessionMachine';
 import { ScriptedBreathEngine } from '../input/scriptedEngine';
 import { SpacebarBreathEngine } from '../input/spacebarEngine';
+import { startInput } from '../input/inputSource';
+import type { InputPlan, InputSource, StartedInput } from '../input/inputSource';
+import { createBreathEngine } from '../../breath/engine';
+import type { BreathEngine } from '../../breath/types';
+import type { InputCode } from '../surface/diveLog';
 import { DiveScene, createDiveRenderer } from './diveScene';
 import { SurfaceScreen } from '../surface/SurfaceScreen';
 import { useLanguage } from '../../shell/i18n';
 import { fill } from '../../shell/strings';
+import type { Strings } from '../../shell/strings';
 import './DiveView.css';
 
 /**
@@ -16,7 +22,33 @@ import './DiveView.css';
  * control that no player should ever see.
  */
 
-type Source = 'scripted' | 'spacebar';
+type Source = InputSource;
+
+/** How long the baseline read listens, for the inputs that measure one. */
+const CALIBRATION_MS = 10_000;
+
+/**
+ * Labels for the input controls, and for the input that actually ran. Kept as
+ * lookups rather than nested ternaries so adding a fourth source cannot quietly
+ * leave one of the three places behind.
+ */
+const SOURCE_LABEL: Record<Source, (t: Strings) => string> = {
+  mic: (t) => t.dive.inputMicrophone,
+  spacebar: (t) => t.dive.spacebar,
+  scripted: (t) => t.dive.scripted,
+};
+
+const CODE_LABEL: Record<InputCode, (t: Strings) => string> = {
+  microphone: (t) => t.dive.inputMicrophone,
+  keyboard: (t) => t.dive.inputKeyboard,
+  scripted: (t) => t.dive.inputScripted,
+};
+
+const SOURCE_HINT: Record<Source, (t: Strings) => string> = {
+  mic: (t) => t.dive.hintMic,
+  spacebar: (t) => t.dive.hintSpacebar,
+  scripted: (t) => t.dive.hintScripted,
+};
 
 /** Which visual zone each stage of the arc belongs to. */
 const ZONE_INDEX: Partial<Record<SessionState, number>> = {
@@ -35,7 +67,7 @@ export function DiveView() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<DiveScene | null>(null);
   const teardownRef = useRef<(() => void) | null>(null);
-  const engineRef = useRef<ScriptedBreathEngine | SpacebarBreathEngine | null>(null);
+  const engineRef = useRef<BreathEngine | null>(null);
   const conductorRef = useRef<BreathConductor | null>(null);
   const machineRef = useRef<SessionMachine | null>(null);
 
@@ -47,6 +79,11 @@ export function DiveView() {
   const [rate, setRate] = useState<number | null>(null);
   const [result, setResult] = useState<SessionResult | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  // What actually drove the dive, which is not always what was selected, and
+  // why — the surface screen and the exported log both read this rather than
+  // the button that was pressed.
+  const [inputCode, setInputCode] = useState<InputCode>('scripted');
+  const [fallbackReason, setFallbackReason] = useState<string | null>(null);
 
   const stopAll = () => {
     machineRef.current?.stop();
@@ -78,14 +115,54 @@ export function DiveView() {
     setDepth(0);
     setRate(null);
     setResult(null);
+    setFallbackReason(null);
 
-    // A person cannot be fast-forwarded, so the spacebar always runs real time.
-    const timeScale = source === 'spacebar' ? 1 : speed;
+    // Only the fixture can be fast-forwarded. A person breathing into a
+    // microphone or holding a key runs in real time, whatever the dev control says.
+    const timeScale = source === 'scripted' ? speed : 1;
     const conductor = new BreathConductor({ targetRR: 15, timeScale });
-    const engine: ScriptedBreathEngine | SpacebarBreathEngine =
-      source === 'spacebar'
-        ? new SpacebarBreathEngine({ calibrationMs: 10_000 })
-        : new ScriptedBreathEngine({ follow: conductor, timeScale });
+
+    // Built for the chosen source only. Constructing all three would spin up a
+    // detector and an estimator nobody asked for on every dive.
+    const planFor = (chosen: Source): InputPlan => {
+      switch (chosen) {
+        case 'mic':
+          return {
+            primary: createBreathEngine(),
+            code: 'microphone',
+            fallback: () => new SpacebarBreathEngine({ calibrationMs: CALIBRATION_MS }),
+          };
+        case 'spacebar':
+          return {
+            primary: new SpacebarBreathEngine({ calibrationMs: CALIBRATION_MS }),
+            code: 'keyboard',
+          };
+        case 'scripted':
+          return {
+            primary: new ScriptedBreathEngine({ follow: conductor, timeScale }),
+            code: 'scripted',
+          };
+      }
+    };
+
+    // Started here, before the renderer is awaited, and not at the end of this
+    // function where it used to sit. `capture.ts` has to construct its
+    // AudioContext inside the gesture that opened it, and an await on the
+    // render path in between is enough to lose that — Safari most strictly.
+    let started: StartedInput;
+    try {
+      started = await startInput(planFor(source));
+    } catch (error) {
+      setAnnouncement(error instanceof Error ? error.message : String(error));
+      return;
+    }
+
+    const engine = started.engine;
+    // Held immediately so a failure further down this function still releases
+    // the microphone rather than leaving it hot with no way to reach it.
+    engineRef.current = engine;
+    setInputCode(started.code);
+    setFallbackReason(started.fellBack ? started.reason : null);
     conductor.attach(engine);
 
     const renderer = await createDiveRenderer(canvas);
@@ -123,12 +200,11 @@ export function DiveView() {
     });
 
     sceneRef.current = scene;
-    engineRef.current = engine;
     conductorRef.current = conductor;
     machineRef.current = machine;
 
+    // The engine is already running — it was started above, inside the gesture.
     scene.start();
-    await engine.start();
     // The machine starts the conductor once calibration is done — see #29.
     setRunning(true);
     void machine.start();
@@ -158,7 +234,7 @@ export function DiveView() {
 
       <div className="dive-controls">
         <div className="row">
-          {(['scripted', 'spacebar'] as Source[]).map((option) => (
+          {(['mic', 'spacebar', 'scripted'] as Source[]).map((option) => (
             <button
               key={option}
               type="button"
@@ -166,7 +242,7 @@ export function DiveView() {
               disabled={running}
               onClick={() => setSource(option)}
             >
-              {option === 'scripted' ? t.dive.scripted : t.dive.spacebar}
+              {SOURCE_LABEL[option](t)}
             </button>
           ))}
           {source === 'scripted' && (
@@ -208,17 +284,24 @@ export function DiveView() {
         {result && (
           <SurfaceScreen
             result={result}
-            inputLabel={source === 'spacebar' ? t.dive.inputKeyboard : t.dive.inputScripted}
-            inputCode={source === 'spacebar' ? 'keyboard' : 'scripted'}
+            // The input that ran, not the one that was selected. A dive that
+            // fell back to the keyboard says keyboard, here and in the export.
+            inputLabel={CODE_LABEL[inputCode](t)}
+            inputCode={inputCode}
             onLeave={() => setResult(null)}
           />
         )}
 
-        <p className="hint">
-          {source === 'spacebar'
-            ? t.dive.hintSpacebar
-            : t.dive.hintScripted}
-        </p>
+        {/* Assertive, unlike the stage announcements: someone who asked for the
+            microphone and got the keyboard needs to know before they breathe,
+            not at the next pause. */}
+        {fallbackReason !== null && (
+          <p className="hint" role="alert">
+            {fill(t.dive.micRefused, { reason: fallbackReason })}
+          </p>
+        )}
+
+        <p className="hint">{SOURCE_HINT[source](t)}</p>
       </div>
     </div>
   );

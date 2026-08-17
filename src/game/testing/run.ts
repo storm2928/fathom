@@ -10,6 +10,7 @@ import './../../breath/exhaleGate.test.ts';
 import './../../breath/engine.test.ts';
 import './../../breath/exhaleTarget.test.ts';
 import './../input/rateEstimator.test.ts';
+import './../input/inputSource.test.ts';
 import './../scene/descent.test.ts';
 import './../session/cycleShape.test.ts';
 import './../session/conductor.test.ts';
