@@ -24,6 +24,16 @@ import './DiveView.css';
 
 type Source = InputSource;
 
+/**
+ * The scripted fixture and the speed control breathe for you, which is the
+ * opposite of the product. They are compiled out of anything a visitor can
+ * reach, so the deployed site offers the two real ways to play and nothing else.
+ */
+const DEV_TOOLS = import.meta.env.DEV;
+
+const PLAYABLE_SOURCES: Source[] = ['mic', 'spacebar'];
+const ALL_SOURCES: Source[] = ['mic', 'spacebar', 'scripted'];
+
 /** How long the baseline read listens, for the inputs that measure one. */
 const CALIBRATION_MS = 10_000;
 
@@ -72,7 +82,10 @@ export function DiveView() {
   const machineRef = useRef<SessionMachine | null>(null);
 
   const [running, setRunning] = useState(false);
-  const [source, setSource] = useState<Source>('scripted');
+  // The microphone is the point of the thing, so it is what a visitor gets
+  // first. The spacebar sits beside it as an equal choice rather than a
+  // consolation: a loud room or a shared office is ordinary, not a failure.
+  const [source, setSource] = useState<Source>('mic');
   const [speed, setSpeed] = useState(10);
   const [state, setState] = useState<SessionState>('idle');
   const [depth, setDepth] = useState(0);
@@ -234,7 +247,7 @@ export function DiveView() {
 
       <div className="dive-controls">
         <div className="row">
-          {(['mic', 'spacebar', 'scripted'] as Source[]).map((option) => (
+          {(DEV_TOOLS ? ALL_SOURCES : PLAYABLE_SOURCES).map((option) => (
             <button
               key={option}
               type="button"
@@ -245,7 +258,7 @@ export function DiveView() {
               {SOURCE_LABEL[option](t)}
             </button>
           ))}
-          {source === 'scripted' && (
+          {DEV_TOOLS && source === 'scripted' && (
             <button type="button" disabled={running} onClick={() => setSpeed(speed === 1 ? 10 : 1)}>
               {fill(t.dive.speed, { n: speed })}
             </button>

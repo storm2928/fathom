@@ -13,6 +13,9 @@ import './App.css';
  */
 type View = 'dive' | 'harness';
 
+/** The input harness is a development surface; visitors never see it. */
+const DEV_TOOLS = import.meta.env.DEV;
+
 /**
  * Per browser session rather than remembered forever. Re-reading a short safety
  * screen costs a few seconds; a stored flag that quietly suppresses it for good
@@ -44,20 +47,22 @@ function Shell() {
         >
           {t.nav.dive}
         </button>
-        <button
-          type="button"
-          className={view === 'harness' ? 'active' : ''}
-          onClick={() => setView('harness')}
-        >
-          {t.nav.harness}
-        </button>
+        {DEV_TOOLS && (
+          <button
+            type="button"
+            className={view === 'harness' ? 'active' : ''}
+            onClick={() => setView('harness')}
+          >
+            {t.nav.harness}
+          </button>
+        )}
         <button type="button" onClick={() => setAcknowledged(false)}>
           {t.nav.scope}
         </button>
         <span className="app-nav-spacer" />
         <LanguageToggle />
       </nav>
-      {view === 'dive' ? <DiveView /> : <ScriptedEnginePanel />}
+      {view === 'dive' || !DEV_TOOLS ? <DiveView /> : <ScriptedEnginePanel />}
     </div>
   );
 }
