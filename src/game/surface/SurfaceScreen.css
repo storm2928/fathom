@@ -1,130 +1,119 @@
+/* The surface: what the dive measured, then the door. */
+
 .surface {
-  max-width: 62ch;
-  padding-top: 8px;
-}
-
-.surface h1 {
-  font-size: 28px;
-  margin: 0 0 20px;
-}
-
-.surface-figures {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.surface-figures > div {
   display: flex;
   flex-direction: column;
+  gap: var(--s-6);
 }
 
-.surface-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.surface-figures strong {
-  font-family: var(--mono);
-  font-size: 44px;
-  font-weight: 500;
-  line-height: 1.1;
-  color: var(--text-h);
-}
-
-.surface-unit {
-  font-size: 12px;
-}
-
-.surface-arrow {
-  font-size: 28px;
-  opacity: 0.5;
-}
-
-.surface-lead {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.surface-lead strong {
-  font-family: var(--mono);
-  color: var(--text-h);
-}
-
-.surface-detail {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 14px;
-  margin: 0 0 20px;
-  padding: 16px 0;
-  border-block: 1px solid var(--border);
-}
-
-.surface-detail dt {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.surface-detail dd {
-  margin: 2px 0 0;
-  font-family: var(--mono);
-  font-size: 16px;
-  color: var(--text-h);
-}
-
-.surface-note {
-  font-size: 13px;
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-
-.surface-exit {
-  margin-top: 20px;
-}
-
-.surface-exit p {
-  font-size: 15px;
-  margin-bottom: 10px;
-  color: var(--text-h);
-}
-
-.surface-leave {
-  font: inherit;
-  font-family: var(--mono);
-  font-size: 14px;
-  padding: 9px 20px;
-  border: 1px solid var(--accent-border);
-  border-radius: 6px;
-  background: var(--accent-bg);
-  color: var(--text-h);
-  cursor: pointer;
-  margin-top: 12px;
-}
-
-.surface-actions {
+.surface__chips {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  gap: var(--s-2);
 }
 
-.surface-save {
-  font: inherit;
-  font-family: var(--mono);
-  font-size: 14px;
-  padding: 9px 20px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--code-bg);
-  color: var(--text-h);
-  cursor: pointer;
-  margin-top: 12px;
+/* Programmatic focus lands here after a dive; the heading is not a control. */
+.surface__title:focus-visible {
+  box-shadow: none;
 }
 
-.surface-save:hover {
-  border-color: var(--accent-border);
+/* ---------- Hero: before → after ---------- */
+
+.surface__figures {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.surface__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  min-width: 0;
+  text-align: center;
+}
+
+.surface__arrow {
+  width: 40px;
+  height: 40px;
+  justify-self: center;
+  color: var(--text-3);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.surface__delta {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--s-4);
+}
+
+/* ---------- Verdict ---------- */
+
+.surface__verdict,
+.surface__stopped {
+  max-width: 62ch;
+}
+
+.surface__stopped {
+  margin-top: calc(-1 * var(--s-3));
+}
+
+/* The delta inside the sentence is a measurement, so it is set in mono. */
+.surface__verdict strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  font-weight: 500;
+}
+
+/* ---------- Exit ---------- */
+
+.surface__exit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.surface__exit .t-lead {
+  color: var(--text-1);
+  max-width: 62ch;
+}
+
+.surface__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.surface__save-note {
+  max-width: 62ch;
+}
+
+@media (max-width: 599px) {
+  .surface {
+    gap: var(--s-5);
+  }
+
+  .surface__figures {
+    grid-template-columns: 1fr;
+    gap: var(--s-2);
+  }
+
+  .surface__arrow {
+    transform: rotate(90deg);
+  }
+
+  .surface__actions {
+    flex-direction: column;
+  }
+
+  .surface__actions .btn {
+    width: 100%;
+  }
 }

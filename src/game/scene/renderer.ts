@@ -7,23 +7,43 @@
  * where WebGL refuses to start still show a dive instead of a blank rectangle.
  */
 
+export type { ZoneLook } from './art/palette';
+export { ZONE_LOOKS, lookForZone } from './art/palette';
+
+export type PromptBeat = 'inhale' | 'top-up' | 'exhale' | 'rest' | 'none';
+export type DiverPose = 'level' | 'descending';
+
 export interface SceneState {
-  /** metres, as drawn — the eased value, not the earned one */
+  /** metres, as drawn - the eased value, not the earned one */
   depth: number;
-  /** 0–1 dive light charge */
+  /** 0-1 dive light charge */
   light: number;
-  /** true while the diver is actually moving down */
+  /** true while the drawn depth is still catching up */
   descending: boolean;
   /**
-   * Zone index from the session arc, 0-based. -1 before the dive starts.
+   * Zone index from the session arc, 0-based; 0 before a dive.
    *
    * Told, not inferred. Depth bands used to be read as zones and contradicted
    * the arc (#30); the arc owns progression, so making zones look different
    * means the arc has to say which one is current.
    */
   zone: number;
-  /** current prompt beat, for the corner readout */
-  promptStep: string;
+  /** current prompt beat; 'none' before the conductor starts */
+  promptStep: PromptBeat;
+  /** an exhale is in progress (engine phase 'exhale') */
+  exhaling: boolean;
+  /** wall-clock seconds since that exhale began; 0 when not exhaling */
+  exhaleSeconds: number;
+  /** inhale or top-up prompt active (light rising) */
+  charging: boolean;
+  /** 0-1 elapsed fraction of the current prompt step; 0 when none */
+  promptProgress: number;
+  /** wall-clock length of the current step (protocol ms / timeScale); 0 when none */
+  promptDurationMs: number;
+  /** told by the view; 'level' by default */
+  pose: DiverPose;
+  /** wall-clock seconds since the scene started; drives ambient motion */
+  elapsedSeconds: number;
 }
 
 export interface SceneRenderer {
@@ -32,60 +52,26 @@ export interface SceneRenderer {
   destroy(): void;
 }
 
-/**
- * How each zone looks. Progressively deeper, darker and colder, with the
- * bioluminescence getting sparser and more startling as the light thins out.
- *
- * Index 0 is used before a dive begins as well as during zone 1.
- */
-export interface ZoneLook {
-  top: string;
-  bottom: string;
-  mote: string;
-  light: string;
-}
-
-export const ZONE_LOOKS: ZoneLook[] = [
-  {
-    top: 'hsl(196 74% 11%)',
-    bottom: 'hsl(206 80% 5%)',
-    mote: 'hsl(176 90% 66%)',
-    light: 'hsl(184 96% 72%)',
-  },
-  {
-    top: 'hsl(212 76% 7%)',
-    bottom: 'hsl(226 74% 3.5%)',
-    mote: 'hsl(196 92% 68%)',
-    light: 'hsl(196 96% 70%)',
-  },
-  {
-    top: 'hsl(234 68% 4.5%)',
-    bottom: 'hsl(250 62% 2%)',
-    mote: 'hsl(268 88% 76%)',
-    light: 'hsl(214 94% 72%)',
-  },
-];
-
-export const lookForZone = (zone: number): ZoneLook =>
-  ZONE_LOOKS[Math.min(ZONE_LOOKS.length - 1, Math.max(0, zone))];
-
-/** Pixels drawn per metre of depth. Shared so both renderers agree on scale. */
+/** Pixels drawn per metre of depth on the diver's own layer. */
 export const PIXELS_PER_METRE = 5;
 
-/** Metres of world kept populated above and below the diver. */
-export const MOTE_SPAN = 90;
+/** Motes live on one of three parallax layers: 0 far, 1 mid, 2 base. */
+export type MoteLayer = 0 | 1 | 2;
 
 export interface Mote {
-  /** 0–1 across the canvas */
+  /** 0-1 across the canvas */
   x: number;
-  /** world depth in metres */
-  depth: number;
+  /** normalised slot within the layer's wrap span, 0-1 */
+  u: number;
+  /** accumulated drift along the span, metres */
+  drift: number;
+  layer: MoteLayer;
   radius: number;
   glow: number;
 }
 
 /** Seeded so the field is identical every run without being regular. */
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -102,27 +88,32 @@ function mulberry32(seed: number): () => number {
  * Seeded noise rather than modular arithmetic: spacing motes by (i * k) % n is
  * reproducible but lands them on a lattice, which is invisible at seventy motes
  * and an obvious grid at six hundred.
+ *
+ * Layers are dealt 25% far, 50% mid, 25% base.
  */
 export function seedMotes(count: number): Mote[] {
   const random = mulberry32(0x0fa7);
-  return Array.from({ length: count }, () => ({
-    x: random(),
-    depth: random() * MOTE_SPAN - MOTE_SPAN / 2,
-    radius: 0.5 + random() * 1.8,
-    glow: 0.2 + random() * 0.75,
-  }));
+  return Array.from({ length: count }, () => {
+    const roll = random();
+    const layer: MoteLayer = roll < 0.25 ? 0 : roll < 0.75 ? 1 : 2;
+    return {
+      x: random(),
+      u: random(),
+      drift: 0,
+      layer,
+      radius: 0.5 + random() * 1.8,
+      glow: 0.2 + random() * 0.75,
+    };
+  });
 }
 
 /**
- * Motes hold still in the world and the diver moves past them — that is what
- * reads as descent. The slow independent drift only keeps the water alive.
+ * Motes hold still in the world and the diver moves past them - that is what
+ * reads as descent. The slow independent rise only keeps the water alive.
+ * Wrapping happens when the slot is resolved to a screen position, so this
+ * never allocates and never needs to know the viewport.
  */
-export function driftMotes(motes: Mote[], dtSeconds: number, depth: number): void {
-  const top = depth - MOTE_SPAN / 2;
-  const bottom = depth + MOTE_SPAN / 2;
-  for (const mote of motes) {
-    mote.depth -= dtSeconds * 0.6;
-    if (mote.depth < top) mote.depth += MOTE_SPAN;
-    else if (mote.depth > bottom) mote.depth -= MOTE_SPAN;
-  }
+export function driftMotes(motes: Mote[], dtSeconds: number): void {
+  const step = dtSeconds * 0.6;
+  for (let i = 0; i < motes.length; i += 1) motes[i].drift -= step;
 }

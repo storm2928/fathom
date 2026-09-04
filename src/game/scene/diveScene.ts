@@ -3,7 +3,7 @@ import type { BreathConductor, PromptWindow } from '../session/conductor';
 import { metresForExhale } from './descent';
 import { CanvasSceneRenderer } from './canvasRenderer';
 import { PixiSceneRenderer } from './pixiRenderer';
-import type { SceneRenderer, SceneState } from './renderer';
+import type { DiverPose, PromptBeat, SceneRenderer, SceneState } from './renderer';
 
 /**
  * The dive: descent, dive light, camera.
@@ -87,9 +87,13 @@ export class DiveScene {
   private lastQuality = 0.7;
 
   /** 0–1. Charged by the inhale prompt, spent on the way down. */
-  private light = 0;
+  private lightCharge = 0;
   private charging = false;
-  private promptStep = 'inhale';
+  private promptStep: PromptBeat = 'none';
+  private promptStartedAt: number | null = null;
+  private promptDurationMs = 0;
+  private pose: DiverPose = 'level';
+  private startedAt = 0;
   private zone = 0;
 
   constructor(
@@ -130,7 +134,7 @@ export class DiveScene {
         // The light is spent by descending: it has to be recharged each cycle,
         // which is what makes the double inhale part of the loop rather than
         // decoration.
-        this.light = Math.max(0, this.light - 0.35);
+        this.lightCharge = Math.max(0, this.lightCharge - 0.35);
       }),
     );
 
@@ -146,10 +150,16 @@ export class DiveScene {
     this.zone = zone;
   }
 
+  /** Told by the view how the diver should hold itself: level or head-down. */
+  setPose(pose: DiverPose): void {
+    this.pose = pose;
+  }
+
   start(): void {
     if (this.frame) return;
     this.settling = false;
     this.lastFrameAt = performance.now();
+    if (!this.startedAt) this.startedAt = this.lastFrameAt;
     this.observer = new ResizeObserver(() => this.renderer.resize());
     this.observer.observe(this.canvas);
 
@@ -157,7 +167,7 @@ export class DiveScene {
       const dt = Math.min(0.05, (now - this.lastFrameAt) / 1000);
       this.lastFrameAt = now;
       this.update(dt, now);
-      this.renderer.render(this.snapshot(), dt);
+      this.renderer.render(this.snapshot(now), dt);
       if (this.settling && this.atRest()) {
         this.stop();
         return;
@@ -180,6 +190,8 @@ export class DiveScene {
     // would otherwise keep filling, the rest condition would never be met, and
     // "settle" would mean "run forever".
     this.charging = false;
+    this.promptStartedAt = null;
+    this.promptDurationMs = 0;
   }
 
   stop(): void {
@@ -210,21 +222,38 @@ export class DiveScene {
     return this.shownDepth;
   }
 
+  /** 0-1 dive light charge, for the HUD meter. */
+  get light(): number {
+    return this.lightCharge;
+  }
+
   // ------------------------------------------------------------- internals
 
-  private snapshot(): SceneState {
+  private snapshot(now: number): SceneState {
+    const exhaling = this.exhaleStartedAt !== null;
+    const promptProgress =
+      this.promptStartedAt === null || this.promptDurationMs === 0
+        ? 0
+        : clamp01((now - this.promptStartedAt) / this.promptDurationMs);
     return {
       depth: this.shownDepth,
-      light: this.light,
+      light: this.lightCharge,
       descending: this.targetDepth - this.shownDepth > 0.05,
       zone: this.zone,
       promptStep: this.promptStep,
+      exhaling,
+      exhaleSeconds: exhaling ? (now - (this.exhaleStartedAt as number)) / 1000 : 0,
+      charging: this.charging,
+      promptProgress,
+      promptDurationMs: this.promptDurationMs,
+      pose: this.pose,
+      elapsedSeconds: this.startedAt ? (now - this.startedAt) / 1000 : 0,
     };
   }
 
   /** Close enough that another frame would not change a pixel. */
   private atRest(): boolean {
-    return Math.abs(this.targetDepth - this.shownDepth) < 0.05 && this.light < 0.02;
+    return Math.abs(this.targetDepth - this.shownDepth) < 0.05 && this.lightCharge < 0.02;
   }
 
   private release(): void {
@@ -238,13 +267,15 @@ export class DiveScene {
     // light up rather than starting over — which is why a double inhale lights
     // the way further than a single one.
     this.charging = window.step === 'inhale' || window.step === 'top-up';
+    this.promptStartedAt = performance.now();
+    this.promptDurationMs = window.durationMs / this.timeScale;
   }
 
   private update(dt: number, now: number): void {
     if (this.charging) {
-      this.light = clamp01(this.light + dt * 0.9);
+      this.lightCharge = clamp01(this.lightCharge + dt * 0.9);
     } else {
-      this.light = Math.max(0, this.light - dt * LIGHT_DECAY_PER_SECOND);
+      this.lightCharge = Math.max(0, this.lightCharge - dt * LIGHT_DECAY_PER_SECOND);
     }
 
     // Glide down while the exhale is still running, using the length so far.

@@ -1,26 +1,38 @@
 .lang {
   display: inline-flex;
-  gap: 4px;
+  align-items: center;
+  padding: 2px;
+  border-radius: var(--r-full);
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
 }
 
-.lang button {
-  font: inherit;
-  font-family: var(--mono);
+.lang__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-3);
   font-size: 12px;
-  padding: 5px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: none;
-  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
   cursor: pointer;
+  transition:
+    background-color var(--d-fast) var(--ease-out),
+    color var(--d-fast) var(--ease-out);
 }
 
-.lang button:hover {
-  color: var(--text-h);
+.lang__btn:hover {
+  color: var(--text-1);
 }
 
-.lang button.active {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
-  color: var(--text-h);
+.lang__btn--on,
+.lang__btn--on:hover {
+  background: var(--accent);
+  color: var(--on-accent);
 }

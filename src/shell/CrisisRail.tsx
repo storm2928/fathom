@@ -1,4 +1,5 @@
 import { useLanguage } from './i18n';
+import { IconPerson } from './ui/icons';
 import './CrisisRail.css';
 
 /**
@@ -22,19 +23,30 @@ export function CrisisRail() {
 
   return (
     <aside className="crisis" aria-label={t.crisis.label}>
-      <p className="crisis-lead">{t.crisis.lead}</p>
-      <ul>
+      <div className="crisis__head">
+        <IconPerson size={24} className="crisis__icon" />
+        <h2 className="crisis__title">{t.crisis.heading}</h2>
+      </div>
+      <p className="crisis__lead">{t.crisis.lead}</p>
+      <ul className="crisis__list">
         <li>
-          <a href="tel:988">988</a> — {t.crisis.usBody}
+          <a className="crisis__link" href="tel:988">
+            988
+          </a>
+          <span className="crisis__body">{t.crisis.usBody}</span>
         </li>
         <li>
-          <a href="tel:988">9-8-8</a> — {t.crisis.caBody}
+          <a className="crisis__link" href="tel:988">
+            9-8-8
+          </a>
+          <span className="crisis__body">{t.crisis.caBody}</span>
         </li>
         <li>
-          <a href="https://findahelpline.com" target="_blank" rel="noreferrer">
+          <a className="crisis__link" href="https://findahelpline.com" target="_blank" rel="noreferrer">
             findahelpline.com
-          </a>{' '}
-          — {t.crisis.intlBody}
+            <span className="visually-hidden"> {t.common.newTab}</span>
+          </a>
+          <span className="crisis__body">{t.crisis.intlBody}</span>
         </li>
       </ul>
     </aside>

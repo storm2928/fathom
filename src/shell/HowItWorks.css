@@ -1,0 +1,210 @@
+/* How it works: four ordered step cards, the device banner, rewards and limits, two CTAs. */
+
+.how {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+}
+
+.how__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.how__intro {
+  max-width: 62ch;
+}
+
+/* ---------- Step flow ---------- */
+
+.how__flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-4);
+  padding: 0;
+  list-style: none;
+}
+
+.how__step {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.how__card {
+  flex: 1;
+}
+
+.how__card .card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+  height: 100%;
+}
+
+.how__num {
+  font-family: var(--font-mono);
+  font-size: var(--t-mono-sm);
+  line-height: var(--lh-mono-sm);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--accent);
+}
+
+.how__pic {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  color: var(--text-1);
+}
+
+.how__pic--row {
+  gap: 2px;
+}
+
+.how__pic-slash {
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.how__pic-arrow {
+  color: var(--text-3);
+}
+
+.how__pic-mark {
+  position: absolute;
+  bottom: 3px;
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.how__pic-mark--tick {
+  left: 4px;
+  color: var(--text-3);
+}
+
+.how__pic-mark--check {
+  right: 4px;
+}
+
+.how__step-title {
+  font-size: var(--t-h3);
+  line-height: var(--lh-h3);
+}
+
+.how__step-body {
+  color: var(--text-2);
+}
+
+.how__connector {
+  position: absolute;
+  top: 50%;
+  right: calc(-1 * (var(--s-4) + 24px) / 2);
+  display: inline-flex;
+  color: var(--text-3);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* ---------- Device banner ---------- */
+
+.how__banner .card__body {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.how__banner-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent);
+}
+
+.how__banner p {
+  color: var(--text-1);
+}
+
+/* ---------- Rewards and limits ---------- */
+
+.how__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+}
+
+.how__pair ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+/* ---------- Call to action ---------- */
+
+.how__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 899px) {
+  .how__flow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* On a 2x2 grid the second step has no neighbour to its right. */
+  .how__step:nth-child(2) .how__connector {
+    display: none;
+  }
+}
+
+@media (max-width: 599px) {
+  .how {
+    gap: var(--s-7);
+  }
+
+  .how__flow {
+    grid-template-columns: 1fr;
+    gap: var(--s-6);
+  }
+
+  .how__step:nth-child(2) .how__connector {
+    display: inline-flex;
+  }
+
+  .how__connector {
+    top: auto;
+    right: auto;
+    left: 50%;
+    bottom: calc(-1 * (var(--s-6) + 24px) / 2);
+    transform: translateX(-50%) rotate(90deg);
+  }
+
+  .how__pair {
+    grid-template-columns: 1fr;
+  }
+
+  .how__cta .btn--primary {
+    width: 100%;
+  }
+}
+
+@media (min-width: 600px) {
+  .how__cta .btn--primary {
+    min-width: 240px;
+  }
+}

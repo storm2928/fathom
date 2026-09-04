@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { DICTIONARIES } from './strings';
 import type { Language, Strings } from './strings';
@@ -26,9 +26,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLanguage = useCallback((next: Language) => {
     sessionStorage.setItem(STORAGE_KEY, next);
-    document.documentElement.lang = next;
     setLanguageState(next);
   }, []);
+
+  // The document language follows the resolved language from the first
+  // render, so a French browser gets <html lang="fr"> before any toggle.
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   const value = useMemo(
     () => ({ language, setLanguage, t: DICTIONARIES[language] }),

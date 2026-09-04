@@ -1,111 +1,451 @@
+/*
+ * Deepwater — design tokens and base styles.
+ *
+ * Dark values live on bare :root; light values are redeclared under
+ * prefers-color-scheme: light. Scene and HUD tokens are declared once and
+ * never redeclared: the ocean is always dark, only the chrome follows the
+ * system.
+ */
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/dm-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-mono-400-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-mono-500-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  color-scheme: dark;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Colour — dark (default) */
+  --bg-0: #070e17;
+  --bg-1: #0d1826;
+  --bg-2: #132234;
+  --bg-3: #1a2d42;
+  --line-1: #1e3040;
+  --line-2: #2a4054;
+  --line-strong: #52738f;
+  --text-1: #eaf3f7;
+  --text-2: #b4c6d1;
+  --text-3: #85a6b7;
+  --accent: #5ce3cf;
+  --accent-strong: #8bf0e1;
+  --on-accent: #06211e;
+  --accent-soft: rgba(92, 227, 207, 0.12);
+  --zone-1: #5ce3cf;
+  --zone-2: #7fb6ff;
+  --zone-3: #b49aff;
+  --caution: #f1c77a;
+  --caution-soft: rgba(241, 199, 122, 0.12);
+  --alert: #ff9f90;
+  --alert-soft: rgba(255, 159, 144, 0.12);
+  --focus: #9af4e7;
+  --scrim: rgba(4, 10, 18, 0.62);
+  --shadow-1: none;
+  --shadow-2: none;
+  --glow-accent: 0 0 0 1px rgba(92, 227, 207, 0.35), 0 0 24px rgba(92, 227, 207, 0.18);
+  --glow-focus: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--focus);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Colour — scene and HUD (theme independent) */
+  --scene-0: #030811;
+  --hud-text: #eaf3f7;
+  --hud-muted: #a7c4d1;
+  --hud-accent: #5ce3cf;
+  --hud-track: #2b3e4c;
+  --hud-line: rgba(234, 243, 247, 0.16);
+  --hud-scrim: rgba(4, 10, 18, 0.62);
+  --hud-focus: #9af4e7;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Type */
+  --font-sans: 'DM Sans', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --t-display: 40px;  --lh-display: 44px;
+  --t-h1: 30px;       --lh-h1: 36px;
+  --t-h2: 22px;       --lh-h2: 28px;
+  --t-h3: 17px;       --lh-h3: 24px;
+  --t-lead: 17px;     --lh-lead: 26px;
+  --t-body: 15px;     --lh-body: 23px;
+  --t-small: 13px;    --lh-small: 19px;
+  --t-label: 12px;    --lh-label: 16px;
+  --t-num-xl: 52px;   --lh-num-xl: 56px;
+  --t-num-lg: 28px;   --lh-num-lg: 32px;
+  --t-num: 18px;      --lh-num: 24px;
+  --t-mono-sm: 13px;  --lh-mono-sm: 18px;
+
+  /* Spacing, radii, sizes */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px;
+  --s-7: 32px; --s-8: 40px; --s-9: 48px; --s-10: 64px; --s-11: 80px;
+  --r-1: 6px;
+  --r-2: 10px;
+  --r-3: 16px;
+  --r-4: 24px;
+  --r-full: 999px;
+  --page-max: 1040px;
+  --prose-max: 720px;
+  --nav-h: 56px;
+  --tabbar-h: 64px;
+  --control-h: 44px;
+  --page-pad: 24px;
+  --section-gap: var(--s-8);
+  --card-pad: var(--s-6);
+
+  /* Motion */
+  --d-fast: 120ms;
+  --d-base: 200ms;
+  --d-slow: 400ms;
+  --d-stage: 900ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-linear: linear;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+    color-scheme: light;
+    --bg-0: #f2f6f8;
+    --bg-1: #ffffff;
+    --bg-2: #e7eef2;
+    --bg-3: #dce6ec;
+    --line-1: #cfdbe3;
+    --line-2: #b6c7d2;
+    --line-strong: #6f8898;
+    --text-1: #0b1720;
+    --text-2: #37505e;
+    --text-3: #4f6573;
+    --accent: #0b6e63;
+    --accent-strong: #085a50;
+    --on-accent: #ffffff;
+    --accent-soft: rgba(11, 110, 99, 0.1);
+    --zone-1: #0b6e63;
+    --zone-2: #1f5fc4;
+    --zone-3: #5f45c9;
+    --caution: #8a5a00;
+    --caution-soft: rgba(138, 90, 0, 0.12);
+    --alert: #b7362f;
+    --alert-soft: rgba(183, 54, 47, 0.1);
+    --focus: #0b6e63;
+    --scrim: rgba(4, 10, 18, 0.62);
+    --shadow-1: 0 1px 2px rgba(11, 23, 32, 0.06), 0 4px 12px rgba(11, 23, 32, 0.06);
+    --shadow-2: 0 2px 4px rgba(11, 23, 32, 0.08), 0 12px 32px rgba(11, 23, 32, 0.1);
+    --glow-accent: 0 0 0 1px rgba(11, 110, 99, 0.45), 0 0 0 4px rgba(11, 110, 99, 0.1);
+    --glow-focus: 0 0 0 2px var(--bg-1), 0 0 0 4px var(--focus);
   }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+@media (max-width: 599px) {
+  :root {
+    --t-display: 32px;  --lh-display: 36px;
+    --t-h1: 26px;       --lh-h1: 32px;
+    --t-h2: 20px;       --lh-h2: 26px;
+    --t-lead: 16px;     --lh-lead: 25px;
+    --t-num-xl: 44px;   --lh-num-xl: 48px;
+    --t-num-lg: 26px;   --lh-num-lg: 30px;
+    --page-pad: 16px;
+    --section-gap: var(--s-7);
+    --card-pad: var(--s-5);
+  }
+}
+
+/* Base */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  min-height: 100svh;
+  background: var(--bg-0);
+  color: var(--text-2);
+  font-family: var(--font-sans);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  font-optical-sizing: auto;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
 }
 
 h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--text-1);
+  font-weight: 600;
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-size: var(--t-h1);
+  line-height: var(--lh-h1);
+  letter-spacing: -0.015em;
 }
+
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-size: var(--t-h2);
+  line-height: var(--lh-h2);
+  letter-spacing: -0.01em;
 }
-p {
+
+h3 {
+  font-size: var(--t-h3);
+  line-height: var(--lh-h3);
+}
+
+p,
+ul,
+ol,
+li,
+dl,
+dd,
+figure,
+fieldset {
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+fieldset {
+  padding: 0;
+  border: 0;
+  min-width: 0;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+legend {
+  padding: 0;
 }
+
+p,
+li {
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+}
+
+strong {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color var(--d-fast) var(--ease-out);
+}
+
+a:hover {
+  color: var(--accent-strong);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  margin: 0;
+}
+
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+}
+
+canvas {
+  display: block;
+}
+
+/* Focus — defined once, never suppressed by a component style */
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-focus);
+  border-radius: inherit;
+}
+
+.hud :focus-visible {
+  box-shadow: 0 0 0 2px var(--scene-0), 0 0 0 4px var(--hud-focus);
+}
+
+/* Type utilities */
+
+.t-display {
+  font-size: var(--t-display);
+  line-height: var(--lh-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+}
+
+.t-lead {
+  font-size: var(--t-lead);
+  line-height: var(--lh-lead);
+  font-weight: 400;
+}
+
+.t-small {
+  font-size: var(--t-small);
+  line-height: var(--lh-small);
+  font-weight: 400;
+  color: var(--text-3);
+}
+
+.t-label {
+  font-size: var(--t-label);
+  line-height: var(--lh-label);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.t-num-xl,
+.t-num-lg,
+.t-num,
+.t-mono-sm,
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.t-num-xl {
+  font-size: var(--t-num-xl);
+  line-height: var(--lh-num-xl);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+
+.t-num-lg {
+  font-size: var(--t-num-lg);
+  line-height: var(--lh-num-lg);
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.t-num {
+  font-size: var(--t-num);
+  line-height: var(--lh-num);
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.t-mono-sm {
+  font-size: var(--t-mono-sm);
+  line-height: var(--lh-mono-sm);
+  font-weight: 400;
+}
+
+/* Layout utilities */
+
+.prose p,
+.prose li {
+  max-width: 62ch;
+}
+
+.prose p + p {
+  margin-top: var(--s-3);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.25em;
+}
+
+.prose ul + p,
+.prose ol + p,
+.prose p + ul,
+.prose p + ol {
+  margin-top: var(--s-3);
+}
+
+.page {
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--s-7) var(--page-pad) var(--s-10);
+}
+
+.page--narrow {
+  max-width: var(--prose-max);
+}
+
+@media (max-width: 599px) {
+  .page {
+    padding-top: var(--s-6);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Reduced motion — nothing moves that is not a plain opacity fade */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Opacity-only fades that should survive reduced motion (the page fade, the
+ * stage fade) re-declare their own duration, capped at --d-base, inside their
+ * component's reduced-motion block with a class selector so it wins over the
+ * universal rule above.
+ */

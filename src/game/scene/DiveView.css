@@ -1,123 +1,314 @@
+/* The dive: the stage band, the immersive stage, the HUD, the setup panel. */
+
 .dive {
-  text-align: left;
-  padding: 24px 16px 48px;
-  max-width: 860px;
-  margin: 0 auto;
-}
-
-.dive-stage {
-  aspect-ratio: 16 / 10;
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  background: #06131c;
-}
-
-.dive-stage canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.dive-controls {
-  margin-top: 20px;
-}
-
-.dive-controls .row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.dive-controls button {
-  font: inherit;
-  font-family: var(--mono);
-  font-size: 14px;
-  padding: 8px 16px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--code-bg);
-  color: var(--text-h);
-  cursor: pointer;
-}
-
-.dive-controls button:hover:not(:disabled) {
-  border-color: var(--accent-border);
-}
-
-.dive-controls button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.dive-controls button.active {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
-}
-
-.dive-controls dl {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 16px;
-  margin: 0 0 16px;
-}
-
-.dive-controls dt {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.dive-controls dd {
-  margin: 2px 0 0;
-  font-family: var(--mono);
-  font-size: 20px;
-  color: var(--text-h);
-}
-
-.dive-controls .hint {
-  font-size: 14px;
-  max-width: 62ch;
-}
-
-.dive-stage {
   position: relative;
+  width: 100%;
 }
 
-.dive-state {
+/* ---------- Stage ---------- */
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: clamp(220px, 34vh, 360px);
+  background: var(--scene-0);
+  overflow: hidden;
+}
+
+/* The renderer pins an inline size on the canvas when it starts (autoDensity);
+   the stage changes size around it, so the stylesheet has the last word. */
+.stage__canvas {
   position: absolute;
-  left: 12px;
-  bottom: 10px;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: hsl(185 40% 82% / 0.75);
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0;
+  transition: opacity var(--d-stage) var(--ease-out);
 }
 
-.dive-result {
-  border-top: 1px solid var(--border);
-  padding-top: 16px;
-  margin-bottom: 16px;
+.dive[data-mode='diving'] .stage__canvas,
+.dive[data-mode='surface'] .stage__canvas {
+  opacity: 1;
+}
+
+/* The idle ocean: CSS only, shown while nothing is diving. */
+.stage__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(92, 227, 207, 0.18), transparent 60%),
+    linear-gradient(180deg, #0e3a46 0%, #071c2a 55%, #030811 100%);
+  pointer-events: none;
+  transition: opacity var(--d-stage) var(--ease-out);
+}
+
+.stage__backdrop::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    -420px 60px 0 0.5px rgba(140, 240, 225, 0.5),
+    -300px 210px 0 -0.5px rgba(140, 240, 225, 0.5),
+    -180px 120px 0 0 rgba(140, 240, 225, 0.5),
+    -60px 280px 0 0.5px rgba(140, 240, 225, 0.5),
+    30px 40px 0 -0.5px rgba(140, 240, 225, 0.5),
+    120px 180px 0 0 rgba(140, 240, 225, 0.5),
+    210px 300px 0 0.5px rgba(140, 240, 225, 0.5),
+    330px 90px 0 -0.5px rgba(140, 240, 225, 0.5),
+    450px 230px 0 0 rgba(140, 240, 225, 0.5),
+    -510px 320px 0 0 rgba(140, 240, 225, 0.5),
+    500px 20px 0 0.5px rgba(140, 240, 225, 0.5),
+    -90px 150px 0 -0.5px rgba(140, 240, 225, 0.5);
+  animation: idle-drift 14s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes idle-drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-12px);
+  }
+}
+
+.dive:not([data-mode='setup']) .stage__backdrop {
+  opacity: 0;
+}
+
+/* The band's bottom edge fades into the page. */
+.stage::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 0%, var(--bg-0) 70%);
+  pointer-events: none;
+}
+
+.dive[data-mode='diving'] .stage {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  height: auto;
+}
+
+.dive[data-mode='diving'] .stage::after {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .stage {
+    height: clamp(160px, 26vh, 240px);
+  }
+}
+
+/* ---------- HUD ---------- */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  outline: none;
+  opacity: 1;
+  transition: opacity var(--d-stage) var(--ease-out);
+}
+
+.hud:focus-visible {
+  box-shadow: none;
+}
+
+.hud--out {
+  opacity: 0;
+}
+
+.hud__top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+}
+
+.hud__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.hud__leave,
+.hud__notice {
+  pointer-events: auto;
+}
+
+.hud__notice {
+  max-width: 560px;
+}
+
+.hud__bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom, 0px));
+}
+
+/* HUD text is never drawn on open water: every readout sits on the scrim. */
+.hud__depth,
+.hud__light {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  width: max-content;
+  max-width: 100%;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-2);
+  border: 1px solid var(--hud-line);
+  background: var(--hud-scrim);
+  backdrop-filter: blur(8px);
+}
+
+.hud__depth {
+  justify-self: start;
+}
+
+.hud__light {
+  justify-self: end;
+  align-items: flex-end;
+}
+
+.hud__ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-self: center;
+}
+
+.hud .t-label {
+  color: var(--hud-muted);
+}
+
+.hud .t-num-lg {
+  color: var(--hud-text);
+}
+
+@media (max-width: 599px) {
+  .hud__top {
+    padding: var(--s-3);
+  }
+
+  .hud__bottom {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-3);
+    padding: var(--s-3);
+    padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hud__ring {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: var(--s-6);
+  }
+
+  .hud__depth {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  .hud__light {
+    grid-row: 2;
+    grid-column: 2;
+  }
+}
+
+/* Landscape phones: the ring shrinks and sits in line with the readouts. */
+@media (max-height: 480px) {
+  .hud__bottom {
+    grid-template-columns: 1fr auto 1fr;
+    padding: var(--s-3);
+  }
+
+  .hud__ring {
+    grid-column: 2;
+    grid-row: 1;
+    margin-bottom: 0;
+  }
+
+  .hud__depth {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .hud__light {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+
+/* ---------- Setup panel ---------- */
+
+.setup {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  margin-top: -48px;
+}
+
+.setup__lead {
   max-width: 62ch;
 }
 
-.dive-result h2 {
-  font-size: 18px;
-  margin-bottom: 10px;
+.setup__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
 }
 
-.dive-result p {
-  margin-bottom: 8px;
-  font-size: 15px;
+.setup__actions .setup__note + .setup__note {
+  margin-top: calc(-1 * var(--s-2));
 }
 
-.dive-result strong {
-  font-family: var(--mono);
-  color: var(--text-h);
+.setup__note {
+  max-width: 62ch;
 }
 
-.dive-result .muted {
-  font-size: 13px;
+@media (max-width: 599px) {
+  .setup {
+    margin-top: 0;
+    gap: var(--s-5);
+  }
+
+  .setup__actions {
+    align-items: stretch;
+  }
+}
+
+/* ---------- Reduced motion: the fades are opacity only and stay, capped ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .stage__canvas,
+  .stage__backdrop,
+  .hud {
+    transition-duration: var(--d-base) !important;
+  }
 }

@@ -1,0 +1,149 @@
+/* Research page: intro, theme tabs, one labelled group of study cards per theme. */
+
+.research {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+}
+
+.research__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.research__intro {
+  max-width: 62ch;
+}
+
+/* Tabs sit closer to the groups they filter than to the header above them. */
+.research__tabs {
+  margin-bottom: calc(-1 * var(--s-4));
+}
+
+.research__groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  outline: none;
+}
+
+.research__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.research__group-intro {
+  max-width: 62ch;
+  margin-bottom: var(--s-3);
+}
+
+.research__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--s-4);
+}
+
+/* ---------- Study card ---------- */
+
+.study .card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  height: 100%;
+}
+
+.study__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.study__year {
+  color: var(--text-3);
+}
+
+.study__title {
+  color: var(--text-1);
+}
+
+.study__authors {
+  color: var(--text-3);
+}
+
+.study__venue {
+  font-style: italic;
+}
+
+.study__finding,
+.study__shapes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.study__finding p,
+.study__shapes p {
+  color: var(--text-2);
+}
+
+.study__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  margin-top: auto;
+  padding-top: var(--s-2);
+}
+
+.study__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 28px;
+  font-size: var(--t-small);
+  line-height: var(--lh-small);
+  font-weight: 500;
+  border-radius: var(--r-1);
+}
+
+.study__link svg {
+  flex: none;
+}
+
+.study__doi {
+  color: var(--text-3);
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+/* ---------- Closing card and footer line ---------- */
+
+.research__limits ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.research__readme {
+  max-width: 62ch;
+}
+
+@media (max-width: 639px) {
+  .research__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 599px) {
+  .research {
+    gap: var(--s-7);
+  }
+
+  .research__groups {
+    gap: var(--s-7);
+  }
+}
