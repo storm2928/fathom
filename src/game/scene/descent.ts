@@ -62,6 +62,31 @@ export function metresForExhale(durationMs: number, quality: number): number {
 }
 
 /**
+ * How fast unearned depth is surrendered, in metres per second.
+ *
+ * The scene previews the breath in progress — the diver glides as the exhale
+ * runs — but only a scored breath commits what the preview showed. A span the
+ * gate refuses or the detector throws away commits nothing, and the preview it
+ * drew has to be taken back. Taken back *slowly*: snapping to the earned depth
+ * teleported a diver from 30m back to 5m when a runaway span (a fan, chained
+ * breathing the detector read as one 15-second sound) had previewed tens of
+ * metres that were never going to be committed.
+ */
+export const RETREAT_METRES_PER_SECOND = 2.5;
+
+/**
+ * Move the reported depth toward the truth: forward immediately — the preview
+ * is monotonic and committing it is never a lurch — but backward no faster
+ * than the retreat rate. A refused breath therefore reads as the descent
+ * pausing and easing back, and a scored breath arriving behind it usually
+ * overtakes the retreat before any rise is visible at all.
+ */
+export function stepTowardTruth(current: number, truth: number, dtSeconds: number): number {
+  if (truth >= current) return truth;
+  return Math.max(truth, current - RETREAT_METRES_PER_SECOND * dtSeconds);
+}
+
+/**
  * Depth at which the water is as dark as it gets. Purely a lighting number:
  * it drives how the background fades with depth and nothing else.
  *

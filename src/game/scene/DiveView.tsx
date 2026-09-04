@@ -258,7 +258,12 @@ export function DiveView() {
     // Only the fixture can be fast-forwarded. A person breathing into a
     // microphone or holding a key runs in real time, whatever the dev control says.
     const timeScale = source === 'scripted' ? speed : 1;
-    const conductor = new BreathConductor({ targetRR: 15, timeScale });
+    // 12/min, not 15: the prompt only ever slows from here, so this is the
+    // fastest breathing the dive can ever ask for — and 15 was fast enough
+    // that keeping up meant rushing. With the baseline the zones chase capped
+    // at 14, every zone target computes slower than this start, so the arc
+    // always descends instead of being refused.
+    const conductor = new BreathConductor({ targetRR: 12, timeScale });
 
     // Built for the chosen source only. Constructing all three would spin up a
     // detector and an estimator nobody asked for on every dive.

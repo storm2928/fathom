@@ -207,6 +207,76 @@ test('an engine that is never told about the window scores everything', async ()
   equal(scored.length, 5);
 });
 
+/* --------------------------------------------------- the merged-span bug ---- */
+
+/**
+ * A diver following the prompt exactly: audible inhale, audible top-up, then
+ * the exhale beginning as the window opens. The pauses between the sounds are
+ * shorter than the detector's 250ms hangover, so all three arrive as ONE span
+ * whose onset sits in the closed window — the shape that made real sessions go
+ * silent the moment the guided zones began, while calibration (gate open)
+ * responded to every breath.
+ */
+const PROMPTED_CYCLE_MS = 6500;
+const PROMPTED_CYCLES = 3;
+/** Silence before the first cycle, clear of the detector's floor warmup. */
+const PROMPTED_LEAD_MS = 1000;
+
+function promptedWindowAt(t: number): boolean {
+  // Closed over the prompted inhale and top-up, open from the exhale cue on.
+  if (t < PROMPTED_LEAD_MS) return false;
+  return (t - PROMPTED_LEAD_MS) % PROMPTED_CYCLE_MS >= 1900;
+}
+
+function promptedSession(exhales: boolean): Sound[] {
+  const sounds: Sound[] = [];
+  for (let n = 0; n < PROMPTED_CYCLES; n++) {
+    const t0 = PROMPTED_LEAD_MS + n * PROMPTED_CYCLE_MS;
+    sounds.push({ from: t0 + 200, to: t0 + 1100 }); // deep inhale, audible
+    sounds.push({ from: t0 + 1300, to: t0 + 1750 }); // top-up, 150ms before the cue
+    if (exhales) sounds.push({ from: t0 + 1900, to: t0 + 5600 }); // exhale, on cue
+  }
+  return sounds;
+}
+
+async function runPrompted(exhales: boolean): Promise<number[]> {
+  const capture = createFakeCapture();
+  const engine = createBreathEngine({ capture });
+  const scored: number[] = [];
+  engine.on('exhale-end', ({ durationMs }) => scored.push(durationMs));
+
+  await engine.start();
+  play(capture, promptedSession(exhales), PROMPTED_LEAD_MS + PROMPTED_CYCLES * PROMPTED_CYCLE_MS, (t) => {
+    engine.setExhaleExpected(promptedWindowAt(t));
+  });
+  engine.stop();
+
+  return scored;
+}
+
+test('an exhale that follows its top-up within the hangover is still scored', async () => {
+  // The bug this guards against: latched once at the inhale's onset, the whole
+  // merged span was refused, and every correctly-delivered breath of a guided
+  // zone scored nothing — indistinguishable, from the diver's side, from the
+  // microphone having turned off after calibration.
+  const scored = await runPrompted(true);
+
+  equal(scored.length, PROMPTED_CYCLES, `every prompted breath should score, got ${scored.length}`);
+  for (const durationMs of scored) {
+    equal(durationMs > 3000, true, `a scored span ran ${durationMs}ms, expected the full breath`);
+  }
+});
+
+test('the re-latch does not rescue an inhale coasting through its hangover', async () => {
+  // The same cycles with no exhale at all: the inhale side falls silent just as
+  // the window opens, and the span only outlives the opening by the hangover.
+  // Scoring it would be #27 again — the second reading must demand more
+  // sustained sound than a silent tail can provide.
+  const scored = await runPrompted(false);
+
+  equal(scored.length, 0, `a breathless prompt window scored ${scored.length} breaths`);
+});
+
 /* ------------------------------------------------------------------ #15 ---- */
 
 /** A breather at 8/min: onsets 7.5s apart, three of them. */

@@ -1,6 +1,6 @@
 import type { BreathEngine } from '../../breath/types';
 import type { BreathConductor, PromptWindow } from '../session/conductor';
-import { metresForExhale } from './descent';
+import { metresForExhale, stepTowardTruth } from './descent';
 import { CanvasSceneRenderer } from './canvasRenderer';
 import { PixiSceneRenderer } from './pixiRenderer';
 import type { DiverPose, PromptBeat, SceneRenderer, SceneState } from './renderer';
@@ -126,10 +126,10 @@ export class DiveScene {
       engine.on('exhale-end', ({ durationMs, quality }) => {
         this.lastQuality = quality;
         // Settle on the true value for the breath. The glide during the exhale
-        // was an estimate using the previous quality, so this is a small
-        // correction rather than a jump.
+        // was an estimate using the previous quality, so update() closes the
+        // small gap rather than jumping — forward immediately, backward at the
+        // retreat rate.
         this.earnedDepth = this.depthAtExhaleStart + metresForExhale(durationMs, quality);
-        this.targetDepth = this.earnedDepth;
         this.exhaleStartedAt = null;
         // The light is spent by descending: it has to be recharged each cycle,
         // which is what makes the double inhale part of the loop rather than
@@ -190,6 +190,10 @@ export class DiveScene {
     // would otherwise keep filling, the rest condition would never be met, and
     // "settle" would mean "run forever".
     this.charging = false;
+    // And stop previewing. The engine is stopped, so no phase change is coming
+    // to close a breath the session ended in the middle of — left open, the
+    // preview would deepen forever and the rest condition would never be met.
+    this.exhaleStartedAt = null;
     this.promptStartedAt = null;
     this.promptDurationMs = 0;
   }
@@ -278,13 +282,20 @@ export class DiveScene {
       this.lightCharge = Math.max(0, this.lightCharge - dt * LIGHT_DECAY_PER_SECOND);
     }
 
-    // Glide down while the exhale is still running, using the length so far.
-    // metresForExhale is monotonic in duration, so this only ever moves forward.
-    if (this.exhaleStartedAt !== null) {
-      const elapsed = now - this.exhaleStartedAt;
-      this.targetDepth =
-        this.depthAtExhaleStart + metresForExhale(elapsed, this.lastQuality);
-    }
+    // Depth follows the truth: metres committed by scored breaths, plus a
+    // preview of the breath still running, from its length so far. The preview
+    // is not yet earned — a span the gate refuses or the detector throws away
+    // commits nothing — so when one ends unscored the truth falls back to the
+    // earned depth, and the target retreats toward it at a bounded rate rather
+    // than teleporting. It used to teleport: the dangling preview of a single
+    // runaway span snapped a diver from 30m back to 5m at the start of the
+    // next breath.
+    const truth =
+      this.exhaleStartedAt !== null
+        ? this.depthAtExhaleStart +
+          metresForExhale(now - this.exhaleStartedAt, this.lastQuality)
+        : this.earnedDepth;
+    this.targetDepth = stepTowardTruth(this.targetDepth, truth, dt * this.timeScale);
 
     const catchUp = this.reducedMotion
       ? 1

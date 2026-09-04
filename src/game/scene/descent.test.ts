@@ -1,5 +1,10 @@
 import { test, assert, equal } from '../testing/harness.ts';
-import { metresForExhale, REFERENCE_EXHALE_MS } from './descent.ts';
+import {
+  RETREAT_METRES_PER_SECOND,
+  metresForExhale,
+  stepTowardTruth,
+  REFERENCE_EXHALE_MS,
+} from './descent.ts';
 
 /**
  * The safety rule, pinned.
@@ -83,4 +88,37 @@ test('mid-breath scoring is safe to call repeatedly as the exhale runs', () => {
     assert(now >= previous, `descent went backwards at ${ms}ms`);
     previous = now;
   }
+});
+
+/* ------------------------------------------------------- unearned preview ---- */
+
+test('depth commits forward immediately', () => {
+  // The preview is monotonic and committing it is never a lurch, so there is
+  // no reason to lag behind a truth that moved deeper.
+  equal(stepTowardTruth(5, 12, 0.016), 12);
+  equal(stepTowardTruth(5, 5, 0.016), 5);
+});
+
+test('unearned depth is surrendered at the retreat rate, not by teleport', () => {
+  // The bug this pins: a runaway span previewed ~25m that was never scored,
+  // and the next breath snapped the diver from 30m back to 5m in one frame.
+  const after = stepTowardTruth(30, 5, 1);
+  equal(after, 30 - RETREAT_METRES_PER_SECOND);
+});
+
+test('the retreat stops at the truth rather than overshooting past it', () => {
+  equal(stepTowardTruth(6, 5, 10), 5);
+});
+
+test('a scored breath behind a refusal overtakes the retreat', () => {
+  // The common case in play: one refused breath, then real progress. The
+  // moment the rising preview passes the retreating target, depth is moving
+  // forward again — the refusal reads as a pause, not a plunge undone.
+  let target = 20; // preview left by a refused breath
+  const earned = 16;
+  for (let t = 0; t < 5; t += 0.1) {
+    const preview = earned + metresForExhale(t * 1000, 0.7);
+    target = stepTowardTruth(target, preview, 0.1);
+  }
+  assert(target > 20, `after a 5s scored breath the diver should be deeper, was ${target}`);
 });

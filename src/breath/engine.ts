@@ -106,6 +106,17 @@ export function createBreathEngine(
   let lastQuality: SignalQuality | null = null;
   let lowConfidenceSince: number | null = null;
 
+  /**
+   * Armed when the exhale window opens while a span is already sounding, so the
+   * gate can be given a second onset reading — see the comment above the
+   * re-latch in onFrame. `relatchFrom` is the audio-clock time of the first
+   * frame after the window opened, null until that frame arrives.
+   */
+  let relatchArmed = false;
+  let relatchFrom: number | null = null;
+  /** The window as last told, so only a real closed→open edge arms a reading. */
+  let windowExpected = true;
+
   let calibrator: ReturnType<typeof createCalibrator> | null = null;
   let settleCalibration: ((result: CalibrationResult) => void) | null = null;
   let failCalibration: ((reason: Error) => void) | null = null;
@@ -180,6 +191,37 @@ export function createBreathEngine(
     // the longest and best ones. exhaleGate.ts has the measurements.
     if (result.phase === 'exhale' && lastPhase !== 'exhale') gate.onset();
 
+    // The second reading: a span still sounding once the window has opened.
+    //
+    // A diver following the prompt inhales audibly, tops up, and exhales on
+    // cue — and the pause between the top-up and the exhale is usually shorter
+    // than the detector's hangover, so all three arrive as one span whose
+    // onset sits in the closed window. Latched once at onset, that span is
+    // refused whole, cycle after cycle: the prompted exhale itself, delivered
+    // exactly as asked, scores nothing, and a session that responded to every
+    // breath during calibration goes silent the moment the zones begin.
+    //
+    // So a span that is still sounding when the window opens is read again.
+    // Not immediately: an audible inhale that already fell quiet is coasting
+    // through the hangover, and re-latching on its tail would score exactly
+    // the sound #27 exists to refuse. It must outlive that tail plus one
+    // onset debounce — the same evidence a fresh onset would need — before
+    // the second reading is believed.
+    if (relatchArmed) {
+      if (result.phase !== 'exhale') {
+        relatchArmed = false;
+        relatchFrom = null;
+      } else {
+        relatchFrom ??= frame.t;
+        const sustainMs = detector.options.hangoverMs + detector.options.onsetDebounceMs;
+        if (frame.t - relatchFrom >= sustainMs) {
+          gate.onset();
+          relatchArmed = false;
+          relatchFrom = null;
+        }
+      }
+    }
+
     setPhase(result.phase, frame.t);
     assessQuality(frame, result.confidence, result.noiseFloor);
 
@@ -251,6 +293,9 @@ export function createBreathEngine(
       lastPhase = 'idle';
       lastQuality = null;
       lowConfidenceSince = null;
+      relatchArmed = false;
+      relatchFrom = null;
+      windowExpected = true;
 
       try {
         await capture.start();
@@ -298,6 +343,21 @@ export function createBreathEngine(
 
     setExhaleExpected(expected: boolean): void {
       gate.setExpected(expected);
+      // Edges only: a caller repeating the same window must not keep resetting
+      // the sustain clock, or the second reading would never come due.
+      if (expected === windowExpected) return;
+      windowExpected = expected;
+      // Opening onto a span already in progress arms the second reading; the
+      // window closing stands any pending one down. A latch taken while the
+      // window was open is left alone either way — the long exhale that
+      // outlasts its prompt keeps the answer it latched at onset.
+      if (expected && lastPhase === 'exhale') {
+        relatchArmed = true;
+        relatchFrom = null;
+      } else {
+        relatchArmed = false;
+        relatchFrom = null;
+      }
     },
 
     setExhaleTarget(ms: number): void {

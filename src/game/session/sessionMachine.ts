@@ -90,6 +90,19 @@ export const PLANS: Record<SessionPlan, { factors: number[]; zoneMs: number; sur
  */
 const TARGET_FLOOR_RR = 6;
 
+/**
+ * The prompt never chases a baseline faster than this. Calibration is a
+ * free-breathing read with the scoring gate open, so audible inhales can be
+ * counted as breaths and nearly double the measured rate — and zone targets
+ * derived from that number are all faster than the starting prompt, which the
+ * conductor rightly refuses to speed up to. Every zone refused means the whole
+ * dive plays at the starting rate: the fastest prompt the session owns, held
+ * for its entire length, asking the diver to rush. Capping what the prompt
+ * chases keeps the arc descending whatever the read said. The *measured*
+ * baseline is untouched — the surface screen and the export still report it.
+ */
+const PROMPT_BASELINE_CAP_RR = 14;
+
 const ZONE_STATES: SessionState[] = ['zone-1', 'zone-2', 'zone-3'];
 
 const SIGNAL_RANK: Record<SignalQuality, number> = {
@@ -207,7 +220,10 @@ export class SessionMachine {
     if (this.downshiftMs !== null || this.baselineRR === 0) return;
     if (this.halfwayTarget === null) {
       const { factors } = this.plan;
-      const slowest = Math.max(TARGET_FLOOR_RR, this.baselineRR * factors[factors.length - 1]);
+      // The same capped chase as runZone, so "halfway" is half the change the
+      // prompt actually asks for rather than half of one it never will.
+      const chased = Math.min(this.baselineRR, PROMPT_BASELINE_CAP_RR);
+      const slowest = Math.max(TARGET_FLOOR_RR, chased * factors[factors.length - 1]);
       this.halfwayTarget = (this.baselineRR + slowest) / 2;
     }
     if (breathsPerMin <= this.halfwayTarget) {
@@ -236,9 +252,11 @@ export class SessionMachine {
     }
 
     this.enter(ZONE_STATES[index]);
-    // Derived from the measured baseline, floored, and handed to a conductor
-    // that will refuse it outright if it is not slower than the current target.
-    const target = Math.max(TARGET_FLOOR_RR, this.baselineRR * this.plan.factors[index]);
+    // Derived from the measured baseline — capped, then floored — and handed to
+    // a conductor that will refuse it outright if it is not slower than the
+    // current target.
+    const chased = Math.min(this.baselineRR, PROMPT_BASELINE_CAP_RR);
+    const target = Math.max(TARGET_FLOOR_RR, chased * this.plan.factors[index]);
     this.conductor.slowTo(target);
     this.after(this.plan.zoneMs, () => this.runZone(index + 1));
   }
