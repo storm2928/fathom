@@ -17,7 +17,7 @@ breathing actually did, measured before and after.
 ## Why build it this way
 
 Support is rationed by supply. US school counselor caseloads run at roughly
-**376 students to one counselor** — well past the 250:1 the profession
+**372 students to one counselor** (2024–25) — well past the 250:1 the profession
 recommends ([ASCA][asca]) — and clinical biofeedback, the closest established
 relative of what this does, is typically delivered in supervised sessions at
 **$100+ each**. The gap is not a lack of things to read. It is a lack of
@@ -112,7 +112,7 @@ and there is a floor below which the prompt will not go.
 1. Balban MY, Neri E, Kogon MM, Weed L, Nouriani B, Jo B, Holl G, Zeitzer JM,
    Spiegel D, Huberman AD. **Brief structured respiration practices enhance mood
    and reduce physiological arousal.** *Cell Reports Medicine*, 2023;4(1):100895.
-   RCT, n=114; cyclic sighing produced greater improvement in mood and greater
+   Randomised controlled trial (114 enrolled, 108 randomised); cyclic sighing produced greater improvement in mood and greater
    reduction in respiratory rate than mindfulness meditation over 28 days.
    <https://doi.org/10.1016/j.xcrm.2022.100895>
 2. Zaccaro A, Piarulli A, Laurino M, Garbella E, Menicucci D, Neri B, Gemignani A.
@@ -123,7 +123,7 @@ and there is a floor below which the prompt will not go.
    work?** *Frontiers in Psychology*, 2014;5:756.
    <https://doi.org/10.3389/fpsyg.2014.00756>
 4. Linehan MM. **DBT Skills Training Manual**, 2nd ed. Guilford Press, 2015. Paced
-   breathing is the *P* in the TIPP distress-tolerance skill.
+   breathing is the *P* in the TIP distress-tolerance skills.
 5. American School Counselor Association. **School counselor roles and ratios.**
    Student-to-counselor ratio data. [asca][asca]
 
