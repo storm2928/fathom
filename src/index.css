@@ -108,6 +108,11 @@
   --section-gap: var(--s-8);
   --card-pad: var(--s-6);
 
+  /* Derived: the reading column, the depth-scale gutter, the overline colour */
+  --measure: 600px;
+  --scale-gutter: 64px;
+  --overline-color: var(--text-2);
+
   /* Motion */
   --d-fast: 120ms;
   --d-base: 200ms;
@@ -339,6 +344,17 @@ canvas {
   color: var(--text-3);
 }
 
+/* The section voice on content pages: a tracked overline, then the content. */
+.overline {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--t-label);
+  line-height: var(--lh-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--overline-color);
+}
+
 .t-num-xl,
 .t-num-lg,
 .t-num,
@@ -400,20 +416,76 @@ canvas {
   margin-top: var(--s-3);
 }
 
+/* Page frame: the centred 1040px frame, and inside it one left-aligned reading column. */
+
 .page {
+  position: relative;
   width: 100%;
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: var(--s-7) var(--page-pad) var(--s-10);
+  padding: var(--s-8) var(--page-pad) var(--s-11);
 }
 
-.page--narrow {
-  max-width: var(--prose-max);
+.page__head {
+  margin-bottom: var(--s-8);
+}
+
+.page__head .t-lead {
+  max-width: var(--measure);
+  margin-top: var(--s-3);
+  color: var(--text-2);
+}
+
+.page__col {
+  max-width: var(--measure);
+}
+
+@media (min-width: 1024px) {
+  .page--scale {
+    padding-left: calc(var(--page-pad) + var(--scale-gutter));
+  }
 }
 
 @media (max-width: 599px) {
   .page {
-    padding-top: var(--s-6);
+    padding: var(--s-6) var(--page-pad) var(--s-10);
+  }
+
+  .page__head {
+    margin-bottom: var(--s-7);
+  }
+}
+
+/* Section rhythm: an overline over a hairline. Boxes are for containers only. */
+
+.sec {
+  padding-block: var(--s-7);
+  border-top: 1px solid var(--line-1);
+}
+
+.sec > .overline {
+  margin-bottom: var(--s-3);
+}
+
+.bounded {
+  padding-block: var(--s-5);
+  border-top: 1px solid var(--line-1);
+  border-bottom: 1px solid var(--line-1);
+}
+
+.rule {
+  border: 0;
+  border-top: 1px solid var(--line-1);
+  margin: 0;
+}
+
+.rule--strong {
+  border-top-color: var(--line-2);
+}
+
+@media (max-width: 599px) {
+  .sec {
+    padding-block: var(--s-6);
   }
 }
 

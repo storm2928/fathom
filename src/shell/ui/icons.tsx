@@ -256,7 +256,10 @@ export function IconLeave(p: IconProps) {
   );
 }
 
-/** The brand mark: a ring with a light at its foot — the diver's lamp seen from above. */
+/**
+ * The brand mark: a depth gauge, needle pointing down and left. Descending.
+ * Sits beside the FATHOM logotype in the nav and on the gate.
+ */
 export function BrandMark({ size = 22, className }: IconProps) {
   return (
     <svg
@@ -267,8 +270,15 @@ export function BrandMark({ size = 22, className }: IconProps) {
       aria-hidden="true"
       focusable="false"
     >
-      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth={1.75} />
-      <circle cx="12" cy="16.5" r="2.25" fill="var(--accent)" />
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth={1.5} />
+      <path
+        d="M12 3v2.5M21 12h-2.5M12 21v-2.5M3 12h2.5"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+      <path d="M12 12l-3.6 4.4" stroke="var(--accent)" strokeWidth={2} strokeLinecap="round" />
+      <circle cx="12" cy="12" r="1.6" fill="var(--accent)" />
     </svg>
   );
 }

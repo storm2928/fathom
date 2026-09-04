@@ -91,6 +91,8 @@ export interface Frame {
   beamY: number;
   exhaling: boolean;
   reduced: boolean;
+  /** descent surge: multiplier for scroll and drift speed this frame, 1 at rest */
+  surge: number;
   /** wrap spans per layer, metres */
   spans: number[];
   look: ZoneLook;
@@ -112,6 +114,7 @@ export function createFrame(look: ZoneLook): Frame {
     beamY: 1,
     exhaling: false,
     reduced: false,
+    surge: 1,
     spans: [0, 0, 0, 0],
     look,
   };

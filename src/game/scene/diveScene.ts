@@ -24,6 +24,14 @@ const GLIDE_PER_SECOND = 1.6;
 /** The dive light fades over this long once charged, so it has to be renewed. */
 const LIGHT_DECAY_PER_SECOND = 0.22;
 
+/**
+ * How long the loop keeps drawing after the scene comes to rest while settling.
+ * The renderer eases the descent surge and its wake off over about 700 ms
+ * after the drawn depth catches up; stopping on the first resting frame could
+ * freeze a wake half-faded on the surface band.
+ */
+const REST_GRACE_SECONDS = 0.8;
+
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
@@ -74,6 +82,7 @@ export class DiveScene {
   private lastFrameAt = 0;
   private observer: ResizeObserver | null = null;
   private settling = false;
+  private restSeconds = 0;
 
   /** Depth earned by completed breaths, in metres. */
   private earnedDepth = 0;
@@ -158,6 +167,7 @@ export class DiveScene {
   start(): void {
     if (this.frame) return;
     this.settling = false;
+    this.restSeconds = 0;
     this.lastFrameAt = performance.now();
     if (!this.startedAt) this.startedAt = this.lastFrameAt;
     this.observer = new ResizeObserver(() => this.renderer.resize());
@@ -168,9 +178,12 @@ export class DiveScene {
       this.lastFrameAt = now;
       this.update(dt, now);
       this.renderer.render(this.snapshot(now), dt);
-      if (this.settling && this.atRest()) {
-        this.stop();
-        return;
+      if (this.settling) {
+        this.restSeconds = this.atRest() ? this.restSeconds + dt : 0;
+        if (this.restSeconds >= REST_GRACE_SECONDS) {
+          this.stop();
+          return;
+        }
       }
       this.frame = requestAnimationFrame(loop);
     };

@@ -3,6 +3,7 @@ import { ZoneCrossfade } from './art/crossfade';
 import { LAYER_PPM, clamp01, createFrame, lit, slotY, spanMetres } from './art/layers';
 import type { Frame } from './art/layers';
 import { ZONE_LOOKS, hexCss, DIVER } from './art/palette';
+import { DescentSurge } from './art/surge';
 import { PIXELS_PER_METRE, driftMotes, lookForZone, seedMotes } from './renderer';
 import type { Mote, SceneRenderer, SceneState } from './renderer';
 
@@ -35,12 +36,14 @@ export class CanvasSceneRenderer implements SceneRenderer {
   private readonly reducedMotion: boolean;
   private readonly art = new CanvasArt();
   private readonly fade = new ZoneCrossfade();
+  private readonly surge = new DescentSurge();
   private readonly frame = createFrame(ZONE_LOOKS[0]);
   private readonly bubbles: Bubble[] = [];
   private readonly bubbleCss = hexCss(DIVER.bubble);
 
   private visualLight = 0;
   private scroll = 0;
+  private lastDepth = 0;
   private theta = LEVEL_THETA;
   private kick = 0;
   private bubbleAccumulator = 0;
@@ -94,8 +97,12 @@ export class CanvasSceneRenderer implements SceneRenderer {
     const f = this.frame;
 
     this.visualLight += (state.light - this.visualLight) * (1 - Math.exp(-6 * dt));
+    // The descent surge, as in the WebGL renderer; this fallback takes the
+    // speed factor and leaves out the wake.
+    const surge = this.surge.step(state.descending, dt, reduced);
     if (reduced) this.scroll += (state.depth - this.scroll) * (1 - Math.exp(-3 * dt));
-    else this.scroll = state.depth;
+    else this.scroll += (state.depth - this.lastDepth) * surge;
+    this.lastDepth = state.depth;
 
     const zone = Math.min(ZONE_LOOKS.length - 1, Math.max(0, state.zone));
     if (zone !== this.fade.to) this.fade.begin(this.fade.to, zone);
@@ -114,6 +121,7 @@ export class CanvasSceneRenderer implements SceneRenderer {
     f.dt = dt;
     f.light = this.visualLight;
     f.exhaling = state.exhaling;
+    f.surge = surge;
     f.look = toLook;
 
     // Water, with the previous zone fading out over it.
@@ -143,7 +151,7 @@ export class CanvasSceneRenderer implements SceneRenderer {
     if (fading) this.art.drawZone(ctx, fromIndex, f, 1 - e);
 
     // Motes.
-    if (!reduced) driftMotes(this.motes, dt);
+    if (!reduced) driftMotes(this.motes, dt * surge);
     const moteAlpha = fromLook.moteAlpha + (toLook.moteAlpha - fromLook.moteAlpha) * e;
     ctx.fillStyle = this.art.moteColour(zone);
     for (let i = 0; i < this.motes.length; i += 1) {

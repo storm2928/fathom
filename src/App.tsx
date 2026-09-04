@@ -132,6 +132,8 @@ function Shell() {
   // that could ask for a microphone.
   if (!acknowledged) return <SafetyScreen mode="gate" onContinue={handleContinue} />;
 
+  // The three reading pages carry the depth scale in their left gutter
+  // (`page--scale`); the dive owns its own frame.
   let content: ReactNode;
   let mainClass = 'app-main page';
   switch (route) {
@@ -141,13 +143,15 @@ function Shell() {
       break;
     case 'how':
       content = <HowItWorks />;
+      mainClass = 'app-main page page--scale';
       break;
     case 'research':
       content = <Research />;
+      mainClass = 'app-main page page--scale';
       break;
     case 'safety':
       content = <SafetyScreen mode="reference" />;
-      mainClass = 'app-main page page--narrow';
+      mainClass = 'app-main page page--scale';
       break;
     case 'harness':
       content = DEV_TOOLS ? <ScriptedEnginePanel /> : <DiveView />;

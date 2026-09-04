@@ -321,12 +321,12 @@ export class CanvasArt {
   }
 
   private drawMidnight(ctx: CanvasRenderingContext2D, f: Frame, alpha: number): void {
-    const { w, h, t, dt, depth, reduced } = f;
+    const { w, h, t, dt, depth, reduced, surge } = f;
     const cache = this.zones[1];
 
     // Marine snow.
     const spanFar = spanMetres(h, LAYER_PPM[FAR], 60);
-    const fall = reduced ? 0 : 0.25 * dt;
+    const fall = reduced ? 0 : 0.25 * dt * surge;
     ctx.fillStyle = '#ffffff';
     ctx.globalAlpha = 0.35 * alpha;
     for (let i = 0; i < this.flakes.length; i += 1) {
@@ -342,7 +342,7 @@ export class CanvasArt {
 
     // Jellyfish.
     const spanMid = spanMetres(h, LAYER_PPM[MID], 100);
-    const rise = reduced ? 0 : 0.15 * dt;
+    const rise = reduced ? 0 : 0.15 * dt * surge;
     ctx.strokeStyle = cache.mote;
     ctx.fillStyle = cache.mote;
     ctx.lineWidth = 1.5;

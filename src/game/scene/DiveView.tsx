@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { BreathConductor } from '../session/conductor';
 import type { PromptStep } from '../session/conductor';
@@ -20,17 +21,17 @@ import { formatDecimal, formatMetres, formatPercent } from '../../shell/format';
 import {
   Button,
   Chip,
-  Choice,
-  ChoiceGroup,
   IconDive,
   IconLeave,
   IconMic,
   IconNumbers,
   IconSpacebar,
-  IconTimer,
   Meter,
   Notice,
   ProgressRing,
+  Segmented,
+  SegmentedOption,
+  useMediaQuery,
 } from '../../shell/ui';
 import './DiveView.css';
 
@@ -114,20 +115,8 @@ interface RingState {
 
 const IDLE_RING: RingState = { step: null, sweepMs: 0, seq: 0 };
 
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(
-    () => typeof matchMedia === 'function' && matchMedia(query).matches,
-  );
-  useEffect(() => {
-    if (typeof matchMedia !== 'function') return;
-    const list = matchMedia(query);
-    const onChange = () => setMatches(list.matches);
-    onChange();
-    list.addEventListener('change', onChange);
-    return () => list.removeEventListener('change', onChange);
-  }, [query]);
-  return matches;
-}
+/** Whole seconds left in a window, never below one: the count-in reads "1", not "0". */
+const countInFor = (remainingMs: number) => Math.max(1, Math.ceil(remainingMs / 1000));
 
 export function DiveView() {
   const { t, language } = useLanguage();
@@ -171,6 +160,17 @@ export function DiveView() {
   const [inputCode, setInputCode] = useState<InputCode>('scripted');
   const [fallbackReason, setFallbackReason] = useState<string | null>(null);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
+  // Whether the depth readout rose between the last two samples: the diver is
+  // sinking right now. Read off the same number the HUD prints rather than the
+  // drawn glide, which under reduced motion never trails the earned depth.
+  const [descending, setDescending] = useState(false);
+  const lastDepthRef = useRef(0);
+  // Wall-clock moment the exhale will be asked for, known from the start of the
+  // first inhale: both inhale beats together are the lead-in, counted down on
+  // the ring, because the top-up alone is under a second and no warning at all.
+  // Null outside the inhale beats.
+  const leadEndsAtRef = useRef<number | null>(null);
+  const [countIn, setCountIn] = useState<number | null>(null);
 
   const phone = useMediaQuery('(max-width: 599px)');
   const landscape = useMediaQuery('(max-height: 480px)');
@@ -224,8 +224,13 @@ export function DiveView() {
     const id = setInterval(() => {
       const scene = sceneRef.current;
       if (!scene) return;
-      setDepth(scene.depth);
+      const next = scene.depth;
+      setDescending(next > lastDepthRef.current);
+      lastDepthRef.current = next;
+      setDepth(next);
       setLight(scene.light);
+      const leadEndsAt = leadEndsAtRef.current;
+      if (leadEndsAt !== null) setCountIn(countInFor(leadEndsAt - performance.now()));
     }, 100);
     return () => clearInterval(id);
   }, [running]);
@@ -254,6 +259,10 @@ export function DiveView() {
     setStartError(null);
     setFallbackReason(null);
     setNoticeDismissed(false);
+    setDescending(false);
+    lastDepthRef.current = 0;
+    leadEndsAtRef.current = null;
+    setCountIn(null);
 
     // Only the fixture can be fast-forwarded. A person breathing into a
     // microphone or holding a key runs in real time, whatever the dev control says.
@@ -311,13 +320,25 @@ export function DiveView() {
     const detachScene = scene.attach(engine, conductor);
     // The ring follows the conductor directly: the same windows the scene and
     // the engine get, in wall-clock time, restarted on every step.
-    const detachRing = conductor.on((window) =>
+    const detachRing = conductor.on((window) => {
+      const sweepMs = window.durationMs / timeScale;
+      // The exhale comes after the two inhale beats. From the first one, the
+      // lead is this window plus the top-up that follows it; from the top-up
+      // it is the window itself. The sampler keeps the count current.
+      const leadMs =
+        window.step === 'inhale'
+          ? sweepMs + conductor.currentCycle().topUpMs / timeScale
+          : window.step === 'top-up'
+            ? sweepMs
+            : null;
+      leadEndsAtRef.current = leadMs === null ? null : performance.now() + leadMs;
+      setCountIn(leadMs === null ? null : countInFor(leadMs));
       setRing((previous) => ({
         step: window.step,
-        sweepMs: window.durationMs / timeScale,
+        sweepMs,
         seq: previous.seq + 1,
-      })),
-    );
+      }));
+    });
     teardownRef.current = () => {
       detachScene();
       detachRing();
@@ -357,6 +378,7 @@ export function DiveView() {
         // readout freezes mid-glide while the canvas carries on easing down.
         setDepth(scene.depth);
         setLight(scene.light);
+        setDescending(false);
         // Let the descent come to rest, then the scene stops itself rather than
         // animating underneath the surface screen for as long as it is open.
         scene.settle();
@@ -386,7 +408,7 @@ export function DiveView() {
 
     // The engine is already running — it was started above, inside the gesture.
     // The stage goes full-viewport before the loop starts, so the first frame
-    // is drawn at the size the dive is played at, not the setup band's.
+    // is drawn at the size the dive is played at, not the hidden setup canvas's.
     flushSync(() => setRunning(true));
     scene.start();
     // The machine starts the conductor once calibration is done — see #29.
@@ -415,9 +437,12 @@ export function DiveView() {
 
   const surfacing = state === 'surfacing';
   let ringLabel: string | undefined;
-  let ringCaption: string | undefined;
+  let ringCaption: ReactNode;
   let activeSegment = -1;
   let ringGlow = false;
+  // The beat before the exhale: the ring's track eases up to the accent over
+  // the window, so the exhale arrives on a ring that is already lit.
+  let ringLead = false;
   if (ring.step === 'calibrating') {
     ringLabel = t.dive.prompt.calibrating;
     ringCaption = t.dive.prompt.calibratingCaption;
@@ -425,14 +450,31 @@ export function DiveView() {
     ringLabel = PROMPT_LABEL[ring.step](t);
     activeSegment = SEGMENT_INDEX[ring.step];
     ringGlow = ring.step === 'exhale';
+    // The stroke shifts to the dive-light colour only on the final beat; the
+    // caption and count run through both inhale beats so there is time to act.
+    ringLead = ring.step === 'top-up';
     if (surfacing) ringCaption = t.dive.prompt.surfacing;
     else if (ring.step === 'exhale') ringCaption = EXHALE_CAPTION[inputCode]?.(t);
+    else if (ring.step === 'inhale' || ring.step === 'top-up')
+      ringCaption = (
+        <>
+          {t.dive.nextOut}
+          {countIn !== null && (
+            <span className="hud__count" aria-hidden="true">
+              {countIn}
+            </span>
+          )}
+        </>
+      );
   }
   const ringSize = landscape ? 80 : phone ? 96 : 120;
   const ringStroke = phone || landscape ? 5 : 6;
 
   const lightPercent = Math.round(light * 100);
   const showNotice = fallbackReason !== null && !noticeDismissed;
+  // Only through the zones, where the diver is posed head-down. The depth
+  // still climbs while surfacing, but the diver is level and the chip says so.
+  const descendingOn = descending && ZONE_INDEX[state] !== undefined && state !== 'calibrating';
 
   return (
     <div className="dive" data-mode={mode}>
@@ -447,7 +489,6 @@ export function DiveView() {
           role="presentation"
         />
         <p className="visually-hidden">{t.dive.sceneDescription}</p>
-        <div className="stage__backdrop" aria-hidden="true" />
 
         {mode !== 'setup' && (
           <div
@@ -493,7 +534,20 @@ export function DiveView() {
 
             <div className="hud__bottom">
               <div className="hud__depth">
-                <span className="t-label">{t.dive.depth}</span>
+                <div className="hud__depth-head">
+                  <span className="t-label">{t.dive.depth}</span>
+                  {/* Always in the tree so the box never changes size; it
+                      fades in while the diver sinks and out when it stops. */}
+                  <Chip
+                    tone="hud"
+                    zone={chipZone}
+                    className="chip--sm hud__descending"
+                    data-on={descendingOn ? '1' : undefined}
+                    aria-hidden={descendingOn ? undefined : true}
+                  >
+                    {t.dive.descending}
+                  </Chip>
+                </div>
                 <span className="t-num-lg">{formatMetres(depth, t, language)}</span>
               </div>
               <div className="hud__ring">
@@ -509,6 +563,7 @@ export function DiveView() {
                   label={ringLabel}
                   caption={ringCaption}
                   glow={ringGlow}
+                  className={ringLead ? 'hud__lead' : undefined}
                 />
               </div>
               <div className="hud__light">
@@ -531,96 +586,98 @@ export function DiveView() {
       </p>
 
       {mode === 'setup' && (
-        <section className="setup page page--narrow" aria-labelledby="setup-title">
-          <h1 id="setup-title">{t.setup.title}</h1>
-          <p className="t-lead setup__lead">
-            {t.setup.howLine} <a href="#/how">{t.setup.howLink}</a>
-          </p>
+        <section className="setup page" aria-labelledby="setup-title">
+          <div className="page__col setup__col">
+            <div className="setup__head">
+              <h1 id="setup-title">{t.setup.title}</h1>
+              <p className="t-lead setup__lead">
+                {t.setup.howLine} <a href="#/how">{t.setup.howLink}</a>
+              </p>
+            </div>
 
-          <ChoiceGroup
-            legend={t.setup.inputLegend}
-            extra={
-              DEV_TOOLS && source === 'scripted' ? (
-                <Button variant="secondary" size="sm" onClick={() => setSpeed(speed === 1 ? 10 : 1)}>
-                  {fill(t.setup.speed, { n: speed })}
-                </Button>
-              ) : undefined
-            }
-          >
-            {(DEV_TOOLS ? ALL_SOURCES : PLAYABLE_SOURCES).map((option) => (
-              <Choice
-                key={option}
-                name="input"
-                value={option}
-                checked={source === option}
-                onChange={() => setSource(option)}
-                icon={
-                  option === 'mic' ? (
-                    <IconMic size={24} />
-                  ) : option === 'spacebar' ? (
-                    <IconSpacebar size={24} />
-                  ) : (
-                    <IconNumbers size={24} />
-                  )
-                }
-                title={
-                  option === 'mic'
-                    ? t.setup.micTitle
-                    : option === 'spacebar'
-                      ? t.setup.spacebarTitle
-                      : t.setup.scriptedTitle
-                }
-                description={
-                  option === 'mic'
-                    ? t.setup.micDesc
-                    : option === 'spacebar'
-                      ? t.setup.spacebarDesc
-                      : t.setup.scriptedDesc
-                }
-              />
-            ))}
-          </ChoiceGroup>
-
-          <ChoiceGroup legend={t.setup.lengthLegend}>
-            <Choice
-              name="length"
-              value="full"
-              checked={plan === 'full'}
-              onChange={() => setPlan('full')}
-              icon={<IconDive size={24} />}
-              title={t.setup.fullTitle}
-              description={t.setup.fullDesc}
-            />
-            <Choice
-              name="length"
-              value="quick"
-              checked={plan === 'quick'}
-              onChange={() => setPlan('quick')}
-              icon={<IconTimer size={24} />}
-              title={t.setup.quickTitle}
-              description={t.setup.quickDesc}
-            />
-          </ChoiceGroup>
-
-          {startError !== null && <Notice tone="alert">{startError}</Notice>}
-
-          <div className="setup__actions">
-            <Button
-              variant="primary"
-              size="lg"
-              icon={<IconDive size={18} />}
-              disabled={starting}
-              onClick={() => void handleStart(plan)}
+            <Segmented
+              legend={t.setup.inputLegend}
+              extra={
+                DEV_TOOLS && source === 'scripted' ? (
+                  <Button variant="secondary" size="sm" onClick={() => setSpeed(speed === 1 ? 10 : 1)}>
+                    {fill(t.setup.speed, { n: speed })}
+                  </Button>
+                ) : undefined
+              }
             >
-              {t.setup.start}
-            </Button>
-            {source === 'mic' && (
-              <>
-                <p className="t-small setup__note">{t.setup.permissionNote}</p>
-                <p className="t-small setup__note">{t.setup.micFidelity}</p>
-              </>
-            )}
-            {source === 'spacebar' && <p className="t-small setup__note">{t.setup.spacebarNote}</p>}
+              {(DEV_TOOLS ? ALL_SOURCES : PLAYABLE_SOURCES).map((option) => (
+                <SegmentedOption
+                  key={option}
+                  name="input"
+                  value={option}
+                  checked={source === option}
+                  onChange={() => setSource(option)}
+                  icon={
+                    option === 'mic' ? (
+                      <IconMic size={20} />
+                    ) : option === 'spacebar' ? (
+                      <IconSpacebar size={20} />
+                    ) : (
+                      <IconNumbers size={20} />
+                    )
+                  }
+                  title={
+                    option === 'mic'
+                      ? t.setup.micTitle
+                      : option === 'spacebar'
+                        ? t.setup.spacebarTitle
+                        : t.setup.scriptedTitle
+                  }
+                  description={
+                    option === 'mic'
+                      ? t.setup.micDesc
+                      : option === 'spacebar'
+                        ? t.setup.spacebarDesc
+                        : t.setup.scriptedDesc
+                  }
+                />
+              ))}
+            </Segmented>
+
+            <Segmented legend={t.setup.lengthLegend} size="sm">
+              <SegmentedOption
+                name="length"
+                value="full"
+                checked={plan === 'full'}
+                onChange={() => setPlan('full')}
+                title={t.setup.fullTitle}
+                description={t.setup.fullDesc}
+              />
+              <SegmentedOption
+                name="length"
+                value="quick"
+                checked={plan === 'quick'}
+                onChange={() => setPlan('quick')}
+                title={t.setup.quickTitle}
+                description={t.setup.quickDesc}
+              />
+            </Segmented>
+
+            {startError !== null && <Notice tone="alert">{startError}</Notice>}
+
+            <div className="setup__actions">
+              <Button
+                variant="primary"
+                size="lg"
+                icon={<IconDive size={18} />}
+                disabled={starting}
+                onClick={() => void handleStart(plan)}
+              >
+                {t.setup.start}
+              </Button>
+              {source === 'mic' && (
+                <>
+                  <p className="t-small setup__note">{t.setup.permissionNote}</p>
+                  <p className="t-small setup__note">{t.setup.micFidelity}</p>
+                </>
+              )}
+              {source === 'spacebar' && <p className="t-small setup__note">{t.setup.spacebarNote}</p>}
+            </div>
           </div>
         </section>
       )}

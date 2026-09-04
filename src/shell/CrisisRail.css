@@ -1,3 +1,10 @@
+/*
+ * The one bordered container on the content pages. Everything else sits on
+ * the page ground and is structured by type and hairlines; this keeps its
+ * border, its accent edge and the single soft elevation so it is found
+ * without being looked for.
+ */
+
 .crisis {
   padding: var(--s-5) var(--s-6);
   border: 1px solid var(--line-2);
@@ -28,9 +35,10 @@
 
 .crisis__lead {
   margin: 0 0 var(--s-4);
+  max-width: 62ch;
   font-size: var(--t-body);
   line-height: var(--lh-body);
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text-1);
 }
 

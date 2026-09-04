@@ -4,7 +4,17 @@ import { CrisisRail } from '../../shell/CrisisRail';
 import { Rich, useLanguage } from '../../shell/i18n';
 import { fill } from '../../shell/strings';
 import { formatDecimal, formatDuration } from '../../shell/format';
-import { Button, Card, Chip, IconDownload, IconInfo, IconLeave, Notice, StatTile } from '../../shell/ui';
+import {
+  Button,
+  Chip,
+  IconDownload,
+  IconInfo,
+  IconLeave,
+  KeyValue,
+  Notice,
+  Overline,
+  Rule,
+} from '../../shell/ui';
 import { buildDiveLog, downloadDiveLog } from './diveLog';
 import type { InputCode } from './diveLog';
 import './SurfaceScreen.css';
@@ -57,124 +67,129 @@ export function SurfaceScreen({ result, inputLabel, inputCode, onLeave }: Surfac
     titleRef.current?.focus({ preventScroll: true });
   }, []);
 
+  // The title is set small, as an instrument's caption; the state chips sit
+  // on its line. It keeps its heading semantics and takes focus on arrival.
+  const head = (title: string) => (
+    <div className="surface__head">
+      <h1 id="surface-title" className="surface__title" tabIndex={-1} ref={titleRef}>
+        {title}
+      </h1>
+      <Chip tone="muted">{t.state.ended}</Chip>
+      {stopped && <Chip tone="muted">{s.stoppedChip}</Chip>}
+    </div>
+  );
+
   if (ending === 'signal-lost') {
     return (
-      <section className="surface page page--narrow" aria-labelledby="surface-title">
-        <div className="surface__chips">
-          <Chip tone="muted">{t.state.ended}</Chip>
-        </div>
-        <h1 id="surface-title" className="surface__title" tabIndex={-1} ref={titleRef}>
-          {s.lostTitle}
-        </h1>
-        <p className="t-lead surface__verdict">{s.lostBody}</p>
-        <Notice tone="info" icon={<IconInfo size={20} />}>
-          {s.lostFix}
-        </Notice>
-        <CrisisRail />
-        <div className="surface__actions">
-          <Button variant="primary" onClick={onLeave}>
-            {s.close}
-          </Button>
+      <section className="surface page" aria-labelledby="surface-title">
+        <div className="page__col surface__col">
+          {head(s.lostTitle)}
+          <p className="t-lead surface__verdict">{s.lostBody}</p>
+          <Notice tone="info" icon={<IconInfo size={20} />}>
+            {s.lostFix}
+          </Notice>
+          <CrisisRail />
+          <div className="surface__actions">
+            <Button variant="primary" onClick={onLeave}>
+              {s.close}
+            </Button>
+          </div>
         </div>
       </section>
     );
   }
 
   const delta = formatDecimal(Math.abs(deltaRR), language, t);
-  const deltaChip = slowed
+  // One plain line for all three outcomes: nothing about it says "good".
+  const deltaText = slowed
     ? fill(s.deltaSlower, { delta, unit: s.unit })
     : sped
       ? fill(s.deltaFaster, { delta, unit: s.unit })
       : s.deltaNone;
 
   return (
-    <section className="surface page page--narrow" aria-labelledby="surface-title">
-      <div className="surface__chips">
-        <Chip tone="muted">{t.state.ended}</Chip>
-        {stopped && <Chip tone="muted">{s.stoppedChip}</Chip>}
-      </div>
+    <section className="surface page" aria-labelledby="surface-title">
+      <div className="page__col surface__col">
+        {head(s.title)}
 
-      <h1 id="surface-title" className="surface__title" tabIndex={-1} ref={titleRef}>
-        {s.title}
-      </h1>
-
-      {/* The label comes first in each figure so it reads "Before 15.2
-          breaths/min"; the arrow is decoration. */}
-      <Card plain className="surface__hero">
-        <div className="surface__figures">
+        {/* The readout. The label comes first in each figure so it reads
+            "Before 15.2 breaths/min"; the numerals are the only large thing
+            on the page. */}
+        <div className="surface__readout">
           <div className="surface__figure">
-            <span className="t-label">{s.before}</span>
+            <Overline as="span">{s.before}</Overline>
             <span className="t-num-xl">{formatDecimal(baselineRR, language, t)}</span>
             <span className="t-small">{s.unit}</span>
           </div>
-          <svg className="surface__arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M4 12h16M14 6l6 6-6 6" />
-          </svg>
           <div className="surface__figure">
-            <span className="t-label">{s.after}</span>
+            <Overline as="span">{s.after}</Overline>
             <span className="t-num-xl">{formatDecimal(finalRR, language, t)}</span>
             <span className="t-small">{s.unit}</span>
           </div>
         </div>
-        {/* One chip style for all three outcomes: the accent never means "good". */}
-        <div className="surface__delta">
-          <Chip tone="muted">{deltaChip}</Chip>
-        </div>
-      </Card>
+        <Rule />
+        <p className="surface__delta t-small">{deltaText}</p>
 
-      {slowed && (
-        <p className="t-lead surface__verdict">
-          <Rich text={fill(s.slowed, { delta })} />
-          {downshiftMs !== null && <> {fill(s.halfway, { time: formatDuration(downshiftMs, t) })}</>}
-        </p>
-      )}
+        {slowed && (
+          <p className="t-lead surface__verdict">
+            <Rich text={fill(s.slowed, { delta })} />
+            {downshiftMs !== null && <> {fill(s.halfway, { time: formatDuration(downshiftMs, t) })}</>}
+          </p>
+        )}
 
-      {!slowed && !sped && <p className="t-lead surface__verdict">{s.unchanged}</p>}
+        {!slowed && !sped && <p className="t-lead surface__verdict">{s.unchanged}</p>}
 
-      {sped && (
-        <p className="t-lead surface__verdict">
-          <Rich text={fill(s.sped, { delta })} />
-        </p>
-      )}
+        {sped && (
+          <p className="t-lead surface__verdict">
+            <Rich text={fill(s.sped, { delta })} />
+          </p>
+        )}
 
-      {stopped && <p className="surface__stopped">{s.stopped}</p>}
+        {stopped && <p className="surface__stopped">{s.stopped}</p>}
 
-      <div className="stat-grid">
-        <StatTile
-          label={s.downshift}
-          value={downshiftMs === null ? null : formatDuration(downshiftMs, t)}
-          unit={s.downshiftHint}
+        <KeyValue
+          items={[
+            {
+              key: s.downshift,
+              value: downshiftMs === null ? null : formatDuration(downshiftMs, t),
+              hint: s.downshiftHint,
+            },
+            { key: s.breaths, value: String(result.scoredBreaths) },
+            { key: s.duration, value: formatDuration(result.durationMs, t) },
+            { key: s.input, value: input, mono: false },
+            { key: s.signal, value: t.signal[result.worstSignal], mono: false },
+          ]}
         />
-        <StatTile label={s.breaths} value={result.scoredBreaths} />
-        <StatTile label={s.duration} value={formatDuration(result.durationMs, t)} />
-        <StatTile label={s.input} value={input} />
-        <StatTile label={s.signal} value={t.signal[result.worstSignal]} />
-      </div>
 
-      <Notice tone="info" icon={<IconInfo size={20} />}>
-        {s.note}
-        {result.usedFallbackInput ? fill(s.noteFallback, { input: input.toLowerCase() }) : ''}
-      </Notice>
+        {/* The measurement note: what this number is and is not. Bounded by
+            rules rather than boxed, in the same voice as the rest. */}
+        <p className="bounded t-small surface__note">
+          <span className="surface__note-text">
+            {s.note}
+            {result.usedFallbackInput ? fill(s.noteFallback, { input: input.toLowerCase() }) : ''}
+          </span>
+        </p>
 
-      <CrisisRail />
+        <CrisisRail />
 
-      <div className="surface__exit">
-        <p className="t-lead">{s.exit}</p>
-        <div className="surface__actions">
-          <Button
-            variant="secondary"
-            icon={<IconDownload size={18} />}
-            onClick={() =>
-              downloadDiveLog(buildDiveLog(result, { plan: result.plan, input: inputCode }))
-            }
-          >
-            {s.save}
-          </Button>
-          <Button variant="primary" icon={<IconLeave size={18} />} onClick={onLeave}>
-            {s.leave}
-          </Button>
+        <div className="surface__exit">
+          <p className="t-lead">{s.exit}</p>
+          <div className="surface__actions">
+            <Button
+              variant="secondary"
+              icon={<IconDownload size={18} />}
+              onClick={() =>
+                downloadDiveLog(buildDiveLog(result, { plan: result.plan, input: inputCode }))
+              }
+            >
+              {s.save}
+            </Button>
+            <Button variant="primary" icon={<IconLeave size={18} />} onClick={onLeave}>
+              {s.leave}
+            </Button>
+          </div>
+          <p className="t-small surface__save-note">{s.saveNote}</p>
         </div>
-        <p className="t-small surface__save-note">{s.saveNote}</p>
       </div>
     </section>
   );

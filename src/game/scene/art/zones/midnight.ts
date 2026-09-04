@@ -136,10 +136,10 @@ export class MidnightZone implements ZoneArt {
   }
 
   update(f: Frame): void {
-    const { w, h, t, dt, depth, reduced } = f;
+    const { w, h, t, dt, depth, reduced, surge } = f;
 
     // Marine snow sinks; the world scrolls up past it.
-    const fall = reduced ? 0 : 0.25 * dt;
+    const fall = reduced ? 0 : 0.25 * dt * surge;
     for (let i = 0; i < this.flakes.length; i += 1) {
       const flake = this.flakes[i];
       flake.drift += fall;
@@ -156,7 +156,7 @@ export class MidnightZone implements ZoneArt {
     }
 
     // Jellyfish: pulse, rise, drift.
-    const rise = reduced ? 0 : 0.15 * dt;
+    const rise = reduced ? 0 : 0.15 * dt * surge;
     for (let i = 0; i < this.jellies.length; i += 1) {
       const jelly = this.jellies[i];
       jelly.drift -= rise;
