@@ -2,37 +2,39 @@
 
 **A game you play with your breath. Five minutes to a measurably calmer body.**
 
-Built for [Hack for Humanity | Summer 2026](https://hack-for-humanity-summer-26.devpost.com/) — Best Mental Health Tool track.
+Built for [Hack for Humanity | Summer 2026](https://hack-for-humanity-summer-26.devpost.com/), Best Mental Health Tool track.
 
-You're a diver descending a bioluminescent ocean. The only controller is your
-microphone: a double inhale charges your dive light, a long slow exhale propels
-you down. The input pattern is **cyclic sighing** — longer, smoother exhales
-make you better at the game, and a respiratory-rate readout shows what your
-breathing actually did, measured before and after.
+You're a diver going down through a dark, glowing ocean. The only controller is
+your breath: two quick breaths in charge your dive light, and one long, slow
+breath out sends you deeper. That pattern is called **cyclic sighing**, and it's
+the breathing exercise from a 2023 clinical trial (see the citations at the
+bottom). The longer and smoother you breathe out, the better you do in the game.
+When you surface, the app shows you your breathing rate from before and after,
+so you can see what actually changed.
 
-- No chatbot. No account. No data leaves your device.
-- Trains arousal regulation, measured live. Not therapy, not diagnosis.
-- In crisis? **988** (US) · **9-8-8** (Canada) · [findahelpline.com](https://findahelpline.com)
+- No chatbot. No account. Nothing you say or breathe ever leaves your device.
+- It trains arousal regulation, measured live. It is not therapy and not a diagnosis.
+- If you're in crisis, please talk to a person: **988** (US) · **9-8-8** (Canada) · [findahelpline.com](https://findahelpline.com)
 
-## Why build it this way
+## Why we built it this way
 
-Support is rationed by supply. US school counselor caseloads run at roughly
-**372 students to one counselor** (2024–25) — well past the 250:1 the profession
-recommends ([ASCA][asca]) — and clinical biofeedback, the closest established
-relative of what this does, is typically delivered in supervised sessions at
-**$100+ each**. The gap is not a lack of things to read. It is a lack of
-anything that works in the ten minutes before an exam.
+Help is hard to get when you actually need it. In the US there are about
+**372 students for every school counselor** (2024–25), way past the 250:1 the
+profession recommends ([ASCA][asca]). Biofeedback, which is the closest thing
+clinics offer to what this app does, usually means a supervised session at
+**$100 or more** each. The problem isn't a lack of stuff to read about anxiety.
+It's that almost nothing works in the ten minutes before an exam, when you're
+sitting there on your own with a phone.
 
-So this is deliberately small: one exercise, five minutes, a number at the end,
-and then it tells you to leave. It is not trying to be a companion, a journal or
-a therapist.
+So we kept it small on purpose. One exercise, five minutes, one number at the
+end, and then the app tells you to leave. It doesn't try to be a companion, a
+journal, or a therapist.
 
-**It is also deliberately not a chatbot.** There is no conversational surface
-anywhere in the product, and nothing in it generates or interprets text. That is
-a safety position rather than a technical shortcut — the regulatory and
-professional direction of travel on software that presents itself as therapy is
-toward restriction, and an app that measures your breathing and hands you the
-number stays on the right side of that line by construction.
+**It's also deliberately not a chatbot.** There's no chat anywhere in it, and
+nothing in it writes or interprets text. That's a safety choice, not a shortcut.
+Software that acts like a therapist is heading toward tighter rules, and an app
+that just measures your breathing and shows you the number stays clear of that
+by design.
 
 ## How it works
 
@@ -52,60 +54,63 @@ flowchart TD
     end
 ```
 
-Audio is reduced to a handful of numbers on the audio thread and never recorded,
-buffered for upload, or sent anywhere. There is no server. The deployed artifact
-is a folder of static files.
+The microphone audio gets boiled down to a handful of numbers about fifty times
+a second, right on the audio thread. It's never recorded, never held for upload,
+and never sent anywhere. There's no server at all. What we deploy is a folder of
+static files.
 
-**The exhale is measured. The inhale is not.** An audible inhale is broadband
-turbulent noise that our feature set cannot reliably tell apart from an exhale,
-so the app *prompts* inhales on a rhythm and only listens for what follows.
-Every breathing rate in the app and in this README is counted from exhale onsets.
-We say so on the scope screen, on the surface screen, and inside the exported
-file, because a fidelity claim that only appears in the README is a fidelity
-claim nobody reads.
+**We measure the breath out. We don't measure the breath in.** A breath in sounds
+like broadband noise, and the few numbers we track can't reliably tell it apart
+from a breath out. So the app *prompts* you to breathe in on a rhythm and only
+listens for what comes after. Every breathing rate in the app and in this README
+is counted from the start of each exhale. We say this on the first screen, on
+the surface screen, and inside the file you can save, because a caveat that only
+lives in the README is a caveat nobody reads.
 
-### Layout
+### Where things live
 
-| Path | What lives there |
+| Path | What's in there |
 |---|---|
-| `src/breath/` | Signal engine: capture, band features, exhale detection, calibration, rate estimation |
-| `src/breath/types.ts` | The contract between the two halves |
-| `src/game/input/` | Input sources: scripted fixture, spacebar, shared rate estimator |
-| `src/game/session/` | Prompt conductor, cycle geometry, session arc |
-| `src/game/scene/` | Descent model and the dive scene |
-| `src/game/surface/` | Surface screen and dive log export |
-| `src/shell/` | Scope screen, crisis rail, English/French strings |
+| `src/breath/` | The signal engine: mic capture, band features, exhale detection, calibration, breathing-rate estimate |
+| `src/breath/types.ts` | The contract between the two halves of the project |
+| `src/game/input/` | Input sources: a scripted test fixture, the spacebar, the shared rate estimator |
+| `src/game/session/` | The prompt conductor, the breathing-cycle geometry, the session arc |
+| `src/game/scene/` | The descent model and the dive scene |
+| `src/game/surface/` | The surface screen and the dive-log export |
+| `src/shell/` | The first screen, the crisis rail, English and French text |
 
 ## What the game rewards
 
-The reward loop is isolated in [`src/game/scene/descent.ts`](src/game/scene/descent.ts) so it can be
-audited without reading a renderer. Three properties hold by construction:
+The scoring lives in one small file,
+[`src/game/scene/descent.ts`](src/game/scene/descent.ts), so anyone can check it
+without reading the renderer. Three things are always true:
 
-- **Longer always beats shorter.** Depth is strictly increasing in exhale length.
-- **Slower beats faster.** Depth is *super-linear* in exhale length, so over an
-  identical twelve seconds of exhaling, twelve one-second breaths travel 7.5m and
-  two six-second breaths travel 21.8m. Breathing faster to fit in more breaths is
-  strictly worse.
-- **Breath-holds earn nothing.** Depth only advances on an exhale. A held breath
-  is not punished; it simply is not a move.
+- **Longer beats shorter.** The longer you breathe out, the deeper you go. Always.
+- **Slower beats faster.** Depth grows faster than exhale length does. Over the
+  same twelve seconds of breathing out, twelve one-second breaths get you 7.5 m
+  and two six-second breaths get you 21.8 m. Breathing faster to squeeze in more
+  breaths is just worse.
+- **Holding your breath does nothing.** You only move on a breath out. A held
+  breath isn't punished. It just isn't a move.
 
-Difficulty adapts to the baseline it measured, and **can only ever slow the
-target**. That rule is enforced in the conductor rather than trusted to callers,
-and there is a floor below which the prompt will not go.
+The difficulty adapts to the breathing rate we measured from you at the start,
+and it **can only ever ask you to slow down**. That rule is enforced in the code
+that runs the rhythm, not left up to whoever calls it, and there's a floor it
+will never go below.
 
 ## Honest limitations
 
-- One session is not evidence about anyone's health, and the app says so.
-- Respiratory rate is inferred from detected exhale onsets, not from a chest
-  strap or a capnograph. It is a good relative measure within a session and
-  should not be read as a clinical vital sign.
-- Smoothness scoring is a heuristic tuned against our own recordings, not a
-  validated metric.
-- The spacebar path cannot judge smoothness at all — a key is down or it is not
-  — so quality there is exhale length only. The surface screen names which input
-  was used.
-- Cyclic sighing is evidenced as a **practice**; this is a game built around that
-  practice, and the game itself has not been trialled.
+- One session doesn't tell you anything about your health, and the app says so.
+- The breathing rate comes from detected exhales, not from a chest strap or a
+  medical device. It's a good before-and-after comparison within one session.
+  It is not a clinical vital sign.
+- The smoothness score is a rule of thumb we tuned on our own recordings, not a
+  validated measurement.
+- The spacebar mode can't judge smoothness at all (a key is either down or it
+  isn't), so there quality is just exhale length. The surface screen tells you
+  which input you used.
+- Cyclic sighing has evidence behind it as a **practice**. This is a game built
+  around that practice, and the game itself hasn't been tested in a trial.
 
 ## Citations
 
@@ -129,7 +134,7 @@ and there is a floor below which the prompt will not go.
 
 [asca]: https://www.schoolcounselor.org/About-School-Counseling/School-Counselor-Roles-Ratios
 
-## Run
+## Run it
 
 ```bash
 npm install
@@ -141,13 +146,13 @@ npx oxlint         # lint
 node --import ./src/game/testing/resolve.mjs src/game/testing/run.ts   # tests — no build step, no dependencies
 ```
 
-The tests cover the parts where being wrong is both expensive and silent: the
-respiratory-rate estimate, the descent scoring that enforces "slower always
-wins", and the prompt geometry.
+The tests cover the parts where being wrong would be both expensive and easy to
+miss: the breathing-rate estimate, the descent scoring that makes "slower always
+wins" true, and the prompt timing.
 
-Deployment is declared in [`render.yaml`](render.yaml) as a static site. HTTPS is
-required, not optional: browsers refuse microphone access on an insecure origin.
+Deployment is set up in [`render.yaml`](render.yaml) as a static site. It has to
+be HTTPS: browsers won't give a page the microphone otherwise.
 
 ## Team
 
-Max ([storm2928](https://github.com/storm2928)) · [cjasink](https://github.com/cjasink)
+Max ([storm2928](https://github.com/storm2928)) · Cole ([cjasink](https://github.com/cjasink))
