@@ -4,15 +4,9 @@
 
 Built for [Hack for Humanity | Summer 2026](https://hack-for-humanity-summer-26.devpost.com/), Best Mental Health Tool track.
 
-You're a diver going down through a dark, glowing ocean. The only controller is
-your breath: two quick breaths in charge your dive light, and one long, slow
-breath out sends you deeper. That pattern is called **cyclic sighing**, and it's
-the breathing exercise from a 2023 clinical trial (see the citations at the
-bottom). The longer and smoother you breathe out, the better you do in the game.
-When you surface, the app shows you your breathing rate from before and after,
-so you can see what actually changed.
+You play as a diver descending into a dark ocean lit by glowing objects. The only controller is your breathing: two short breaths activate the dive light and one long slow exhalation causes the diver to descend. This pattern of breathing is known as **cyclic sighing** and was used in a 2023 clinical study (see citations at the bottom). The longer and smoother the exhalation, the better the player performs in the game. Upon surfacing, the app will display the player's breathing rate before and after the dive allowing for comparison.
 
-- No chatbot. No account. Nothing you say or breathe ever leaves your device.
+- Nothing you say or breathe ever leaves your device.
 - It trains arousal regulation, measured live. It is not therapy and not a diagnosis.
 - If you're in crisis, please talk to a person: **988** (US) · **9-8-8** (Canada) · [findahelpline.com](https://findahelpline.com)
 
@@ -26,12 +20,10 @@ clinics offer to what this app does, usually means a supervised session at
 It's that almost nothing works in the ten minutes before an exam, when you're
 sitting there on your own with a phone.
 
-So we kept it small on purpose. One exercise, five minutes, one number at the
-end, and then the app tells you to leave. It doesn't try to be a companion, a
-journal, or a therapist.
+So we kept it small on purpose. One exercise for only five minutes.
 
 **It's also deliberately not a chatbot.** There's no chat anywhere in it, and
-nothing in it writes or interprets text. That's a safety choice, not a shortcut.
+nothing in it writes or interprets text.
 Software that acts like a therapist is heading toward tighter rules, and an app
 that just measures your breathing and shows you the number stays clear of that
 by design.
@@ -54,19 +46,9 @@ flowchart TD
     end
 ```
 
-The microphone audio gets boiled down to a handful of numbers about fifty times
-a second, right on the audio thread. It's never recorded, never held for upload,
-and never sent anywhere. There's no server at all. What we deploy is a folder of
-static files.
+Audio from the microphone is processed to a few numbers 50 times a second on the audio thread. This data is never recorded, never stored for upload, and never transmitted anywhere. There is no server. What is deployed is a folder of static files.
 
-**We measure the breath out. We don't measure the breath in.** A breath in sounds
-like broadband noise, and the few numbers we track can't reliably tell it apart
-from a breath out. So the app *prompts* you to breathe in on a rhythm and only
-listens for what comes after. Every breathing rate in the app and in this README
-is counted from the start of each exhale. We say this on the first screen, on
-the surface screen, and inside the file you can save, because a caveat that only
-lives in the README is a caveat nobody reads.
-
+**We measure the breath out. We do not measure the breath in.** In comes like broadband noise and we cannot reliably differentiate in from out using just a few numbers. Instead, the app asks the user to breathe in according to a certain rate and then only listens to what happens afterwards. All breathing rates recorded by the app and described in this README are measured from the beginning of each exhalation. This is indicated on the front screen, the first screen and in the saved file. A caveat only described in this README will not be read by anyone.
 ### Where things live
 
 | Path | What's in there |
@@ -88,29 +70,28 @@ without reading the renderer. Three things are always true:
 - **Longer beats shorter.** The longer you breathe out, the deeper you go. Always.
 - **Slower beats faster.** Depth grows faster than exhale length does. Over the
   same twelve seconds of breathing out, twelve one-second breaths get you 7.5 m
-  and two six-second breaths get you 21.8 m. Breathing faster to squeeze in more
-  breaths is just worse.
+  and two six-second breaths get you 21.8 m. 
 - **Holding your breath does nothing.** You only move on a breath out. A held
-  breath isn't punished. It just isn't a move.
+  breath isn't punished it simply isn't a move.
 
-The difficulty adapts to the breathing rate we measured from you at the start,
-and it **can only ever ask you to slow down**. That rule is enforced in the code
-that runs the rhythm, not left up to whoever calls it, and there's a floor it
-will never go below.
+The difficulty is based on the breathing rate measured at the beginning of use,
+and can only ever request a reduction in that rate. This restriction is built
+into the code for the rhythm and is not up to the code that calls the rhythm.
+There is a minimum that will not be reached.
 
-## Honest limitations
+## limitations
 
-- One session doesn't tell you anything about your health, and the app says so.
-- The breathing rate comes from detected exhales, not from a chest strap or a
-  medical device. It's a good before-and-after comparison within one session.
-  It is not a clinical vital sign.
-- The smoothness score is a rule of thumb we tuned on our own recordings, not a
-  validated measurement.
-- The spacebar mode can't judge smoothness at all (a key is either down or it
-  isn't), so there quality is just exhale length. The surface screen tells you
-  which input you used.
-- Cyclic sighing has evidence behind it as a **practice**. This is a game built
-  around that practice, and the game itself hasn't been tested in a trial.
+- A single session does not provide any information about a user’s health.
+- The breathing rate is derived from exhalation detections, and not from a chest strap
+  or medical device. This provides a before/after measure within a single session,
+  but is not a clinical metric.
+- Smoothness is an estimate that was tuned using our own recordings. It is not a
+  validated metric.
+- In spacebar mode, smoothness cannot be assessed (a key is either down or it isn’t).
+  Instead, quality is based on the length of the exhalation. The surface display
+  informs the user which mode was used.
+- Cyclic sighing as a practice has evidence. This game is based on that practice.
+  The game has not been tested in a trial.
 
 ## Citations
 
