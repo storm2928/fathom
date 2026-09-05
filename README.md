@@ -1,3 +1,5 @@
+<img width="1672" height="941" alt="fathom thumbnail" src="https://github.com/user-attachments/assets/b10119f2-07f6-4526-89e4-703769eabd80" />
+
 # FATHOM
 
 **A game you play with your breath. Five minutes to a measurably calmer body.**
