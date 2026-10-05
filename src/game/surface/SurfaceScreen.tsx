@@ -16,6 +16,7 @@ import {
   Rule,
 } from '../../shell/ui';
 import { buildDiveLog, downloadDiveLog } from './diveLog';
+import { isNativeApp } from '../../platform';
 import type { InputCode } from './diveLog';
 import './SurfaceScreen.css';
 
@@ -175,20 +176,24 @@ export function SurfaceScreen({ result, inputLabel, inputCode, onLeave }: Surfac
         <div className="surface__exit">
           <p className="t-lead">{s.exit}</p>
           <div className="surface__actions">
-            <Button
-              variant="secondary"
-              icon={<IconDownload size={18} />}
-              onClick={() =>
-                downloadDiveLog(buildDiveLog(result, { plan: result.plan, input: inputCode }))
-              }
-            >
-              {s.save}
-            </Button>
+            {/* The export is a browser download, which an installed app has
+                nowhere to put. The website keeps it; the apps leave it out. */}
+            {!isNativeApp() && (
+              <Button
+                variant="secondary"
+                icon={<IconDownload size={18} />}
+                onClick={() =>
+                  downloadDiveLog(buildDiveLog(result, { plan: result.plan, input: inputCode }))
+                }
+              >
+                {s.save}
+              </Button>
+            )}
             <Button variant="primary" icon={<IconLeave size={18} />} onClick={onLeave}>
               {s.leave}
             </Button>
           </div>
-          <p className="t-small surface__save-note">{s.saveNote}</p>
+          {!isNativeApp() && <p className="t-small surface__save-note">{s.saveNote}</p>}
         </div>
       </div>
     </section>

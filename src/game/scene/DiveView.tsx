@@ -17,6 +17,7 @@ import type { InputCode } from '../surface/diveLog';
 import { DiveScene, createDiveRenderer } from './diveScene';
 import { SurfaceScreen } from '../surface/SurfaceScreen';
 import { useLanguage } from '../../shell/i18n';
+import { haptic, keepAwake } from '../../platform';
 import { fill } from '../../shell/strings';
 import type { Strings } from '../../shell/strings';
 import { formatDecimal, formatMetres, formatPercent } from '../../shell/format';
@@ -222,6 +223,16 @@ export function DiveView() {
     return () => document.documentElement.removeAttribute('data-diving');
   }, [running]);
 
+  // The screen stays on for the length of a dive and not a moment longer. A
+  // phone that dims mid-exhale has ended the session for the person holding it.
+  useEffect(() => {
+    if (!running) return;
+    void keepAwake(true);
+    return () => {
+      void keepAwake(false);
+    };
+  }, [running]);
+
   // Focus lands on the HUD container, never on the canvas. From there Tab
   // reaches Dismiss (when present) and Leave; Space is free for the exhale.
   useEffect(() => {
@@ -335,6 +346,9 @@ export function DiveView() {
     // The ring follows the conductor directly: the same windows the scene and
     // the engine get, in wall-clock time, restarted on every step.
     const detachRing = conductor.on((window) => {
+      // A light tap on each prompted beat, so the rhythm can be followed with
+      // eyes closed. Rest is silence. A no-op on the website.
+      if (window.step !== 'rest') haptic('prompt');
       const sweepMs = window.durationMs / timeScale;
       // The exhale comes after the two inhale beats. From the first one, the
       // lead is this window plus the top-up that follows it; from the top-up
@@ -396,6 +410,7 @@ export function DiveView() {
         // Let the descent come to rest, then the scene stops itself rather than
         // animating underneath the surface screen for as long as it is open.
         scene.settle();
+        haptic('surface');
         setResult(finished);
         setRunning(false);
         // Stated as the two measurements rather than as a verdict, so the
