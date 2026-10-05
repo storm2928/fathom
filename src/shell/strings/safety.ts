@@ -19,7 +19,7 @@ const en = {
   voiceShort:
     'If you use the microphone, the audio is processed on your device and never leaves it. Nothing is uploaded, nothing is stored on a server, and no recording is kept.',
   voiceMore:
-    'The app only ever looks at how loud and how broad the sound is, moment to moment — a handful of numbers, not a recording. You can also play the whole thing with the spacebar and never turn the microphone on at all.',
+    'The app only ever looks at how loud and how broad the sound is, moment to moment — a handful of numbers, not a recording. You can also play the whole thing with the spacebar, or by touch on a phone, and never turn the microphone on at all.',
   measuredTitle: 'What is actually measured',
   measuredShort:
     'Your **exhales** are measured — when they start, how long they last, how steady they are. Your **inhales are not**: they are prompted on a rhythm, not sensed. Where you see a breathing rate, it was counted from exhales.',
@@ -28,7 +28,7 @@ const en = {
   begin: 'I have read this — continue',
   backToDive: 'Back to the dive',
   afterBegin:
-    'The next screen lets you choose the microphone or the spacebar. Nothing asks for permission until you pick.',
+    'The next screen lets you choose the microphone or a hold — the spacebar, or a finger on a phone. Nothing asks for permission until you pick.',
 };
 
 const fr: typeof en = {
@@ -47,7 +47,7 @@ const fr: typeof en = {
   voiceShort:
     "Si vous utilisez le microphone, le son est traité sur votre appareil et n'en sort jamais. Rien n'est téléversé, rien n'est conservé sur un serveur, et aucun enregistrement n'est gardé.",
   voiceMore:
-    "L'application ne regarde que l'intensité et la largeur du son, instant par instant — une poignée de chiffres, pas un enregistrement. Vous pouvez aussi tout faire à la barre d'espace, sans jamais activer le microphone.",
+    "L'application ne regarde que l'intensité et la largeur du son, instant par instant — une poignée de chiffres, pas un enregistrement. Vous pouvez aussi tout faire à la barre d'espace, ou au toucher sur un téléphone, sans jamais activer le microphone.",
   measuredTitle: 'Ce qui est réellement mesuré',
   measuredShort:
     'Vos **expirations** sont mesurées — quand elles commencent, combien de temps elles durent, à quel point elles sont régulières. Vos **inspirations ne le sont pas** : elles sont guidées par un rythme, non détectées. Partout où un rythme respiratoire est affiché, il a été compté à partir des expirations.',
@@ -56,7 +56,7 @@ const fr: typeof en = {
   begin: "J'ai lu — continuer",
   backToDive: 'Retour à la plongée',
   afterBegin:
-    "L'écran suivant vous laisse choisir le microphone ou la barre d'espace. Aucune permission n'est demandée avant votre choix.",
+    "L'écran suivant vous laisse choisir le microphone ou un appui maintenu — la barre d'espace, ou un doigt sur un téléphone. Aucune permission n'est demandée avant votre choix.",
 };
 
 export const safety = { en, fr };

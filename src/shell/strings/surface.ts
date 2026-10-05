@@ -36,7 +36,7 @@ const en = {
   lostTitle: 'The dive ended early',
   lostBody:
     'The signal stopped being readable, so there is nothing measured well enough to show you. A number here would be invented, and an invented number is worse than none.',
-  lostFix: 'A quieter room, or the spacebar instead of the microphone, will usually fix it.',
+  lostFix: 'A quieter room, or a hold instead of the microphone, will usually fix it.',
   close: 'Close',
   /** The live-region result: two measurements, never a verdict. */
   announce: '{title}: {before} → {after} {unit}',
@@ -74,7 +74,7 @@ const fr: typeof en = {
   lostTitle: "La plongée s'est arrêtée tôt",
   lostBody:
     "Le signal est devenu illisible : rien n'a été mesuré assez bien pour vous être montré. Un chiffre ici serait inventé, et un chiffre inventé vaut moins que pas de chiffre du tout.",
-  lostFix: "Une pièce plus calme, ou la barre d'espace plutôt que le microphone, règle généralement le problème.",
+  lostFix: "Une pièce plus calme, ou un appui maintenu plutôt que le microphone, règle généralement le problème.",
   close: 'Fermer',
   announce: '{title} : {before} → {after} {unit}',
 };

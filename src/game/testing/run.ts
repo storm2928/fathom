@@ -12,6 +12,7 @@ import './../../breath/exhaleTarget.test.ts';
 import './../input/rateEstimator.test.ts';
 import './../input/inputSource.test.ts';
 import './../input/holdEngines.test.ts';
+import './../input/holdInput.test.ts';
 import './../scene/descent.test.ts';
 import './../session/cycleShape.test.ts';
 import './../session/conductor.test.ts';

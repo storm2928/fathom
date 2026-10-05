@@ -16,7 +16,7 @@ import type { SessionResult } from '../session/sessionMachine';
 /** Bumped if the shape changes, so an old file is still readable later. */
 const LOG_VERSION = 1;
 
-export type InputCode = 'microphone' | 'keyboard' | 'scripted';
+export type InputCode = 'microphone' | 'keyboard' | 'touch' | 'scripted';
 
 export interface DiveLogEntry {
   version: number;

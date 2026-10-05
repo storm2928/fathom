@@ -5,7 +5,7 @@ const en = {
   intro: 'Four steps, all on your device. Nothing is sent anywhere because there is nowhere to send it.',
   step1Title: 'You breathe',
   step1Body:
-    'Choose the microphone or the spacebar. Two prompted breaths in charge your dive light; one long, slow breath out takes you down.',
+    'Choose the microphone or a hold — the spacebar, or a finger on a phone. Two prompted breaths in charge your dive light; one long, slow breath out takes you down.',
   step2Title: 'The sound becomes a few numbers',
   step2Body:
     'On the audio thread, each moment of sound is reduced to how loud and how broad it is. No recording is made and nothing is sent anywhere — there is no server to send it to.',
@@ -22,7 +22,7 @@ const en = {
   rule3: 'Holding your breath earns nothing.',
   rule4: 'The prompted pace only ever slows down, and never below six breaths a minute.',
   limitsTitle: 'What it cannot see',
-  limit1: 'With the spacebar, only the length of each exhale can be judged — a key is down or it is not.',
+  limit1: 'With a hold, only the length of each exhale can be judged — a key or a finger is down or it is not.',
   limit2: 'The breathing rate is counted from exhale onsets, not from a chest strap or a capnograph.',
   limit3: 'One session is not evidence about your health.',
   cta: 'Start a dive',
@@ -35,7 +35,7 @@ const fr: typeof en = {
   intro: "Quatre étapes, toutes sur votre appareil. Rien n'est envoyé nulle part, parce qu'il n'y a nulle part où l'envoyer.",
   step1Title: 'Vous respirez',
   step1Body:
-    "Choisissez le microphone ou la barre d'espace. Deux inspirations guidées chargent votre lampe ; une longue expiration lente vous fait descendre.",
+    "Choisissez le microphone ou un appui maintenu — la barre d'espace, ou un doigt sur un téléphone. Deux inspirations guidées chargent votre lampe ; une longue expiration lente vous fait descendre.",
   step2Title: 'Le son devient quelques chiffres',
   step2Body:
     "Sur le fil audio, chaque instant de son est réduit à son intensité et à sa largeur. Aucun enregistrement n'est fait et rien n'est envoyé nulle part — il n'y a pas de serveur à qui l'envoyer.",
@@ -52,7 +52,7 @@ const fr: typeof en = {
   rule3: 'Retenir son souffle ne rapporte rien.',
   rule4: 'Le rythme guidé ne fait que ralentir, et jamais sous six respirations par minute.',
   limitsTitle: "Ce qu'il ne peut pas voir",
-  limit1: "À la barre d'espace, seule la durée de chaque expiration peut être évaluée — une touche est enfoncée ou ne l'est pas.",
+  limit1: "Avec un appui maintenu, seule la durée de chaque expiration peut être évaluée — une touche ou un doigt est posé ou ne l'est pas.",
   limit2: "Le rythme respiratoire est compté à partir du début des expirations, non d'une ceinture thoracique ou d'un capnographe.",
   limit3: 'Une séance ne constitue pas une preuve concernant votre santé.',
   cta: 'Commencer une plongée',

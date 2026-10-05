@@ -49,6 +49,16 @@ export function IconSpacebar(p: IconProps) {
   );
 }
 
+export function IconTouch(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="14" r="2.5" />
+      <path d="M7.8 9.8a6 6 0 0 1 8.4 0" />
+      <path d="M5 7a10 10 0 0 1 14 0" />
+    </Svg>
+  );
+}
+
 export function IconDive(p: IconProps) {
   return (
     <Svg {...p}>

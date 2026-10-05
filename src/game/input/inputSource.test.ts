@@ -53,7 +53,7 @@ test('a microphone that starts is the engine that runs', async () => {
   const started = await startInput({
     primary: mic,
     code: 'microphone',
-    fallback: () => fakeEngine(),
+    fallback: { create: () => fakeEngine(), code: 'keyboard' },
   });
 
   equal(started.engine, mic, 'a working microphone was swapped out anyway');
@@ -67,7 +67,7 @@ test('a microphone that is refused hands the dive to the spacebar', async () => 
   const started = await startInput({
     primary: fakeEngine(new Error('Microphone unavailable: NotAllowedError')),
     code: 'microphone',
-    fallback: () => spacebar,
+    fallback: { create: () => spacebar, code: 'keyboard' },
   });
 
   equal(started.engine, spacebar, 'the dive was not handed to the fallback');
@@ -80,7 +80,11 @@ test('a microphone that is refused hands the dive to the spacebar', async () => 
 
 test('the refused microphone is stopped rather than left holding the device', async () => {
   const mic = fakeEngine(new Error('Microphone unavailable: NotAllowedError'));
-  await startInput({ primary: mic, code: 'microphone', fallback: () => fakeEngine() });
+  await startInput({
+    primary: mic,
+    code: 'microphone',
+    fallback: { create: () => fakeEngine(), code: 'keyboard' },
+  });
 
   equal(mic.stopped, 1, 'the failed engine was left running');
 });
@@ -89,7 +93,7 @@ test('the reason the microphone was refused survives for the player to read', as
   const started = await startInput({
     primary: fakeEngine(new Error('Microphone unavailable: NotAllowedError')),
     code: 'microphone',
-    fallback: () => fakeEngine(),
+    fallback: { create: () => fakeEngine(), code: 'keyboard' },
   });
 
   assert(
@@ -117,10 +121,23 @@ test('a fallback that also fails to start is not reported as a working dive', as
     await startInput({
       primary: fakeEngine(new Error('Microphone unavailable')),
       code: 'microphone',
-      fallback: () => fakeEngine(new Error('the keyboard is on fire')),
+      fallback: { create: () => fakeEngine(new Error('the keyboard is on fire')), code: 'keyboard' },
     });
   } catch {
     threw = true;
   }
   equal(threw, true, 'a dive with no working input reported success');
+});
+
+test('on a phone, a refused microphone hands the dive to touch and says so', async () => {
+  const touch = fakeEngine();
+  const started = await startInput({
+    primary: fakeEngine(new Error('Microphone unavailable: NotAllowedError')),
+    code: 'microphone',
+    fallback: { create: () => touch, code: 'touch' },
+  });
+
+  equal(started.engine, touch);
+  equal(started.code, 'touch', 'a touch session was logged as something else');
+  equal(started.fellBack, true);
 });

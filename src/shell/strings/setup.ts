@@ -11,6 +11,8 @@ const en = {
   micDesc: 'Breathe out audibly. Processed on your device; nothing leaves it.',
   spacebarTitle: 'Spacebar',
   spacebarDesc: 'Hold the key for as long as you breathe out. No microphone at all.',
+  touchTitle: 'Touch',
+  touchDesc: 'Hold a finger on the screen for as long as you breathe out. No microphone at all.',
   /** Development only. */
   scriptedTitle: DEV ? 'Scripted fixture' : '',
   /** Development only. */
@@ -26,12 +28,15 @@ const en = {
   permissionNote: 'Nothing asks for the microphone until you press Start.',
   micFidelity:
     'The inhale is prompted on a rhythm rather than listened for, and the audio never leaves your device.',
-  spacebarNote: 'The microphone stays off for the whole dive.',
+  holdNote: 'The microphone stays off for the whole dive.',
   startError: 'The dive could not start: {reason}',
   micRefused:
     'The microphone was not available, so the spacebar is driving this dive instead — hold it for as long as you are exhaling. ({reason})',
+  micRefusedTouch:
+    'The microphone was not available, so touch is driving this dive instead — hold a finger on the screen for as long as you are exhaling. ({reason})',
   inputMicrophone: 'Microphone',
   inputKeyboard: 'Keyboard',
+  inputTouch: 'Touch',
   inputScripted: DEV ? 'Scripted fixture' : '',
 };
 
@@ -44,6 +49,8 @@ const fr: typeof en = {
   micDesc: "Expirez de façon audible. Traité sur votre appareil ; rien n'en sort.",
   spacebarTitle: "Barre d'espace",
   spacebarDesc: 'Maintenez la touche aussi longtemps que vous expirez. Aucun microphone.',
+  touchTitle: 'Écran tactile',
+  touchDesc: "Maintenez un doigt sur l'écran aussi longtemps que vous expirez. Aucun microphone.",
   scriptedTitle: DEV ? 'Séquence scriptée' : '',
   scriptedDesc: DEV ? 'Respire à votre place, en suivant le rythme.' : '',
   speed: DEV ? 'vitesse {n}×' : '',
@@ -56,12 +63,15 @@ const fr: typeof en = {
   permissionNote: 'Rien ne demande le microphone avant que vous appuyiez sur Commencer.',
   micFidelity:
     "L'inspiration est guidée par le rythme plutôt qu'écoutée, et l'audio ne quitte jamais votre appareil.",
-  spacebarNote: 'Le microphone reste éteint pendant toute la plongée.',
+  holdNote: 'Le microphone reste éteint pendant toute la plongée.',
   startError: "La plongée n'a pas pu démarrer : {reason}",
   micRefused:
     "Le microphone n'était pas disponible : c'est donc la barre d'espace qui pilote cette plongée — maintenez-la aussi longtemps que vous expirez. ({reason})",
+  micRefusedTouch:
+    "Le microphone n'était pas disponible : c'est donc l'écran tactile qui pilote cette plongée — maintenez un doigt dessus aussi longtemps que vous expirez. ({reason})",
   inputMicrophone: 'Microphone',
   inputKeyboard: 'Clavier',
+  inputTouch: 'Écran tactile',
   inputScripted: DEV ? 'Séquence scriptée' : '',
 };
 

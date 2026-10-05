@@ -7,6 +7,8 @@ import { SessionMachine } from '../session/sessionMachine';
 import type { SessionPlan, SessionResult, SessionState } from '../session/sessionMachine';
 import { ScriptedBreathEngine } from '../input/scriptedEngine';
 import { SpacebarBreathEngine } from '../input/spacebarEngine';
+import { TouchHoldEngine } from '../input/touchHoldEngine';
+import { holdInputFor } from '../input/holdInput';
 import { startInput } from '../input/inputSource';
 import type { InputPlan, InputSource, StartedInput } from '../input/inputSource';
 import { createBreathEngine } from '../../breath/engine';
@@ -26,6 +28,7 @@ import {
   IconMic,
   IconNumbers,
   IconSpacebar,
+  IconTouch,
   Meter,
   Notice,
   ProgressRing,
@@ -51,9 +54,6 @@ type Source = InputSource;
  */
 const DEV_TOOLS = import.meta.env.DEV;
 
-const PLAYABLE_SOURCES: Source[] = ['mic', 'spacebar'];
-const ALL_SOURCES: Source[] = ['mic', 'spacebar', 'scripted'];
-
 /** How long the baseline read listens, for the inputs that measure one. */
 const CALIBRATION_MS = 10_000;
 
@@ -61,6 +61,7 @@ const CALIBRATION_MS = 10_000;
 const CODE_LABEL: Record<InputCode, (t: Strings) => string> = {
   microphone: (t) => t.setup.inputMicrophone,
   keyboard: (t) => t.setup.inputKeyboard,
+  touch: (t) => t.setup.inputTouch,
   scripted: (t) => t.setup.inputScripted,
 };
 
@@ -93,6 +94,7 @@ const PROMPT_LABEL: Record<PromptStep, (t: Strings) => string> = {
 const EXHALE_CAPTION: Record<InputCode, ((t: Strings) => string) | null> = {
   microphone: (t) => t.dive.prompt.exhaleMic,
   keyboard: (t) => t.dive.prompt.exhaleKey,
+  touch: (t) => t.dive.prompt.exhaleTouch,
   scripted: null,
 };
 
@@ -136,8 +138,8 @@ export function DiveView() {
   const startingRef = useRef(false);
   const [starting, setStarting] = useState(false);
   // The microphone is the point of the thing, so it is what a visitor gets
-  // first. The spacebar sits beside it as an equal choice rather than a
-  // consolation: a loud room or a shared office is ordinary, not a failure.
+  // first. The hold input (spacebar, or touch on a phone) sits beside it as an
+  // equal choice rather than a consolation: a loud room or a shared office is ordinary, not a failure.
   const [source, setSource] = useState<Source>('mic');
   const [plan, setPlan] = useState<SessionPlan>('full');
   const [speed, setSpeed] = useState(10);
@@ -174,6 +176,15 @@ export function DiveView() {
 
   const phone = useMediaQuery('(max-width: 599px)');
   const landscape = useMediaQuery('(max-height: 480px)');
+  // A phone holds a finger down where a desktop holds the spacebar. Chosen by
+  // the pointer, so nobody is told to hold a key they do not have.
+  const hold = holdInputFor(useMediaQuery('(pointer: coarse)'));
+  const holdEngine = () =>
+    hold.source === 'touch'
+      ? new TouchHoldEngine({ calibrationMs: CALIBRATION_MS })
+      : new SpacebarBreathEngine({ calibrationMs: CALIBRATION_MS });
+  const playableSources: Source[] = ['mic', hold.source];
+  const allSources: Source[] = ['mic', hold.source, 'scripted'];
 
   const mode: 'setup' | 'diving' | 'surface' = running ? 'diving' : result !== null ? 'surface' : 'setup';
 
@@ -282,13 +293,11 @@ export function DiveView() {
           return {
             primary: createBreathEngine(),
             code: 'microphone',
-            fallback: () => new SpacebarBreathEngine({ calibrationMs: CALIBRATION_MS }),
+            fallback: { create: holdEngine, code: hold.code },
           };
         case 'spacebar':
-          return {
-            primary: new SpacebarBreathEngine({ calibrationMs: CALIBRATION_MS }),
-            code: 'keyboard',
-          };
+        case 'touch':
+          return { primary: holdEngine(), code: hold.code };
         case 'scripted':
           return {
             primary: new ScriptedBreathEngine({ follow: conductor, timeScale }),
@@ -532,7 +541,9 @@ export function DiveView() {
                     </Button>
                   }
                 >
-                  {fill(t.setup.micRefused, { reason: fallbackReason })}
+                  {fill(inputCode === 'touch' ? t.setup.micRefusedTouch : t.setup.micRefused, {
+                    reason: fallbackReason,
+                  })}
                 </Notice>
               )}
             </div>
@@ -610,7 +621,7 @@ export function DiveView() {
                 ) : undefined
               }
             >
-              {(DEV_TOOLS ? ALL_SOURCES : PLAYABLE_SOURCES).map((option) => (
+              {(DEV_TOOLS ? allSources : playableSources).map((option) => (
                 <SegmentedOption
                   key={option}
                   name="input"
@@ -622,6 +633,8 @@ export function DiveView() {
                       <IconMic size={20} />
                     ) : option === 'spacebar' ? (
                       <IconSpacebar size={20} />
+                    ) : option === 'touch' ? (
+                      <IconTouch size={20} />
                     ) : (
                       <IconNumbers size={20} />
                     )
@@ -631,14 +644,18 @@ export function DiveView() {
                       ? t.setup.micTitle
                       : option === 'spacebar'
                         ? t.setup.spacebarTitle
-                        : t.setup.scriptedTitle
+                        : option === 'touch'
+                          ? t.setup.touchTitle
+                          : t.setup.scriptedTitle
                   }
                   description={
                     option === 'mic'
                       ? t.setup.micDesc
                       : option === 'spacebar'
                         ? t.setup.spacebarDesc
-                        : t.setup.scriptedDesc
+                        : option === 'touch'
+                          ? t.setup.touchDesc
+                          : t.setup.scriptedDesc
                   }
                 />
               ))}
@@ -681,7 +698,9 @@ export function DiveView() {
                   <p className="t-small setup__note">{t.setup.micFidelity}</p>
                 </>
               )}
-              {source === 'spacebar' && <p className="t-small setup__note">{t.setup.spacebarNote}</p>}
+              {(source === 'spacebar' || source === 'touch') && (
+                <p className="t-small setup__note">{t.setup.holdNote}</p>
+              )}
             </div>
           </div>
         </section>

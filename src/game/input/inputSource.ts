@@ -15,7 +15,7 @@ import type { InputCode } from '../surface/diveLog';
  * the test harness can drive.
  */
 
-export type InputSource = 'scripted' | 'spacebar' | 'mic';
+export type InputSource = 'scripted' | 'spacebar' | 'touch' | 'mic';
 
 /**
  * `InputCode` is the dive log's vocabulary, imported rather than restated. What
@@ -34,8 +34,12 @@ export interface InputPlan {
    * Built only if `primary` refuses. Present for the microphone and nothing
    * else: a spacebar or fixture that will not start is a bug, and substituting
    * for it silently would make a broken input look like a working one.
+   *
+   * The code travels with the engine, named rather than derived, because an
+   * input that quietly reports something else would put a wrong label in an
+   * exported log (#32). A desktop falls back to the keyboard, a phone to touch.
    */
-  fallback?: () => BreathEngine;
+  fallback?: { create: () => BreathEngine; code: InputCode };
 }
 
 export interface StartedInput {
@@ -60,7 +64,7 @@ export async function startInput(plan: InputPlan): Promise<StartedInput> {
     // left running and still holding frame listeners.
     plan.primary.stop();
 
-    const engine = plan.fallback();
+    const engine = plan.fallback.create();
     // Deliberately unguarded: if the fallback will not start either there is no
     // way to play, and reporting that as a working dive would be a lie the
     // session would then act on.
@@ -68,10 +72,7 @@ export async function startInput(plan: InputPlan): Promise<StartedInput> {
 
     return {
       engine,
-      // The only fallback is the spacebar. Named rather than derived, because
-      // an input that quietly reports something else would put a wrong label in
-      // an exported log.
-      code: 'keyboard',
+      code: plan.fallback.code,
       fellBack: true,
       reason: error instanceof Error ? error.message : String(error),
     };
