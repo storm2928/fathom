@@ -36,3 +36,17 @@
   background: var(--accent);
   color: var(--on-accent);
 }
+
+/* A fingertip needs 44px: the pill keeps its size and each half grows an
+   invisible hit area above and below it. See the touch targets in ui.css. */
+@media (pointer: coarse) {
+  .lang__btn {
+    position: relative;
+  }
+
+  .lang__btn::after {
+    content: '';
+    position: absolute;
+    inset: -8px 0;
+  }
+}

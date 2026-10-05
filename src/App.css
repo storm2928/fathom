@@ -44,8 +44,9 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: var(--s-6);
-  height: var(--nav-h);
-  padding: 0 var(--page-pad);
+  /* The notch. Zero on a desktop, so the website is unchanged. */
+  height: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--page-pad) 0;
   background: var(--bg-1);
   border-bottom: 1px solid var(--line-1);
 }
@@ -223,8 +224,14 @@
 
 /* ---------- Immersive: a dive is running ---------- */
 
+/* A finger held on the scene is a breath: no text selection, no callout
+   menu, no scroll or zoom gesture under it. */
 html[data-diving='1'] {
   overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 html[data-diving='1'] .topnav,

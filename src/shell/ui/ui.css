@@ -938,3 +938,25 @@
     transition-duration: var(--d-base) !important;
   }
 }
+
+/* ---------- Touch targets ---------- */
+
+/* A fingertip needs 44px. The compact controls keep their drawn size and grow
+   an invisible hit area instead, so a phone gets the reach without the layout
+   changing. The tab strip scrolls and would clip a hit area, so its tabs grow
+   for real. A mouse never sees any of this. */
+@media (pointer: coarse) {
+  .btn--sm {
+    position: relative;
+  }
+
+  .btn--sm::after {
+    content: '';
+    position: absolute;
+    inset: -5px 0;
+  }
+
+  .tab {
+    height: 44px;
+  }
+}
