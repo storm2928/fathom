@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fathom</string>
+    <string name="title_activity_main">Fathom</string>
+    <string name="package_name">dev.fathom.placeholder</string>
+    <string name="custom_url_scheme">dev.fathom.placeholder</string>
+</resources>
