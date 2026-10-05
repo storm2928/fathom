@@ -25,8 +25,8 @@ Decisions made during brainstorming:
 | Orientation | Portrait only |
 | Store accounts | None yet — build and test on simulators and a real phone first |
 
-Success for this phase: the game installs on a real iPhone and a real Android
-phone, the microphone drives a full dive on both, the touch fallback works
+Success for this phase: the game installs on a real Android phone (and a real
+iPhone once Xcode is available), the microphone drives a full dive on each, the touch fallback works
 when the microphone is refused, and `npm run build` still produces the
 unchanged website.
 
@@ -46,11 +46,37 @@ renderer and audio capture) and a PWA / Trusted Web Activity wrapper (Apple
 does not accept it).
 
 Main risk: getUserMedia plus AudioWorklet inside WKWebView. This is proven on a
-real iPhone as the first implementation milestone, before any other work.
+real iPhone as soon as Xcode is available (see Sequencing).
 
 Store risk: Apple guideline 4.2 (minimum functionality) rejects thin website
 wrappers. Bundled offline assets, native haptics, keep-awake and the touch
 input are the mitigations.
+
+## Sequencing
+
+Xcode cannot be installed yet (it needs a macOS update the owner can't do right
+now). Work is ordered so nothing waits on it:
+
+1. Shared web work: `src/platform/`, touch input, keep-awake, haptics wiring,
+   dive-log hiding, portrait layout and safe areas. Tested in the browser and
+   with the unit tests.
+2. Android: add Capacitor and the `android/` project; microphone dive on the
+   emulator, then on a real Android phone if available.
+3. iOS, once Xcode is installed: add the `ios/` project, then the real-iPhone
+   microphone check. If WKWebView capture fails there, iOS-specific fixes are
+   designed at that point; steps 1–2 do not depend on the outcome.
+
+## Branching and releases
+
+The `app` branch is short-lived. It merges into `main` when steps 1–2 are
+done and the website still builds and behaves the same, then is deleted;
+iOS work continues on a new short branch. One `main` builds the website and
+both apps.
+
+- Website: unchanged — every push to `main` deploys via Render. Vite ignores
+  `ios/` and `android/`; Render publishes only `dist/`.
+- Apps: released on their own schedule by building and submitting from
+  `main`. A push to `main` never forces an app release.
 
 ## Structure
 
@@ -149,14 +175,16 @@ The save button on the surface screen is not rendered when `isNativeApp()`.
 - `npm run build` and `npm run lint` pass; website behaviour unchanged on
   desktop.
 - Manual device checks, in order:
-  1. Microphone-driven dive on a real iPhone (risk milestone).
-  2. Same on a real Android phone.
+  1. Microphone-driven dive on the Android emulator, then a real Android phone.
+  2. Same on a real iPhone, once Xcode is available.
   3. Refused microphone → touch fallback on both.
   4. Screen stays on through a full dive; haptics fire; no dive-log button.
   5. Portrait layout and safe areas on a notched iPhone and an Android phone.
 
 ## Setup the owner must do
 
-- Install Xcode (Mac App Store) and Android Studio. Claude will guide setup.
+- Android Studio: installed. Open it once and finish the setup wizard
+  (Standard) so the Android SDK and an emulator are downloaded.
+- Xcode: after the macOS update, install from the Mac App Store.
 - A real iPhone and Android phone for the device checks. Running on your own
   iPhone works with a free Apple ID; no paid account needed yet.
