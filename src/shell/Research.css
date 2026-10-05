@@ -1,92 +1,77 @@
-/* Research page: intro, theme tabs, one labelled group of study cards per theme. */
+/* Research page: a bibliography. Category list beside one column of hairline-separated entries. */
 
-.research {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-8);
+.research__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-6);
 }
 
-.research__head {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--s-3);
-}
-
-.research__intro {
-  max-width: 62ch;
-}
-
-/* Tabs sit closer to the groups they filter than to the header above them. */
-.research__tabs {
-  margin-bottom: calc(-1 * var(--s-4));
+/* The category row scrolls inside the column rather than widening it; neither
+   grid item may grow past the page on its nowrap contents. */
+.research__nav,
+.research__col {
+  min-width: 0;
 }
 
 .research__groups {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-8);
   outline: none;
 }
 
-.research__group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-}
-
+/* The category intro sits between the overline and the first hairline of the entries. */
 .research__group-intro {
   max-width: 62ch;
-  margin-bottom: var(--s-3);
+  margin-bottom: var(--s-4);
 }
 
-.research__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--s-4);
-}
+/* ---------- Entry ---------- */
 
-/* ---------- Study card ---------- */
-
-.study .card__body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-  height: 100%;
+.study {
+  padding: var(--s-6) 0;
+  border-top: 1px solid var(--line-1);
 }
 
 .study__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-3);
-}
-
-.study__year {
-  color: var(--text-3);
+  margin-bottom: var(--s-2);
 }
 
 .study__title {
-  color: var(--text-1);
+  font-size: var(--t-h3);
+  line-height: var(--lh-h3);
 }
 
-.study__authors {
+.study__title a {
+  color: var(--text-1);
+  text-decoration-color: var(--line-strong);
+}
+
+.study__title a:hover {
+  color: var(--accent);
+}
+
+.study__title svg {
+  flex: none;
+  margin-left: var(--s-1);
+  vertical-align: -2px;
   color: var(--text-3);
 }
 
-.study__venue {
-  font-style: italic;
+.study__authors {
+  margin-top: var(--s-1);
 }
 
-.study__finding,
-.study__shapes {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
+.study__kv {
+  display: grid;
+  gap: var(--s-3);
+  margin: var(--s-4) 0 0;
 }
 
-.study__finding p,
-.study__shapes p {
+.study__kv dt {
+  margin-bottom: var(--s-1);
+}
+
+.study__kv dd {
+  margin: 0;
+  max-width: 62ch;
   color: var(--text-2);
 }
 
@@ -95,22 +80,17 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s-2) var(--s-4);
-  margin-top: auto;
-  padding-top: var(--s-2);
+  margin-top: var(--s-3);
 }
 
-.study__link {
+.study__links a {
   display: inline-flex;
   align-items: center;
   gap: var(--s-1);
-  min-height: 28px;
-  font-size: var(--t-small);
-  line-height: var(--lh-small);
-  font-weight: 500;
   border-radius: var(--r-1);
 }
 
-.study__link svg {
+.study__links svg {
   flex: none;
 }
 
@@ -120,7 +100,7 @@
   -webkit-user-select: all;
 }
 
-/* ---------- Closing card and footer line ---------- */
+/* ---------- Closing section and footer line ---------- */
 
 .research__limits ul {
   display: flex;
@@ -128,22 +108,36 @@
   gap: var(--s-2);
 }
 
-.research__readme {
-  max-width: 62ch;
+.research__limits li::marker {
+  color: var(--text-3);
 }
 
-@media (max-width: 639px) {
-  .research__grid {
-    grid-template-columns: 1fr;
+.research__readme {
+  max-width: 62ch;
+  margin-top: var(--s-6);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (min-width: 1024px) {
+  .research__body {
+    grid-template-columns: 180px minmax(0, var(--measure));
+    column-gap: var(--s-8);
+  }
+
+  .research__nav {
+    position: sticky;
+    top: calc(var(--nav-h) + var(--s-6));
+    align-self: start;
   }
 }
 
 @media (max-width: 599px) {
-  .research {
-    gap: var(--s-7);
+  .research__body {
+    gap: var(--s-5);
   }
 
-  .research__groups {
-    gap: var(--s-7);
+  .study {
+    padding: var(--s-5) 0;
   }
 }

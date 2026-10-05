@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import { useLanguage } from './i18n';
-import { Card, Chip, IconExternal, Tabs } from './ui';
+import { DepthScale, IconExternal, Overline, Tabs } from './ui';
+import { useMediaQuery } from './ui/useMediaQuery';
 import { CATEGORY_ORDER, STUDIES } from './studies';
 import type { Category, Study } from './studies';
 import './Research.css';
 
 type Filter = 'all' | Category;
 
-/** Sources page: an intro, category tabs, one labelled group of study cards per category. */
+/**
+ * Sources page, set as a bibliography: a category list beside a single
+ * column of hairline-separated entries. The list is an ARIA tablist (vertical
+ * at desktop widths, a scrollable row below) and the column is its panel.
+ */
 export function Research() {
   const { t } = useLanguage();
   const [filter, setFilter] = useState<Filter>('all');
+  const wide = useMediaQuery('(min-width: 1024px)');
 
   const tabs = [
     { id: 'all', label: t.research.all },
@@ -20,100 +26,112 @@ export function Research() {
 
   return (
     <div className="research">
-      <header className="research__head">
-        <Chip tone="accent">{t.research.eyebrow}</Chip>
+      <DepthScale labels={30} />
+
+      <header className="page__head">
         <h1 tabIndex={-1}>{t.research.title}</h1>
-        <p className="t-lead research__intro">{t.research.intro}</p>
+        <p className="t-lead">{t.research.intro}</p>
       </header>
 
-      <Tabs
-        className="research__tabs"
-        items={tabs}
-        selected={filter}
-        onSelect={(id) => setFilter(id as Filter)}
-        aria-label={t.research.filterLabel}
-      />
+      <div className="research__body">
+        <div className="research__nav">
+          <Tabs
+            items={tabs}
+            selected={filter}
+            onSelect={(id) => setFilter(id as Filter)}
+            orientation={wide ? 'vertical' : 'horizontal'}
+            aria-label={t.research.filterLabel}
+          />
+        </div>
 
-      <div
-        className="research__groups"
-        id={`panel-${filter}`}
-        role="tabpanel"
-        aria-labelledby={`tab-${filter}`}
-        tabIndex={-1}
-      >
-        {visible.map((category) => {
-          const studies = STUDIES.filter((study) => study.category === category);
-          if (studies.length === 0) return null;
-          return (
-            <section key={category} className="research__group" aria-labelledby={`cat-${category}`}>
-              <h2 id={`cat-${category}`}>{t.research.categories[category].title}</h2>
-              <p className="t-small research__group-intro">{t.research.categories[category].intro}</p>
-              <div className="research__grid">
-                {studies.map((study) => (
-                  <StudyCard key={study.id} study={study} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+        <div className="research__col">
+          <div
+            className="research__groups"
+            id={`panel-${filter}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${filter}`}
+            tabIndex={-1}
+          >
+            {visible.map((category) => {
+              const studies = STUDIES.filter((study) => study.category === category);
+              if (studies.length === 0) return null;
+              return (
+                <section key={category} className="sec research__group" aria-labelledby={`cat-${category}`}>
+                  <Overline as="h2" id={`cat-${category}`}>
+                    {t.research.categories[category].title}
+                  </Overline>
+                  <p className="t-small research__group-intro">{t.research.categories[category].intro}</p>
+                  {studies.map((study) => (
+                    <StudyEntry key={study.id} study={study} />
+                  ))}
+                </section>
+              );
+            })}
+          </div>
+
+          <section className="sec research__limits" aria-labelledby="research-limits">
+            <Overline as="h2" id="research-limits">
+              {t.research.limitsTitle}
+            </Overline>
+            <ul className="prose">
+              <li>{t.research.limit1}</li>
+              <li>{t.research.limit2}</li>
+              <li>{t.research.limit3}</li>
+            </ul>
+          </section>
+
+          <p className="t-small research__readme">{t.research.readme}</p>
+        </div>
       </div>
-
-      <Card className="research__limits" title={t.research.limitsTitle} titleId="research-limits">
-        <ul>
-          <li>{t.research.limit1}</li>
-          <li>{t.research.limit2}</li>
-          <li>{t.research.limit3}</li>
-        </ul>
-      </Card>
-
-      <p className="t-small research__readme">{t.research.readme}</p>
     </div>
   );
 }
 
-function StudyCard({ study }: { study: Study }) {
+/** One bibliography entry: venue and year, the title as the link, authors, then the Finding / In FATHOM pair. */
+function StudyEntry({ study }: { study: Study }) {
   const { t } = useLanguage();
   const text = t.research.studies[study.id];
+  const hasLinks = Boolean(study.extraLink || study.doi);
 
   return (
-    <Card as="article" plain className="study" aria-labelledby={`study-${study.id}`}>
-      <div className="study__meta">
-        <Chip tone="muted">{t.research.categories[study.category].title}</Chip>
-        <span className="t-mono-sm study__year">{study.year}</span>
-      </div>
+    <article className="study" aria-labelledby={`study-${study.id}`}>
+      <Overline as="p" className="study__meta">
+        {study.venue} · {study.year}
+      </Overline>
       <h3 className="study__title" id={`study-${study.id}`}>
-        {study.title}
-      </h3>
-      <p className="t-small study__authors">
-        {study.authors} — <span className="study__venue">{study.venue}</span>
-      </p>
-      <div className="study__finding">
-        <span className="t-label">{t.research.finding}</span>
-        <p>{text.finding}</p>
-      </div>
-      <div className="study__shapes">
-        <span className="t-label">{t.research.shapes}</span>
-        <p>{text.shapes}</p>
-      </div>
-      <div className="study__links">
-        <a className="study__link" href={study.url} target="_blank" rel="noreferrer">
-          {t.research.source}
+        <a href={study.url} target="_blank" rel="noreferrer">
+          {study.title}
           <IconExternal size={16} />
           <span className="visually-hidden"> {t.common.newTab}</span>
         </a>
-        {study.extraLink && (
-          <a className="study__link" href={study.extraLink} target="_blank" rel="noreferrer">
-            {t.research.handouts}
-            <IconExternal size={16} />
-            <span className="visually-hidden"> {t.common.newTab}</span>
-          </a>
-        )}
-        {study.doi && (
-          <span className="t-mono-sm study__doi">
-            {t.research.doi} {study.doi}
-          </span>
-        )}
-      </div>
-    </Card>
+      </h3>
+      <p className="t-small study__authors">{study.authors}</p>
+      <dl className="study__kv">
+        <div>
+          <Overline as="dt">{t.research.finding}</Overline>
+          <dd>{text.finding}</dd>
+        </div>
+        <div>
+          <Overline as="dt">{t.research.shapes}</Overline>
+          <dd>{text.shapes}</dd>
+        </div>
+      </dl>
+      {hasLinks && (
+        <p className="t-small study__links">
+          {study.extraLink && (
+            <a href={study.extraLink} target="_blank" rel="noreferrer">
+              {t.research.handouts}
+              <IconExternal size={16} />
+              <span className="visually-hidden"> {t.common.newTab}</span>
+            </a>
+          )}
+          {study.doi && (
+            <span className="t-mono-sm study__doi">
+              {t.research.doi} {study.doi}
+            </span>
+          )}
+        </p>
+      )}
+    </article>
   );
 }

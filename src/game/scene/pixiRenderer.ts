@@ -18,11 +18,13 @@ import {
 import type { Frame, ZoneArt } from './art/layers';
 import { ZONE_LOOKS, lookForZone } from './art/palette';
 import type { ZoneLook } from './art/palette';
+import { DescentSurge } from './art/surge';
 import { buildTextures } from './art/textures';
 import type { SceneTextures } from './art/textures';
 import { AbyssZone } from './art/zones/abyss';
 import { MidnightZone } from './art/zones/midnight';
 import { TwilightZone } from './art/zones/twilight';
+import { DiverWake } from './art/wake';
 import { driftMotes, seedMotes } from './renderer';
 import type { Mote, SceneRenderer, SceneState } from './renderer';
 
@@ -68,12 +70,15 @@ export class PixiSceneRenderer implements SceneRenderer {
 
   private readonly rig: DiverRig;
   private readonly bubbles: BubbleTrail;
+  private readonly wake: DiverWake;
+  private readonly surge = new DescentSurge();
   private readonly zones: ZoneArt[];
   private readonly fade = new ZoneCrossfade();
   private readonly frame: Frame;
 
   private visualLight = 0;
   private scroll = 0;
+  private lastDepth = 0;
   private moteTint = -1;
   private width = 0;
   private height = 0;
@@ -104,6 +109,7 @@ export class PixiSceneRenderer implements SceneRenderer {
 
     this.rig = new DiverRig(tx);
     this.bubbles = new BubbleTrail(tx.bubble);
+    this.wake = new DiverWake(tx.dot);
     this.zones = [
       new TwilightZone(ZONE_LOOKS[0], tx),
       new MidnightZone(ZONE_LOOKS[1], tx),
@@ -126,6 +132,7 @@ export class PixiSceneRenderer implements SceneRenderer {
       this.rig.pool,
       this.rig.cone,
       this.bubbles.container,
+      this.wake.container,
       this.rig.container,
     );
     this.waterB.visible = false;
@@ -186,10 +193,16 @@ export class PixiSceneRenderer implements SceneRenderer {
     // The light on screen trails the light in the simulation, so the spend at
     // exhale end reads as a dim rather than a flash.
     this.visualLight += (state.light - this.visualLight) * (1 - Math.exp(-6 * dtSeconds));
+    // While the drawn depth is still catching up the water goes past a little
+    // faster than the depth alone would carry it: one eased factor, shared by
+    // the scroll and every layer's drift, so the parallax holds. Held at 1
+    // under reduced motion.
+    const surge = this.surge.step(state.descending, dtSeconds, reduced);
     // Under reduced motion the simulation snaps depth at exhale end; a short
     // display easing keeps that from lurching without touching the readout.
     if (reduced) this.scroll += (state.depth - this.scroll) * (1 - Math.exp(-3 * dtSeconds));
-    else this.scroll = state.depth;
+    else this.scroll += (state.depth - this.lastDepth) * surge;
+    this.lastDepth = state.depth;
 
     // Zone changes are crossfades, never cuts.
     const zone = Math.min(this.zones.length - 1, Math.max(0, state.zone));
@@ -240,13 +253,14 @@ export class PixiSceneRenderer implements SceneRenderer {
     f.dt = dtSeconds;
     f.light = this.visualLight;
     f.exhaling = state.exhaling;
+    f.surge = surge;
     f.look = toLook;
 
     // The rig goes first: it writes the lamp position and beam direction that
     // every other element's reveal reads.
     this.rig.update(f, state, lightTint);
 
-    if (!reduced) driftMotes(this.motes, dtSeconds);
+    if (!reduced) driftMotes(this.motes, dtSeconds * surge);
     const toCount = visibleMotes(toLook, reduced);
     const fromCount = visibleMotes(fromLook, reduced);
     const tintChanged = moteTint !== this.moteTint;
@@ -278,6 +292,7 @@ export class PixiSceneRenderer implements SceneRenderer {
     }
 
     this.bubbles.update(f);
+    this.wake.update(f, this.surge.wake);
     this.zones[zone].update(f);
     if (fading && !this.fade.done) this.zones[fromIndex].update(f);
 

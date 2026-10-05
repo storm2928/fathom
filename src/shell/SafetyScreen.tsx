@@ -3,17 +3,7 @@ import { CrisisRail } from './CrisisRail';
 import { LanguageToggle } from './LanguageToggle';
 import { Rich, useLanguage } from './i18n';
 import { hashForRoute } from './router';
-import {
-  BrandMark,
-  Button,
-  Card,
-  Chip,
-  Expandable,
-  IconCaution,
-  IconLock,
-  IconShieldOff,
-  IconWave,
-} from './ui';
+import { BrandMark, Button, DepthScale, Expandable, Overline } from './ui';
 import './SafetyScreen.css';
 
 /**
@@ -24,10 +14,12 @@ import './SafetyScreen.css';
  * the thing does, not before, so nobody is deciding whether to hand over a
  * microphone to something they have not been told about yet.
  *
- * Layout carries the honesty: every required statement (not therapy, the
- * three cautions, audio stays on the device, exhales measured and inhales
- * prompted) is static text at the top of its card. The disclosures beneath
- * hold only the "why".
+ * It reads as a short document: a title, one paragraph, four sections opened
+ * by a hairline and a small tracked heading. Every required statement (not
+ * therapy, the three cautions, audio stays on the device, exhales measured and
+ * inhales prompted) is static text at the top of its section. The disclosures
+ * beneath hold only the "why". The crisis rail is the one thing on the page
+ * that looks like a container, because it is one.
  *
  * Two modes. `gate` is the first visit: the screen is the whole document, so
  * it carries the brand and the language toggle itself. `reference` is
@@ -54,6 +46,8 @@ export function SafetyScreen({ mode, onContinue }: SafetyScreenProps) {
 
   const screen = (
     <section className={gate ? 'safety safety--gate' : 'safety'} aria-labelledby="safety-title">
+      {!gate && <DepthScale />}
+
       {gate && (
         <div className="safety__top">
           <span className="safety__brand">
@@ -64,53 +58,59 @@ export function SafetyScreen({ mode, onContinue }: SafetyScreenProps) {
         </div>
       )}
 
-      <header className="safety__head">
-        <div className="safety__eyebrow">
-          <Chip tone="accent">{s.eyebrow}</Chip>
-        </div>
+      <header className="page__head">
         <h1 id="safety-title" ref={titleRef} tabIndex={gate ? -1 : undefined}>
           {s.title}
         </h1>
-        <p className="t-lead safety__lead">{s.lead}</p>
+        <p className="t-lead">{s.lead}</p>
       </header>
 
-      <div className="safety__grid">
-        <Card icon={<IconShieldOff size={24} />} title={s.notTitle} titleId="safety-not">
-          <p>
-            <Rich text={s.not1} />
-          </p>
-          <p>{s.not2}</p>
-        </Card>
+      <div className="page__col">
+        <section className="sec" aria-labelledby="safety-not">
+          <Overline as="h2" id="safety-not">
+            {s.notTitle}
+          </Overline>
+          <div className="prose">
+            <p>
+              <Rich text={s.not1} />
+            </p>
+            <p>{s.not2}</p>
+          </div>
+        </section>
 
-        <Card
-          icon={<IconCaution size={24} />}
-          tone="caution"
-          title={s.careTitle}
-          titleId="safety-care"
-        >
+        <section className="sec" aria-labelledby="safety-care">
+          <Overline as="h2" id="safety-care">
+            {s.careTitle}
+          </Overline>
           <ul className="safety__cautions">
             <li>{s.care1}</li>
             <li>{s.care2}</li>
             <li>{s.care3}</li>
           </ul>
-          <p className="t-small">{s.stopAnyTime}</p>
-        </Card>
+          <p className="t-small safety__stop">{s.stopAnyTime}</p>
+        </section>
 
-        <Card icon={<IconLock size={24} />} title={s.voiceTitle} titleId="safety-voice">
+        <section className="sec" aria-labelledby="safety-voice">
+          <Overline as="h2" id="safety-voice">
+            {s.voiceTitle}
+          </Overline>
           <p>{s.voiceShort}</p>
           <Expandable>
             <p>{s.voiceMore}</p>
           </Expandable>
-        </Card>
+        </section>
 
-        <Card icon={<IconWave size={24} />} title={s.measuredTitle} titleId="safety-measured">
+        <section className="sec" aria-labelledby="safety-measured">
+          <Overline as="h2" id="safety-measured">
+            {s.measuredTitle}
+          </Overline>
           <p>
             <Rich text={s.measuredShort} />
           </p>
           <Expandable>
             <p>{s.measuredMore}</p>
           </Expandable>
-        </Card>
+        </section>
       </div>
 
       <CrisisRail />
@@ -131,10 +131,12 @@ export function SafetyScreen({ mode, onContinue }: SafetyScreenProps) {
   );
 
   // Standalone on first visit: the screen is the page, so it is also the
-  // document's main landmark and carries the page frame itself.
+  // document's main landmark and carries the page frame itself, depth scale
+  // included.
   if (gate) {
     return (
-      <main id="main" className="page page--narrow safety-gate">
+      <main id="main" className="page page--scale safety-gate">
+        <DepthScale />
         {screen}
       </main>
     );

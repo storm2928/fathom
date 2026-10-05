@@ -1,6 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
-export type ChipTone = 'muted' | 'accent' | 'zone-1' | 'zone-2' | 'zone-3' | 'hud';
+/** State only: the stage in the HUD, "ended", "left early". Never a label above a title. */
+export type ChipTone = 'muted' | 'zone-1' | 'zone-2' | 'zone-3' | 'hud';
 
 export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
   tone?: ChipTone;

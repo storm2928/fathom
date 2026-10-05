@@ -6,12 +6,16 @@
 const en = {
   dive: {
     depth: 'Depth',
+    /** Beside the depth while the diver is sinking. A state, never a score. */
+    descending: 'descending',
     light: 'Light',
     stage: 'Stage',
     leave: 'Leave',
     started: 'Dive started. Press Enter on Leave to stop.',
     sceneDescription:
       'A diver descends a dark ocean. The dive light brightens while you breathe in and the diver sinks while you breathe out. Depth, the current breath step and the light level are shown as text.',
+    /** The ring caption on the second inhale: what comes next, before it does. */
+    nextOut: 'Breathe out next',
     prompt: {
       calibrating: 'Breathe normally',
       calibratingCaption: 'Reading your starting rate',
@@ -42,12 +46,14 @@ const en = {
 const fr: typeof en = {
   dive: {
     depth: 'Profondeur',
+    descending: 'en descente',
     light: 'Lampe',
     stage: 'Étape',
     leave: 'Quitter',
     started: 'Plongée commencée. Appuyez sur Entrée sur Quitter pour arrêter.',
     sceneDescription:
       "Un plongeur descend dans un océan sombre. La lampe s'allume pendant que vous inspirez et le plongeur s'enfonce pendant que vous expirez. La profondeur, l'étape de respiration en cours et le niveau de la lampe sont affichés en texte.",
+    nextOut: 'Expirez ensuite',
     prompt: {
       calibrating: 'Respirez normalement',
       calibratingCaption: 'Lecture de votre rythme de départ',

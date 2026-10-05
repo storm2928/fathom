@@ -6,21 +6,34 @@ export interface TabItem {
   label: ReactNode;
 }
 
+export type TabsOrientation = 'horizontal' | 'vertical';
+
 export interface TabsProps {
   items: TabItem[];
   selected: string;
   onSelect: (id: string) => void;
   'aria-label': string;
+  /** Vertical lists stack as a column (the research category list at desktop widths). */
+  orientation?: TabsOrientation;
   className?: string;
 }
 
 /**
- * ARIA tabs with a roving tabindex. Left/Right/Home/End move the selection
- * and selection follows focus. Panels are the caller's: give each
+ * ARIA tabs with a roving tabindex, drawn as plain text links. Left, Right,
+ * Home and End move the selection (Up and Down too when vertical) and
+ * selection follows focus. Panels are the caller's: give each
  * `id="panel-{id}"` and `aria-labelledby="tab-{id}"`.
  */
-export function Tabs({ items, selected, onSelect, className, ...rest }: TabsProps) {
+export function Tabs({
+  items,
+  selected,
+  onSelect,
+  orientation = 'horizontal',
+  className,
+  ...rest
+}: TabsProps) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const vertical = orientation === 'vertical';
 
   const move = (from: number, to: number) => {
     const count = items.length;
@@ -40,6 +53,16 @@ export function Tabs({ items, selected, onSelect, className, ...rest }: TabsProp
         event.preventDefault();
         move(index, index - 1);
         break;
+      case 'ArrowDown':
+        if (!vertical) break;
+        event.preventDefault();
+        move(index, index + 1);
+        break;
+      case 'ArrowUp':
+        if (!vertical) break;
+        event.preventDefault();
+        move(index, index - 1);
+        break;
       case 'Home':
         event.preventDefault();
         move(index, 0);
@@ -53,8 +76,15 @@ export function Tabs({ items, selected, onSelect, className, ...rest }: TabsProp
     }
   };
 
+  const classes = ['tabs', vertical ? 'tabs--vertical' : '', className ?? ''].filter(Boolean).join(' ');
+
   return (
-    <div className={className ? `tabs ${className}` : 'tabs'} role="tablist" aria-label={rest['aria-label']}>
+    <div
+      className={classes}
+      role="tablist"
+      aria-label={rest['aria-label']}
+      aria-orientation={vertical ? 'vertical' : 'horizontal'}
+    >
       {items.map((item, index) => {
         const isSelected = item.id === selected;
         return (

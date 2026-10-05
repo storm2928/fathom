@@ -1,15 +1,28 @@
-/* The surface: what the dive measured, then the door. */
+/* The surface: what the dive measured, then the door. Set as an instrument
+   readout — two large numerals, a rule, plain text — not as a card. */
 
-.surface {
+.surface__col {
   display: flex;
   flex-direction: column;
   gap: var(--s-6);
 }
 
-.surface__chips {
+/* ---------- Head: small title, state chips on its line ---------- */
+
+.surface__head {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-2);
+  align-items: baseline;
+  gap: var(--s-3);
+}
+
+.surface__title {
+  font-size: var(--t-label);
+  line-height: var(--lh-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
 }
 
 /* Programmatic focus lands here after a dive; the heading is not a control. */
@@ -17,40 +30,25 @@
   box-shadow: none;
 }
 
-/* ---------- Hero: before → after ---------- */
+/* ---------- Readout: before, after ---------- */
 
-.surface__figures {
+.surface__readout {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--s-4);
+  grid-template-columns: auto auto;
+  column-gap: var(--s-10);
+  justify-content: start;
 }
 
 .surface__figure {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
   gap: var(--s-1);
   min-width: 0;
-  text-align: center;
 }
 
-.surface__arrow {
-  width: 40px;
-  height: 40px;
-  justify-self: center;
-  color: var(--text-3);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
+/* Sits close under the rule: it is the rule's caption, not a new paragraph. */
 .surface__delta {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--s-4);
+  margin-top: calc(-1 * var(--s-3));
+  color: var(--text-3);
 }
 
 /* ---------- Verdict ---------- */
@@ -70,6 +68,24 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   font-weight: 500;
+}
+
+/* The note's own top rule follows the readout; the list does not close with a
+   second hairline a gap above it. */
+.surface .kv__row:last-child {
+  border-bottom: 0;
+}
+
+/* ---------- Measurement note ---------- */
+
+/* The rules span the column like every other rule; only the text keeps a measure. */
+.surface__note {
+  color: var(--text-2);
+}
+
+.surface__note-text {
+  display: block;
+  max-width: 62ch;
 }
 
 /* ---------- Exit ---------- */
@@ -96,17 +112,13 @@
 }
 
 @media (max-width: 599px) {
-  .surface {
+  .surface__col {
     gap: var(--s-5);
   }
 
-  .surface__figures {
+  .surface__readout {
     grid-template-columns: 1fr;
-    gap: var(--s-2);
-  }
-
-  .surface__arrow {
-    transform: rotate(90deg);
+    row-gap: var(--s-4);
   }
 
   .surface__actions {
