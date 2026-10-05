@@ -15,6 +15,7 @@ import './../scene/descent.test.ts';
 import './../session/cycleShape.test.ts';
 import './../session/conductor.test.ts';
 import './../session/sessionMachine.test.ts';
+import './../../platform/platform.test.ts';
 import { runAll } from './harness.ts';
 
 await runAll();
