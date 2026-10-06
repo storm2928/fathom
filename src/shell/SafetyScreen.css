@@ -17,6 +17,8 @@
   justify-content: space-between;
   gap: var(--s-4);
   min-height: 36px;
+  /* The gate has no top bar of its own to clear the notch; zero on a desktop. */
+  margin-top: env(safe-area-inset-top, 0px);
   margin-bottom: var(--s-8);
 }
 
