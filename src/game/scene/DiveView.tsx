@@ -410,6 +410,15 @@ export function DiveView() {
         // Let the descent come to rest, then the scene stops itself rather than
         // animating underneath the surface screen for as long as it is open.
         scene.settle();
+        // The session is over, so the input is too: release the microphone (and
+        // the system's recording indicator with it) and stop a touch input from
+        // reading taps on the surface screen as breaths. The scene stays alive
+        // under the results. Leave does the same in handleStop; this is the path
+        // for a dive that ended on its own.
+        teardownRef.current?.();
+        teardownRef.current = null;
+        engineRef.current?.stop();
+        engineRef.current = null;
         haptic('surface');
         setResult(finished);
         setRunning(false);
