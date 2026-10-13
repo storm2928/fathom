@@ -17,6 +17,7 @@ import {
 } from '../../shell/ui';
 import { buildDiveLog, downloadDiveLog } from './diveLog';
 import type { InputCode } from './diveLog';
+import { verdictFor } from './verdict';
 import './SurfaceScreen.css';
 
 /**
@@ -32,9 +33,6 @@ import './SurfaceScreen.css';
  * slowed one. Dressing up a null result would be the single fastest way to
  * lose the argument that this is a measurement tool rather than a mood app.
  */
-
-/** Below this the change is inside the noise of the estimate. */
-const MEANINGFUL_DELTA_RR = 0.5;
 
 interface SurfaceScreenProps {
   result: SessionResult;
@@ -55,8 +53,9 @@ export function SurfaceScreen({ result, inputLabel, inputCode, onLeave }: Surfac
   const s = t.surface;
   const titleRef = useRef<HTMLHeadingElement | null>(null);
   const { baselineRR, finalRR, deltaRR, downshiftMs, ending } = result;
-  const slowed = deltaRR >= MEANINGFUL_DELTA_RR;
-  const sped = deltaRR <= -MEANINGFUL_DELTA_RR;
+  const verdict = verdictFor(deltaRR);
+  const slowed = verdict === 'slowed';
+  const sped = verdict === 'sped';
   const stopped = ending === 'stopped';
   const input = inputLabel ?? (result.usedFallbackInput ? t.setup.inputKeyboard : t.setup.inputMicrophone);
 
