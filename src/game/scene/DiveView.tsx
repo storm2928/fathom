@@ -61,6 +61,7 @@ const CALIBRATION_MS = 10_000;
 const CODE_LABEL: Record<InputCode, (t: Strings) => string> = {
   microphone: (t) => t.setup.inputMicrophone,
   keyboard: (t) => t.setup.inputKeyboard,
+  touch: (t) => t.setup.inputTouch,
   scripted: (t) => t.setup.inputScripted,
 };
 
@@ -93,6 +94,7 @@ const PROMPT_LABEL: Record<PromptStep, (t: Strings) => string> = {
 const EXHALE_CAPTION: Record<InputCode, ((t: Strings) => string) | null> = {
   microphone: (t) => t.dive.prompt.exhaleMic,
   keyboard: (t) => t.dive.prompt.exhaleKey,
+  touch: null,
   scripted: null,
 };
 

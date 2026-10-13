@@ -36,6 +36,11 @@ export interface InputPlan {
    * for it silently would make a broken input look like a working one.
    */
   fallback?: () => BreathEngine;
+  /**
+   * What the fallback is, for the log and the results. The keyboard on the
+   * website, a finger on the phone. Defaults to the keyboard.
+   */
+  fallbackCode?: InputCode;
 }
 
 export interface StartedInput {
@@ -68,10 +73,10 @@ export async function startInput(plan: InputPlan): Promise<StartedInput> {
 
     return {
       engine,
-      // The only fallback is the spacebar. Named rather than derived, because
-      // an input that quietly reports something else would put a wrong label in
-      // an exported log.
-      code: 'keyboard',
+      // The fallback is a hold input: the spacebar or a finger. Named by the
+      // caller rather than derived, because an input that quietly reports
+      // something else would put a wrong label in an exported log.
+      code: plan.fallbackCode ?? 'keyboard',
       fellBack: true,
       reason: error instanceof Error ? error.message : String(error),
     };

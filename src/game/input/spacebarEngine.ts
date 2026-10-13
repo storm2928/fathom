@@ -3,7 +3,7 @@ import { BreathEmitter } from './emitter';
 import { RateEstimator } from './rateEstimator';
 
 /**
- * Hold the spacebar for as long as you are exhaling.
+ * Hold a key or a finger down for as long as you are exhaling.
  *
  * This is a first-class way to play, not a consolation prize. It is offered
  * before a session starts, it is what someone uses in a room too loud for the
@@ -148,6 +148,24 @@ export class SpacebarBreathEngine implements BreathEngine {
     return this.scored;
   }
 
+  /**
+   * Start an exhale from any press: the spacebar, or a finger held on a phone
+   * screen. Ignored before start, after stop, and while a hold is already open.
+   */
+  beginHold(): void {
+    if (!this.running || this.holdStartedAt !== null) return;
+    const at = this.elapsed();
+    this.holdStartedAt = at;
+    this.rate.mark(at);
+    this.emitter.emit('phase-change', { phase: 'exhale', at });
+  }
+
+  /** End the hold `beginHold` opened, scoring it if it was long enough. */
+  endHold(): void {
+    if (!this.running) return;
+    this.release();
+  }
+
   // ------------------------------------------------------------- internals
 
   private elapsed(): number {
@@ -164,11 +182,7 @@ export class SpacebarBreathEngine implements BreathEngine {
     // Otherwise the page scrolls under the diver on every breath.
     key.preventDefault();
     if (this.holdStartedAt !== null) return;
-
-    const at = this.elapsed();
-    this.holdStartedAt = at;
-    this.rate.mark(at);
-    this.emitter.emit('phase-change', { phase: 'exhale', at });
+    this.beginHold();
   };
 
   private readonly onKeyUp = (event: Event) => {

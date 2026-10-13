@@ -32,6 +32,7 @@ const en = {
     'The microphone was not available, so the spacebar is driving this dive instead — hold it for as long as you are exhaling. ({reason})',
   inputMicrophone: 'Microphone',
   inputKeyboard: 'Keyboard',
+  inputTouch: 'Touch and hold',
   inputScripted: DEV ? 'Scripted fixture' : '',
 };
 
@@ -62,6 +63,7 @@ const fr: typeof en = {
     "Le microphone n'était pas disponible : c'est donc la barre d'espace qui pilote cette plongée — maintenez-la aussi longtemps que vous expirez. ({reason})",
   inputMicrophone: 'Microphone',
   inputKeyboard: 'Clavier',
+  inputTouch: 'Appui maintenu',
   inputScripted: DEV ? 'Séquence scriptée' : '',
 };
 

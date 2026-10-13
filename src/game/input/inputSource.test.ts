@@ -124,3 +124,14 @@ test('a fallback that also fails to start is not reported as a working dive', as
   }
   equal(threw, true, 'a dive with no working input reported success');
 });
+
+test('a refused microphone on a phone falls back to touch, and says so', async () => {
+  const started = await startInput({
+    primary: fakeEngine(new Error('Permission denied')),
+    code: 'microphone',
+    fallback: () => fakeEngine(),
+    fallbackCode: 'touch',
+  });
+  equal(started.code, 'touch', 'a touch session was labelled as something else');
+  equal(started.fellBack, true);
+});
