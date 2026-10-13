@@ -1,0 +1,88 @@
+/*
+ * The app is a game surface, not a page: nothing scrolls, nothing selects,
+ * nothing hovers. Tokens and fonts come from the website's index.css.
+ */
+html,
+body,
+#root {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--scene-0);
+  color: var(--hud-text);
+  font-family: var(--font-sans);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+/* Every overlay respects the notch and the home indicator. */
+.safe {
+  position: absolute;
+  inset: 0;
+  padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.wordmark {
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--hud-text);
+}
+
+/* Big, soft, game buttons. Pressed state replaces hover. */
+.game-btn {
+  appearance: none;
+  border: 1px solid var(--hud-line);
+  border-radius: 999px;
+  background: rgba(4, 10, 18, 0.45);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--hud-text);
+  font: 600 17px/1 var(--font-sans);
+  letter-spacing: 0.04em;
+  min-height: 56px;
+  padding: 0 28px;
+  width: 100%;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.game-btn:active {
+  transform: scale(0.97);
+  background: rgba(92, 227, 207, 0.16);
+}
+.game-btn--primary {
+  background: var(--hud-accent);
+  border-color: transparent;
+  color: var(--on-accent);
+}
+.game-btn--primary:active {
+  background: var(--accent-strong);
+}
+.game-btn--quiet {
+  background: transparent;
+  border-color: transparent;
+  min-height: 44px;
+  color: var(--hud-muted);
+}
+
+.fade-in {
+  animation: fade-in 600ms ease both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation-duration: 1ms;
+  }
+}
