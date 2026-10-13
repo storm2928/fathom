@@ -13,6 +13,8 @@ import './../input/rateEstimator.test.ts';
 import './../input/inputSource.test.ts';
 import './../input/spacebarEngine.test.ts';
 import './../scene/descent.test.ts';
+import './../scene/art/depthLight.test.ts';
+import './../scene/diveScene.test.ts';
 import './../session/cycleShape.test.ts';
 import './../session/conductor.test.ts';
 import './../session/sessionMachine.test.ts';

@@ -104,6 +104,7 @@ export class DiveScene {
   private pose: DiverPose = 'level';
   private startedAt = 0;
   private zone = 0;
+  private epochCount = 0;
 
   constructor(
     renderer: SceneRenderer,
@@ -162,6 +163,31 @@ export class DiveScene {
   /** Told by the view how the diver should hold itself: level or head-down. */
   setPose(pose: DiverPose): void {
     this.pose = pose;
+  }
+
+  /**
+   * Back to the surface for the next dive, on the same renderer and canvas.
+   * Detaches whatever engine and conductor were attached; the frame loop keeps
+   * running if it was.
+   */
+  reset(): void {
+    this.release();
+    this.earnedDepth = 0;
+    this.targetDepth = 0;
+    this.shownDepth = 0;
+    this.exhaleStartedAt = null;
+    this.depthAtExhaleStart = 0;
+    this.lastQuality = 0.7;
+    this.lightCharge = 0;
+    this.charging = false;
+    this.promptStep = 'none';
+    this.promptStartedAt = null;
+    this.promptDurationMs = 0;
+    this.pose = 'level';
+    this.zone = 0;
+    this.settling = false;
+    this.restSeconds = 0;
+    this.epochCount += 1;
   }
 
   start(): void {
@@ -244,6 +270,11 @@ export class DiveScene {
     return this.lightCharge;
   }
 
+  /** Increments on every reset; renderers snap their smoothing when it changes. */
+  get epoch(): number {
+    return this.epochCount;
+  }
+
   // ------------------------------------------------------------- internals
 
   private snapshot(now: number): SceneState {
@@ -265,6 +296,7 @@ export class DiveScene {
       promptDurationMs: this.promptDurationMs,
       pose: this.pose,
       elapsedSeconds: this.startedAt ? (now - this.startedAt) / 1000 : 0,
+      epoch: this.epochCount,
     };
   }
 

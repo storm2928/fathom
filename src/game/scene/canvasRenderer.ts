@@ -47,6 +47,7 @@ export class CanvasSceneRenderer implements SceneRenderer {
   private theta = LEVEL_THETA;
   private kick = 0;
   private bubbleAccumulator = 0;
+  private epoch = 0;
 
   constructor(canvas: HTMLCanvasElement, options: { reducedMotion?: boolean } = {}) {
     const ctx = canvas.getContext('2d');
@@ -75,6 +76,13 @@ export class CanvasSceneRenderer implements SceneRenderer {
   }
 
   render(state: SceneState, dtSeconds: number): void {
+    // A reset is a new dive, not a movement: snap rather than glide home.
+    if (state.epoch !== this.epoch) {
+      this.epoch = state.epoch;
+      this.scroll = state.depth;
+      this.lastDepth = state.depth;
+      this.visualLight = state.light;
+    }
     try {
       this.draw(state, dtSeconds);
     } catch {

@@ -44,6 +44,12 @@ export interface SceneState {
   pose: DiverPose;
   /** wall-clock seconds since the scene started; drives ambient motion */
   elapsedSeconds: number;
+  /**
+   * Bumped by DiveScene.reset(). A renderer seeing a new epoch snaps its own
+   * smoothing (scroll, light) to the state instead of easing across a jump
+   * that is a new dive, not a movement.
+   */
+  epoch: number;
 }
 
 export interface SceneRenderer {

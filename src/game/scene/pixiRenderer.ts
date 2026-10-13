@@ -19,6 +19,8 @@ import type { Frame, ZoneArt } from './art/layers';
 import { ZONE_LOOKS, lookForZone } from './art/palette';
 import type { ZoneLook } from './art/palette';
 import { DescentSurge } from './art/surge';
+import { SurfaceLight } from './art/surfaceLight';
+import { PRESSURE_VIGNETTE, pressure } from './art/depthLight';
 import { buildTextures } from './art/textures';
 import type { SceneTextures } from './art/textures';
 import { AbyssZone } from './art/zones/abyss';
@@ -67,6 +69,7 @@ export class PixiSceneRenderer implements SceneRenderer {
   private readonly baseLayer = new Container();
   private readonly fog: Sprite;
   private readonly vignette: Sprite;
+  private readonly surface = new SurfaceLight();
 
   private readonly rig: DiverRig;
   private readonly bubbles: BubbleTrail;
@@ -82,6 +85,7 @@ export class PixiSceneRenderer implements SceneRenderer {
   private moteTint = -1;
   private width = 0;
   private height = 0;
+  private epoch = 0;
 
   private constructor(app: Application, canvas: HTMLCanvasElement, reducedMotion: boolean) {
     this.app = app;
@@ -140,10 +144,12 @@ export class PixiSceneRenderer implements SceneRenderer {
     this.app.stage.addChild(
       this.waterA,
       this.waterB,
+      this.surface.rays,
       this.farLayer,
       this.midLayer,
       this.fog,
       this.nearLayer,
+      this.surface.above,
       this.baseLayer,
       this.vignette,
     );
@@ -189,6 +195,14 @@ export class PixiSceneRenderer implements SceneRenderer {
     if (!w || !h) return;
     const reduced = this.reducedMotion;
     const f = this.frame;
+
+    // A reset is a new dive, not a movement: snap rather than glide 300m home.
+    if (state.epoch !== this.epoch) {
+      this.epoch = state.epoch;
+      this.scroll = state.depth;
+      this.lastDepth = state.depth;
+      this.visualLight = state.light;
+    }
 
     // The light on screen trails the light in the simulation, so the spend at
     // exhale end reads as a dim rather than a flash.
@@ -241,8 +255,10 @@ export class PixiSceneRenderer implements SceneRenderer {
     const moteAlpha = fromLook.moteAlpha + (toLook.moteAlpha - fromLook.moteAlpha) * e;
     this.fog.tint = fading ? lerpTint(fromLook.fog, toLook.fog, e) : toLook.fog;
     this.fog.alpha = fromLook.fogAlpha + (toLook.fogAlpha - fromLook.fogAlpha) * e;
-    this.vignette.alpha =
+    const zoneVignette =
       fromLook.vignetteAlpha + (toLook.vignetteAlpha - fromLook.vignetteAlpha) * e;
+    // Deeper is heavier: the edges close in on top of the zone's own vignette.
+    this.vignette.alpha = Math.min(1, zoneVignette + PRESSURE_VIGNETTE * pressure(this.scroll));
 
     f.w = w;
     f.h = h;
@@ -259,6 +275,7 @@ export class PixiSceneRenderer implements SceneRenderer {
     // The rig goes first: it writes the lamp position and beam direction that
     // every other element's reveal reads.
     this.rig.update(f, state, lightTint);
+    this.surface.update(f);
 
     if (!reduced) driftMotes(this.motes, dtSeconds * surge);
     const toCount = visibleMotes(toLook, reduced);
@@ -322,6 +339,7 @@ export class PixiSceneRenderer implements SceneRenderer {
     this.fog.height = h;
     this.vignette.width = w;
     this.vignette.height = h;
+    this.surface.layout(w, h);
     this.rig.layout(h);
     for (let z = 0; z < this.zones.length; z += 1) this.zones[z].layout(w, h);
     paintWater(this.waterA, lookForZone(this.fade.to), w, h);
