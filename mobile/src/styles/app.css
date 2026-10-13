@@ -2,6 +2,41 @@
  * The app is a game surface, not a page: nothing scrolls, nothing selects,
  * nothing hovers. Tokens and fonts come from the website's index.css.
  */
+/*
+ * The ocean is always dark, so the app is too, whatever the phone's
+ * appearance setting. The website's index.css swaps these for light values
+ * under prefers-color-scheme: light; :root:root outranks that.
+ */
+:root:root {
+  color-scheme: dark;
+  --bg-0: #070e17;
+  --bg-1: #0d1826;
+  --bg-2: #132234;
+  --bg-3: #1a2d42;
+  --line-1: #1e3040;
+  --line-2: #2a4054;
+  --line-strong: #52738f;
+  --text-1: #eaf3f7;
+  --text-2: #b4c6d1;
+  --text-3: #85a6b7;
+  --accent: #5ce3cf;
+  --accent-strong: #8bf0e1;
+  --on-accent: #06211e;
+  --accent-soft: rgba(92, 227, 207, 0.12);
+  --zone-1: #5ce3cf;
+  --zone-2: #7fb6ff;
+  --zone-3: #b49aff;
+  --caution: #f1c77a;
+  --caution-soft: rgba(241, 199, 122, 0.12);
+  --alert: #ff9f90;
+  --alert-soft: rgba(255, 159, 144, 0.12);
+  --focus: #9af4e7;
+  --shadow-1: none;
+  --shadow-2: none;
+  --glow-accent: 0 0 0 1px rgba(92, 227, 207, 0.35), 0 0 24px rgba(92, 227, 207, 0.18);
+  --glow-focus: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--focus);
+}
+
 html,
 body,
 #root {

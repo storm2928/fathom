@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
 import '@fathom/index.css';
+import '@fathom/shell/ui/ui.css';
 import './styles/app.css';
 import App from './App';
 

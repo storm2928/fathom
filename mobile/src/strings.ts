@@ -1,0 +1,57 @@
+import { useLanguage } from '@fathom/shell/i18n';
+
+/**
+ * Text that exists only in the app. Every claim, safety and result sentence
+ * comes from the website's strings instead — those have already been read by
+ * the people who check them.
+ */
+const en = {
+  tagline: 'A dive you take with your breath.',
+  scopeLine: 'Not therapy, not diagnosis, not for a crisis.',
+  dive: 'Dive',
+  diveLength: 'About five minutes',
+  quick: 'Quick dive',
+  quickLength: 'Ninety seconds',
+  chooseInput: 'How will you breathe?',
+  useMic: 'Use the microphone',
+  useMicHint: 'Breathe out through your mouth. Nothing is recorded.',
+  useTouch: 'Touch and hold',
+  useTouchHint: 'Hold a finger on the screen for as long as you breathe out.',
+  headphones: 'Headphones on for the full sound. Sit somewhere still.',
+  begin: 'Begin',
+  back: 'Back',
+  holdHint: 'Hold anywhere while you breathe out',
+  zones: ['Twilight', 'Midnight', 'Abyss'],
+  zoneLabel: 'Zone',
+  done: 'Done',
+  micFellBack: 'The microphone was unavailable, so this dive is on touch and hold.',
+};
+
+const fr: typeof en = {
+  tagline: 'Une plongée que vous menez avec votre souffle.',
+  scopeLine: 'Ni une thérapie, ni un diagnostic, ni pour une crise.',
+  dive: 'Plonger',
+  diveLength: 'Environ cinq minutes',
+  quick: 'Plongée rapide',
+  quickLength: 'Quatre-vingt-dix secondes',
+  chooseInput: 'Comment allez-vous respirer ?',
+  useMic: 'Utiliser le microphone',
+  useMicHint: 'Expirez par la bouche. Rien n’est enregistré.',
+  useTouch: 'Appui maintenu',
+  useTouchHint: 'Gardez un doigt sur l’écran pendant toute l’expiration.',
+  headphones: 'Mettez des écouteurs pour le son complet. Installez-vous au calme.',
+  begin: 'Commencer',
+  back: 'Retour',
+  holdHint: 'Maintenez n’importe où pendant l’expiration',
+  zones: ['Crépuscule', 'Minuit', 'Abysses'],
+  zoneLabel: 'Zone',
+  done: 'Terminé',
+  micFellBack: 'Le microphone était indisponible : cette plongée se fait par appui maintenu.',
+};
+
+export type AppStrings = typeof en;
+
+export function useAppStrings(): AppStrings {
+  const { language } = useLanguage();
+  return language === 'fr' ? fr : en;
+}

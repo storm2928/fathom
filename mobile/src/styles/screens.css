@@ -1,0 +1,230 @@
+/* Title */
+.title {
+  justify-content: space-between;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+}
+.title__brand {
+  margin-top: 18vh;
+  text-align: center;
+}
+.title__brand .wordmark {
+  font-size: 34px;
+}
+.title__brand .wordmark,
+.title__tagline {
+  /* The title sits on the bright dawn sky; a soft shadow keeps it legible. */
+  text-shadow: 0 1px 12px rgba(3, 8, 17, 0.55);
+}
+.title__tagline {
+  margin: 14px 0 0;
+  color: var(--hud-text);
+  font-size: 16px;
+}
+.title__actions {
+  display: grid;
+  gap: 12px;
+}
+.title__sub {
+  display: block;
+  margin-top: 4px;
+  font-weight: 400;
+  font-size: 13px;
+  opacity: 0.75;
+}
+.title__actions .game-btn {
+  min-height: 64px;
+  line-height: 1.15;
+}
+.title__scope {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--hud-muted);
+}
+
+/* Sheet: a card that rises from the bottom over the water */
+.sheet {
+  margin-top: auto;
+  margin-bottom: calc(env(safe-area-inset-bottom) + 12px);
+  padding: 24px 20px;
+  border-radius: 28px;
+  background: rgba(4, 10, 18, 0.72);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--hud-line);
+  max-height: calc(100% - env(safe-area-inset-top) - 24px);
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.sheet h1 {
+  margin: 0 0 10px;
+  font-size: 26px;
+  font-weight: 600;
+}
+.sheet p,
+.sheet li {
+  color: var(--hud-muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.sheet__actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+.choice {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+.choice__opt {
+  text-align: left;
+  border-radius: 18px;
+  min-height: 72px;
+  padding: 14px 18px;
+}
+.choice__opt[aria-pressed='true'] {
+  border-color: var(--hud-accent);
+  background: rgba(92, 227, 207, 0.12);
+}
+.choice__hint {
+  display: block;
+  margin-top: 4px;
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--hud-muted);
+  letter-spacing: 0;
+}
+
+/* Dive HUD */
+.hud {
+  pointer-events: none;
+}
+.hud__press {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+.hud__leave {
+  pointer-events: auto;
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 8px);
+  left: 12px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+}
+.hud__gauge {
+  position: absolute;
+  right: 14px;
+  top: 22%;
+  bottom: 22%;
+  width: 2px;
+  background: var(--hud-track);
+  border-radius: 2px;
+}
+.hud__gauge-mark {
+  position: absolute;
+  right: -4px;
+  width: 10px;
+  height: 2px;
+  background: var(--hud-accent);
+  transition: top 300ms linear;
+}
+.hud__depth {
+  position: absolute;
+  right: 26px;
+  top: calc(env(safe-area-inset-top) + 16px);
+  text-align: right;
+  font-family: var(--font-mono);
+}
+.hud__depth-value {
+  font-size: 28px;
+  color: var(--hud-text);
+}
+.hud__depth-label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+.hud__ring {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 28px);
+  transform: translateX(-50%);
+}
+.hud__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 8px);
+  text-align: center;
+  font-size: 12px;
+  color: var(--hud-muted);
+}
+.zone-card {
+  position: absolute;
+  top: 30%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  animation: zone-card 3.6s ease both;
+}
+.zone-card__over {
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+.zone-card__name {
+  margin-top: 6px;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+@keyframes zone-card {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  20%,
+  70% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Results */
+.results__figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 8px 0 12px;
+}
+.results__figure span {
+  display: block;
+}
+.results__over {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+.results__num {
+  font-family: var(--font-mono);
+  font-size: 44px;
+  color: var(--hud-text);
+}
+.results__unit {
+  font-size: 12px;
+  color: var(--hud-muted);
+}
