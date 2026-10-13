@@ -21,8 +21,17 @@ import { ResultsCard } from './screens/ResultsCard';
 import { useAppStrings } from './strings';
 import './styles/screens.css';
 
+/**
+ * Development only: VITE_FATHOM_AUTOPLAY=1 walks the whole flow by itself on the
+ * scripted fixture — two dives, the second left early — so a simulator build
+ * can be checked where touch input cannot be injected.
+ */
+// Its own switch rather than DEV: a simulator build is a `vite build`, where DEV
+// is false. Never set for a release, so the constant folds to false there.
+const AUTOPLAY = import.meta.env.VITE_FATHOM_AUTOPLAY === '1';
 /** Dev builds can drive a whole dive with the scripted fixture: add ?scripted to the URL. */
-const SCRIPTED = import.meta.env.DEV && new URLSearchParams(location.search).has('scripted');
+const SCRIPTED =
+  AUTOPLAY || (import.meta.env.DEV && new URLSearchParams(location.search).has('scripted'));
 const CALIBRATION_MS = 10_000;
 
 /** What actually drove the dive, in the words the results card uses. */
@@ -121,6 +130,30 @@ function Game() {
     scene?.start();
     send({ type: 'done' });
   };
+
+  const autoplayDives = useRef(0);
+  useEffect(() => {
+    if (!AUTOPLAY) return;
+    const after = (ms: number, fn: () => void) => {
+      const id = setTimeout(fn, ms);
+      return () => clearTimeout(id);
+    };
+    switch (flow.screen) {
+      case 'safety':
+        return after(4000, () => send({ type: 'acknowledge', input: 'touch' }));
+      case 'title':
+        return after(4000, () => send({ type: 'choose-dive', plan: 'quick' }));
+      case 'predive':
+        return controller ? after(3000, () => void begin()) : undefined;
+      case 'dive':
+        autoplayDives.current += 1;
+        return autoplayDives.current === 2 ? after(6000, () => controller?.stop()) : undefined;
+      case 'results':
+        return after(6000, done);
+    }
+    // Keyed on the screen: each screen schedules its one step when it appears.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flow.screen, controller]);
 
   switch (flow.screen) {
     case 'safety':

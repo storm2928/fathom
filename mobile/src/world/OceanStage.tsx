@@ -53,7 +53,7 @@ export function OceanStage({ children }: { children: ReactNode }) {
 
   return (
     <OceanContext.Provider value={scene}>
-      <div ref={hostRef} style={{ position: 'fixed', inset: 0 }} />
+      <div ref={hostRef} style={{ position: 'fixed', inset: 0, touchAction: 'none' }} />
       {children}
     </OceanContext.Provider>
   );

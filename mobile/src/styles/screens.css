@@ -105,6 +105,8 @@
   position: absolute;
   inset: 0;
   pointer-events: auto;
+  /* A held finger is a breath, never a scroll or a zoom. */
+  touch-action: none;
 }
 .hud__leave {
   pointer-events: auto;
