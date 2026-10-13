@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --import ../src/game/testing/resolve.mjs src/testing/run.ts",
     "sync": "npm run build && cap sync ios",
-    "ios": "npm run sync && cap run ios --target B18E46D7-6BC1-40C9-8CB1-6C9336B91DB0"
+    "ios": "npm run sync && sh scripts/run-ios.sh"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
