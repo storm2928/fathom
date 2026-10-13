@@ -161,3 +161,64 @@ test('a second start while the first is starting is ignored', async () => {
   equal(built, 1, 'two engines were built');
   controller.stop();
 });
+
+/** An input that takes a while to start, like a microphone waiting on its permission prompt. */
+function slowEngine(): BreathEngine & { stopped: number } {
+  let stopped = 0;
+  return {
+    start: () => new Promise<void>((resolve) => setTimeout(resolve, 30)),
+    stop() {
+      stopped += 1;
+    },
+    calibrate: (): Promise<CalibrationResult> =>
+      Promise.resolve({ baselineRR: 12, noiseFloor: 0, ok: true }),
+    on: <K extends keyof BreathEventMap>(_e: K, _h: (p: BreathEventMap[K]) => void) => () => {},
+    setExhaleExpected() {},
+    usingFallbackInput: false,
+    get stopped() {
+      return stopped;
+    },
+  };
+}
+
+test('leaving while the input is still starting cancels the dive and releases the input', async () => {
+  const scene = new RecordingScene();
+  const mic = slowEngine();
+  const controller = new DiveController(
+    scene,
+    { onState: () => {}, onPrompt: () => {}, onResult: () => {} },
+    factories({ mic: () => mic }),
+  );
+  const pending = controller.start({ plan: 'quick', input: 'mic' });
+  controller.stop();
+  equal(await pending, null, 'a cancelled start still reported a dive');
+  equal(controller.running, false, 'a session ran with nobody watching it');
+  equal(mic.stopped, 1, 'the microphone stayed open after the dive was cancelled');
+  assert(!scene.calls.includes('attach'), 'the scene was handed a cancelled dive');
+});
+
+test('sending the app to the background ends the dive as left early', async () => {
+  let onVisibility: (() => void) | null = null;
+  const lifecycle = {
+    visibilityState: 'visible' as DocumentVisibilityState,
+    addEventListener: (_type: string, handler: () => void) => {
+      onVisibility = handler;
+    },
+    removeEventListener: () => {
+      onVisibility = null;
+    },
+  };
+  let result: SessionResult | null = null;
+  const controller = new DiveController(
+    new RecordingScene(),
+    { onState: () => {}, onPrompt: () => {}, onResult: (r) => (result = r) },
+    factories(),
+    lifecycle,
+  );
+  await controller.start({ plan: 'full', input: 'touch' });
+  lifecycle.visibilityState = 'hidden';
+  (onVisibility as (() => void) | null)?.();
+  equal((result as SessionResult | null)?.ending, 'stopped', 'the dive kept running in the background');
+  equal(controller.running, false);
+  equal(onVisibility, null, 'the visibility listener outlived the dive');
+});

@@ -3,8 +3,18 @@ import { CrisisRail } from '@fathom/shell/CrisisRail';
 import { fill } from '@fathom/shell/strings';
 import { formatDecimal, formatDuration } from '@fathom/shell/format';
 import type { SessionResult } from '@fathom/game/session/sessionMachine';
+import type { InputCode } from '@fathom/game/surface/diveLog';
+import type { Strings } from '@fathom/shell/strings';
 import { verdictFor } from '@fathom/game/surface/verdict';
 import { useAppStrings } from '../strings';
+
+/** What actually drove the dive, in the words the results card uses. */
+const INPUT_LABEL: Record<InputCode, (t: Strings) => string> = {
+  microphone: (t) => t.setup.inputMicrophone,
+  keyboard: (t) => t.setup.inputKeyboard,
+  touch: (t) => t.setup.inputTouch,
+  scripted: (t) => t.setup.inputScripted,
+};
 
 /**
  * What the dive measured, then the door. Same claims, same wording as the
@@ -12,17 +22,42 @@ import { useAppStrings } from '../strings';
  */
 export function ResultsCard({
   result,
-  inputLabel,
+  input,
   onDone,
 }: {
   result: SessionResult;
-  /** What actually drove the dive, as people read it: microphone, touch and hold. */
-  inputLabel: string;
+  /** What actually drove the dive — not what was chosen. */
+  input: InputCode;
   onDone: () => void;
 }) {
   const { t, language } = useLanguage();
   const a = useAppStrings();
   const s = t.surface;
+  const inputLabel = INPUT_LABEL[input](t);
+
+  const done = (
+    <div className="sheet__actions">
+      <button type="button" className="game-btn game-btn--primary" onClick={onDone}>
+        {a.done}
+      </button>
+    </div>
+  );
+
+  // Left before the baseline was read: there is no "before", so no figures and
+  // no verdict — an invented comparison is worse than none.
+  if (!result.calibrated && result.ending === 'stopped') {
+    return (
+      <div className="safe fade-in">
+        <div className="sheet">
+          <h1>{a.leftEarly}</h1>
+          <p>{a.leftBeforeBaseline}</p>
+          <p style={{ color: 'var(--hud-text)' }}>{s.exit}</p>
+          <CrisisRail />
+          {done}
+        </div>
+      </div>
+    );
+  }
 
   if (result.ending === 'signal-lost') {
     return (
@@ -30,13 +65,10 @@ export function ResultsCard({
         <div className="sheet">
           <h1>{s.lostTitle}</h1>
           <p>{s.lostBody}</p>
-          <p>{s.lostFix}</p>
+          {/* The website's fix names the spacebar; a phone has none. */}
+          <p>{input === 'touch' ? a.lostFixTouch : a.lostFixMic}</p>
           <CrisisRail />
-          <div className="sheet__actions">
-            <button type="button" className="game-btn game-btn--primary" onClick={onDone}>
-              {a.done}
-            </button>
-          </div>
+          {done}
         </div>
       </div>
     );
@@ -80,11 +112,7 @@ export function ResultsCard({
         </p>
         <p style={{ color: 'var(--hud-text)' }}>{s.exit}</p>
         <CrisisRail />
-        <div className="sheet__actions">
-          <button type="button" className="game-btn game-btn--primary" onClick={onDone}>
-            {a.done}
-          </button>
-        </div>
+        {done}
       </div>
     </div>
   );

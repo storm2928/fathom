@@ -51,6 +51,13 @@ export const ZONE_FOR_STATE: Partial<Record<SessionState, number>> = {
   'zone-3': 2,
 };
 
+/** What tells the controller the app went to the background: `document`, in the app. */
+export interface Lifecycle {
+  readonly visibilityState: DocumentVisibilityState;
+  addEventListener(type: 'visibilitychange', listener: () => void): void;
+  removeEventListener(type: 'visibilitychange', listener: () => void): void;
+}
+
 /** The starting prompt rate. The arc only ever slows from here. */
 const START_RR = 12;
 
@@ -58,8 +65,11 @@ export class DiveController {
   private readonly scene: DiveSceneLike;
   private readonly callbacks: DiveCallbacks;
   private readonly factories: InputFactories;
+  private readonly lifecycle: Lifecycle | null;
 
   private starting = false;
+  /** Leave was pressed while the input was still starting. */
+  private cancelled = false;
   private engine: BreathEngine | null = null;
   private touchEngine: SpacebarBreathEngine | null = null;
   private conductor: BreathConductor | null = null;
@@ -67,10 +77,16 @@ export class DiveController {
   private detach: (() => void)[] = [];
   private code: InputCode = 'microphone';
 
-  constructor(scene: DiveSceneLike, callbacks: DiveCallbacks, factories: InputFactories) {
+  constructor(
+    scene: DiveSceneLike,
+    callbacks: DiveCallbacks,
+    factories: InputFactories,
+    lifecycle: Lifecycle | null = (globalThis as { document?: Lifecycle }).document ?? null,
+  ) {
     this.scene = scene;
     this.callbacks = callbacks;
     this.factories = factories;
+    this.lifecycle = lifecycle;
   }
 
   get running(): boolean {
@@ -93,12 +109,19 @@ export class DiveController {
   }): Promise<StartedInput | null> {
     if (this.starting || this.running) return null;
     this.starting = true;
+    this.cancelled = false;
     try {
       // Only the fixture may run fast; a person breathes in real time.
       const timeScale = config.input === 'scripted' ? (config.timeScale ?? 1) : 1;
       const conductor = new BreathConductor({ targetRR: START_RR, timeScale });
 
       const started = await startInput(this.planFor(config.input, conductor, timeScale));
+      // Left before the input finished starting — a microphone prompt still on
+      // screen, say. Release it rather than run a dive nobody is watching.
+      if (this.cancelled) {
+        started.engine.stop();
+        return null;
+      }
       this.engine = started.engine;
       this.code = started.code;
       this.touchEngine =
@@ -119,6 +142,7 @@ export class DiveController {
         onResult: (result) => this.onResult(result),
       });
       this.machine = machine;
+      this.watchLifecycle();
       this.scene.setPose('level');
       // The machine starts the conductor once calibration is done (#29).
       void machine.start();
@@ -128,12 +152,34 @@ export class DiveController {
     }
   }
 
-  /** Leave early. The session reports what it measured so far. */
+  /**
+   * Leave early. The session reports what it measured so far; a dive whose
+   * input is still starting is cancelled instead.
+   */
   stop(): void {
+    if (this.starting) {
+      this.cancelled = true;
+      return;
+    }
     this.machine?.stop();
   }
 
   // ------------------------------------------------------------- internals
+
+  /**
+   * A dive does not carry on in the background. iOS interrupts the microphone
+   * there and a hold cannot continue, so going to the background is leaving:
+   * the session ends where it stood and the input is released.
+   */
+  private watchLifecycle(): void {
+    const lifecycle = this.lifecycle;
+    if (!lifecycle) return;
+    const onVisibility = () => {
+      if (lifecycle.visibilityState === 'hidden') this.stop();
+    };
+    lifecycle.addEventListener('visibilitychange', onVisibility);
+    this.detach.push(() => lifecycle.removeEventListener('visibilitychange', onVisibility));
+  }
 
   private planFor(input: DiveInput, conductor: BreathConductor, timeScale: number): InputPlan {
     switch (input) {

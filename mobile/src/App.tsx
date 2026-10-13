@@ -4,7 +4,6 @@ import { fill } from '@fathom/shell/strings';
 import type { SessionResult, SessionState } from '@fathom/game/session/sessionMachine';
 import type { SpacebarBreathEngine } from '@fathom/game/input/spacebarEngine';
 import type { InputCode } from '@fathom/game/surface/diveLog';
-import type { Strings } from '@fathom/shell/strings';
 import { initialFlow, nextFlow } from './app/flow';
 import type { FlowEvent, FlowState } from './app/flow';
 import { loadChoices, saveChoices } from './app/storage';
@@ -33,14 +32,6 @@ const AUTOPLAY = import.meta.env.VITE_FATHOM_AUTOPLAY === '1';
 const SCRIPTED =
   AUTOPLAY || (import.meta.env.DEV && new URLSearchParams(location.search).has('scripted'));
 const CALIBRATION_MS = 10_000;
-
-/** What actually drove the dive, in the words the results card uses. */
-const INPUT_LABEL: Record<InputCode, (t: Strings) => string> = {
-  microphone: (t) => t.setup.inputMicrophone,
-  keyboard: (t) => t.setup.inputKeyboard,
-  touch: (t) => t.setup.inputTouch,
-  scripted: (t) => t.setup.inputScripted,
-};
 
 function Game() {
   const { t } = useLanguage();
@@ -174,7 +165,12 @@ function Game() {
           busy={busy || !controller}
           error={error}
           onBegin={() => void begin()}
-          onBack={() => send({ type: 'back' })}
+          onBack={() => {
+            // Cancels a dive whose input is still starting, so the microphone is
+            // not left open behind the title.
+            controller?.stop();
+            send({ type: 'back' });
+          }}
         />
       );
     case 'dive':
@@ -190,7 +186,7 @@ function Game() {
         />
       );
     case 'results':
-      return result ? <ResultsCard result={result} inputLabel={INPUT_LABEL[inputCode](t)} onDone={done} /> : null;
+      return result ? <ResultsCard result={result} input={inputCode} onDone={done} /> : null;
   }
 }
 

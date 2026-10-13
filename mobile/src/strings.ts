@@ -25,6 +25,12 @@ const en = {
   zoneLabel: 'Zone',
   done: 'Done',
   micFellBack: 'The microphone was unavailable, so this dive is on touch and hold.',
+  leftEarly: 'Left early',
+  leftBeforeBaseline:
+    'You left before your starting rate had been read, so there is nothing to compare this time.',
+  lostFixMic: 'A quieter room usually fixes it — or choose touch and hold instead of the microphone.',
+  lostFixTouch:
+    'No holds were felt while your starting rate was being read. Hold a finger on the screen for each breath out, from the very first one.',
 };
 
 const fr: typeof en = {
@@ -47,6 +53,13 @@ const fr: typeof en = {
   zoneLabel: 'Zone',
   done: 'Terminé',
   micFellBack: 'Le microphone était indisponible : cette plongée se fait par appui maintenu.',
+  leftEarly: 'Sortie anticipée',
+  leftBeforeBaseline:
+    'La plongée s’est arrêtée avant la lecture de votre rythme de départ : il n’y a donc rien à comparer cette fois.',
+  lostFixMic:
+    'Un endroit plus calme règle généralement le problème — ou choisissez l’appui maintenu plutôt que le microphone.',
+  lostFixTouch:
+    'Aucun appui n’a été senti pendant la lecture de votre rythme de départ. Gardez un doigt sur l’écran à chaque expiration, dès la première.',
 };
 
 export type AppStrings = typeof en;

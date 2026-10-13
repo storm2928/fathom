@@ -180,3 +180,25 @@ test('the plan travels into the result so an exported log says what was run', as
   const full = await run(new StubEngine(ok), { plan: 'full' });
   equal(full.result.plan, 'full');
 });
+
+test('leaving during calibration reports that no baseline was measured', async () => {
+  const engine = new StubEngine(ok);
+  const conductor = new BreathConductor({ targetRR: 15, timeScale: FAST });
+  conductor.attach(engine);
+  let result: SessionResult | null = null;
+  const machine = new SessionMachine(engine, conductor, {
+    plan: 'quick',
+    timeScale: FAST,
+    onResult: (r) => (result = r),
+  });
+  void machine.start();
+  machine.stop();
+  const left = result as SessionResult | null;
+  equal(left?.ending, 'stopped');
+  equal(left?.calibrated, false, 'a dive left before its baseline claimed to have one');
+});
+
+test('a dive that got past calibration says so', async () => {
+  const { result } = await run(new StubEngine(ok));
+  equal(result.calibrated, true);
+});

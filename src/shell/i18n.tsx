@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { DICTIONARIES } from './strings';
 import type { Language, Strings } from './strings';
+import { readLanguage, sessionLanguageStore, writeLanguage } from './languageStore';
 
 interface LanguageContextValue {
   language: Language;
@@ -11,21 +12,13 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-const STORAGE_KEY = 'fathom.language';
-
-function initialLanguage(): Language {
-  const stored = sessionStorage.getItem(STORAGE_KEY);
-  if (stored === 'en' || stored === 'fr') return stored;
-  // Follow the browser rather than assuming English. A francophone user should
-  // not have to find a toggle before reading the safety screen.
-  return navigator.language?.toLowerCase().startsWith('fr') ? 'fr' : 'en';
-}
-
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(initialLanguage);
+  const [language, setLanguageState] = useState<Language>(() =>
+    readLanguage(sessionLanguageStore(), navigator.language),
+  );
 
   const setLanguage = useCallback((next: Language) => {
-    sessionStorage.setItem(STORAGE_KEY, next);
+    writeLanguage(sessionLanguageStore(), next);
     setLanguageState(next);
   }, []);
 

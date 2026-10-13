@@ -19,6 +19,7 @@ import './../session/cycleShape.test.ts';
 import './../session/conductor.test.ts';
 import './../session/sessionMachine.test.ts';
 import './../surface/verdict.test.ts';
+import './../../shell/languageStore.test.ts';
 import { runAll } from './harness.ts';
 
 await runAll();

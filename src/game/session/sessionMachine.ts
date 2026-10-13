@@ -31,6 +31,11 @@ export interface SessionResult {
   ending: SessionEnding;
   /** which mode was run, so an exported log says what it was */
   plan: SessionPlan;
+  /**
+   * Whether the baseline read finished. A dive left during calibration has no
+   * "before" to compare with, and its rates must not be shown as if it did.
+   */
+  calibrated: boolean;
   /** breaths/min measured before the dive */
   baselineRR: number;
   /** breaths/min measured over the final zone */
@@ -136,6 +141,7 @@ export class SessionMachine {
   private downshiftMs: number | null = null;
   private halfwayTarget: number | null = null;
   private finished = false;
+  private calibrated = false;
 
   constructor(engine: BreathEngine, conductor: BreathConductor, options: SessionOptions = {}) {
     this.engine = engine;
@@ -169,6 +175,7 @@ export class SessionMachine {
       return;
     }
 
+    this.calibrated = true;
     this.baselineRR = calibration.baselineRR;
     this.latestRR = calibration.baselineRR;
     this.divingFrom = performance.now();
@@ -280,6 +287,7 @@ export class SessionMachine {
     this.onResult?.({
       ending,
       plan: this.planName,
+      calibrated: this.calibrated,
       baselineRR: this.baselineRR,
       finalRR,
       deltaRR: this.baselineRR - finalRR,
