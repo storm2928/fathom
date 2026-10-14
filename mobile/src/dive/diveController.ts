@@ -88,6 +88,7 @@ export class DiveController {
   private code: InputCode = 'microphone';
   private zone = 0;
   private longestExhaleMs = 0;
+  private breathingOut = false;
 
   constructor(
     scene: DiveSceneLike,
@@ -103,6 +104,20 @@ export class DiveController {
 
   get running(): boolean {
     return this.machine !== null;
+  }
+
+  /** A breath out is under way right now (the engine's exhale phase). */
+  get exhaling(): boolean {
+    return this.running && this.breathingOut;
+  }
+
+  /**
+   * A breath out starting now would be scored. Open through calibration and the
+   * exhale and rest steps; closed during the inhale beats. The soundscape keeps
+   * quiet on the speaker while it is open.
+   */
+  get exhaleWindow(): boolean {
+    return this.running && (this.conductor?.exhaleExpected ?? false);
   }
 
   /** The engine a finger presses, when the dive is on touch. */
@@ -145,6 +160,12 @@ export class DiveController {
       this.longestExhaleMs = 0;
       this.scene.reset();
       this.detach.push(this.scene.attach(started.engine, conductor));
+      this.breathingOut = false;
+      this.detach.push(
+        started.engine.on('phase-change', ({ phase }) => {
+          this.breathingOut = phase === 'exhale';
+        }),
+      );
       this.detach.push(
         started.engine.on('exhale-end', ({ durationMs }) => {
           this.longestExhaleMs = Math.max(this.longestExhaleMs, durationMs);
@@ -248,5 +269,6 @@ export class DiveController {
     this.engine = null;
     this.touchEngine = null;
     this.machine = null;
+    this.breathingOut = false;
   }
 }

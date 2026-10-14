@@ -238,3 +238,31 @@ test('a finished dive reports its depth, deepest zone and longest exhale', async
   equal(reported?.zone, 0, 'a quick dive reached a zone it does not have');
   assert((reported?.longestExhaleMs ?? 0) > 1_000, `longest exhale ${reported?.longestExhaleMs}ms is not a real breath`);
 });
+
+test('the controller says when a breath out is under way, for the soundscape', async () => {
+  const controller = new DiveController(
+    new RecordingScene(),
+    { onState: () => {}, onPrompt: () => {}, onResult: () => {} },
+    factories(),
+  );
+  equal(controller.exhaling, false);
+  await controller.start({ plan: 'full', input: 'touch' });
+  controller.touch?.beginHold();
+  equal(controller.exhaling, true, 'a held breath out was not reported');
+  controller.touch?.endHold();
+  equal(controller.exhaling, false);
+  controller.stop();
+  equal(controller.exhaling, false, 'a stopped dive still reported a breath out');
+});
+
+test('before the prompt starts, any breath out could be scored', async () => {
+  const controller = new DiveController(
+    new RecordingScene(),
+    { onState: () => {}, onPrompt: () => {}, onResult: () => {} },
+    factories(),
+  );
+  equal(controller.exhaleWindow, false, 'no dive, but an exhale window was open');
+  await controller.start({ plan: 'full', input: 'touch' });
+  equal(controller.exhaleWindow, true, 'calibration listens to every breath');
+  controller.stop();
+});

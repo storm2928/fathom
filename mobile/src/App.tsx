@@ -20,6 +20,7 @@ import { PreDive } from './screens/PreDive';
 import { ResultsCard } from './screens/ResultsCard';
 import { SettingsSheet } from './screens/SettingsSheet';
 import { useAppStrings } from './strings';
+import { playInhale, useSoundscape } from './sound/useSoundscape';
 import './styles/screens.css';
 
 /**
@@ -73,8 +74,10 @@ function Game() {
                   setRing((r) => ({ step: 'calibrating', sweepMs: CALIBRATION_MS / timeScale, seq: r.seq + 1 }));
                 }
               },
-              onPrompt: (window, sweepMs) =>
-                setRing((r) => ({ step: window.step, sweepMs, seq: r.seq + 1 })),
+              onPrompt: (window, sweepMs) => {
+                setRing((r) => ({ step: window.step, sweepMs, seq: r.seq + 1 }));
+                if (window.step === 'inhale' || window.step === 'top-up') playInhale();
+              },
               onResult: (finished, code, diveStats) => {
                 setResult(finished);
                 setInputCode(code);
@@ -98,6 +101,15 @@ function Game() {
       if (sampling.current !== null) clearInterval(sampling.current);
     };
   }, [flow.screen, scene]);
+
+  useSoundscape({
+    screen: flow.screen,
+    depth: () => (flow.screen === 'dive' || flow.screen === 'results' ? (scene?.depth ?? 0) : 0),
+    zone: flow.screen === 'dive' ? (zone ?? 0) : flow.screen === 'results' ? stats.zone : 0,
+    exhaling: () => controller?.exhaling ?? false,
+    exhaleWindow: () => controller?.exhaleWindow ?? false,
+    volume,
+  });
 
   const begin = async () => {
     if (!controller) return;

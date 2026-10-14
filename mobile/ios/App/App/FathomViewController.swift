@@ -4,6 +4,8 @@ import Capacitor
 /// itself rather than in an npm package.
 class FathomViewController: CAPBridgeViewController {
   override open func capacitorDidLoad() {
+    AudioSession.configure()
     bridge?.registerPluginInstance(FathomMicPlugin())
+    bridge?.registerPluginInstance(FathomSoundPlugin())
   }
 }
