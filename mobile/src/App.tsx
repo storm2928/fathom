@@ -29,8 +29,9 @@ import './styles/screens.css';
 // is false. Never set for a release, so the constant folds to false there.
 const AUTOPLAY = import.meta.env.VITE_FATHOM_AUTOPLAY === '1';
 /** Dev builds can drive a whole dive with the scripted fixture: add ?scripted to the URL. */
+const AUTOPLAY_MIC = AUTOPLAY && import.meta.env.VITE_FATHOM_AUTOPLAY_INPUT === 'mic';
 const SCRIPTED =
-  AUTOPLAY || (import.meta.env.DEV && new URLSearchParams(location.search).has('scripted'));
+  (AUTOPLAY && !AUTOPLAY_MIC) || (import.meta.env.DEV && new URLSearchParams(location.search).has('scripted'));
 const CALIBRATION_MS = 10_000;
 
 function Game() {
@@ -99,7 +100,7 @@ function Game() {
     setZone(null);
     setDepth(0);
     setRing({ step: null, sweepMs: 0, seq: 0 });
-    const input: DiveInput = SCRIPTED ? 'scripted' : flow.input;
+    const input: DiveInput = SCRIPTED ? 'scripted' : AUTOPLAY_MIC ? 'mic' : flow.input;
     try {
       // Called directly from the tap so the microphone opens inside the gesture.
       const started = await controller.start({ plan: flow.plan, input, timeScale });
