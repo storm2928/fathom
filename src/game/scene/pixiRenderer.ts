@@ -145,6 +145,7 @@ export class PixiSceneRenderer implements SceneRenderer {
       this.waterA,
       this.waterB,
       this.surface.rays,
+      this.surface.under,
       this.farLayer,
       this.midLayer,
       this.fog,
