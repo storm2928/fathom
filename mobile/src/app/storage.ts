@@ -1,8 +1,9 @@
 import type { InputChoice } from './flow';
 
 /**
- * What the app remembers between launches in Plan 1: that the scope was read,
- * and which input was chosen. Plan 4 moves this to Capacitor Preferences.
+ * What the app remembers between launches: that the scope was read, which
+ * input was chosen, volume and haptics. Backed by Capacitor Preferences once
+ * main.tsx has hydrated it; localStorage only before that, and in a browser.
  *
  * Every access is guarded. A web view with storage blocked must still open on
  * the safety screen rather than on a white one.
@@ -17,7 +18,18 @@ export interface SavedChoices {
 
 const KEY = 'fathom.app.choices';
 
-function defaultStore(): KeyValueStore | null {
+/** The Preferences-backed store, set once at launch (see main.tsx). */
+let appStore: KeyValueStore | null = null;
+
+export function setAppStore(store: KeyValueStore): void {
+  appStore = store;
+}
+
+/** Keys saved before Preferences existed, moved across on first launch. */
+export const LEGACY_KEYS = ['fathom.app.choices', 'fathom.app.volume', 'fathom.app.haptics'];
+
+export function defaultStore(): KeyValueStore | null {
+  if (appStore) return appStore;
   try {
     return globalThis.localStorage ?? null;
   } catch {

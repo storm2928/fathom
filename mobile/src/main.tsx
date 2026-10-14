@@ -6,13 +6,33 @@ import '@fathom/index.css';
 import '@fathom/shell/ui/ui.css';
 import './styles/app.css';
 import App from './App';
+import { Preferences } from '@capacitor/preferences';
+import { hydrate } from './app/persistentStore';
+import { LEGACY_KEYS, setAppStore } from './app/storage';
 
 // The ocean is the whole screen. On the web (vite dev) there is no status bar
 // plugin, and that is fine.
 if (Capacitor.isNativePlatform()) void StatusBar.hide().catch(() => {});
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+function legacyStorage() {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function boot() {
+  // Saved state comes from iOS Preferences in the app. Loaded before the first
+  // render so the safety gate, settings and journal read it synchronously.
+  if (Capacitor.isNativePlatform()) {
+    setAppStore(await hydrate(Preferences, legacyStorage(), LEGACY_KEYS));
+  }
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
+
+void boot();

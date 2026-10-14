@@ -6,6 +6,7 @@
 import './smoke.test.ts';
 import '../app/flow.test.ts';
 import '../app/storage.test.ts';
+import '../app/persistentStore.test.ts';
 import '../dive/diveController.test.ts';
 import '../native/nativeMicCapture.test.ts';
 import '../screens/resultsFormat.test.ts';
