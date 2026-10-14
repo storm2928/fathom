@@ -6,7 +6,14 @@ import type { SpacebarBreathEngine } from '@fathom/game/input/spacebarEngine';
 import type { InputCode } from '@fathom/game/surface/diveLog';
 import { initialFlow, nextFlow } from './app/flow';
 import type { FlowEvent, FlowState } from './app/flow';
-import { loadChoices, loadVolume, saveChoices, saveVolume } from './app/storage';
+import {
+  loadChoices,
+  loadHaptics,
+  loadVolume,
+  saveChoices,
+  saveHaptics,
+  saveVolume,
+} from './app/storage';
 import type { InputChoice } from './app/flow';
 import { DiveController, ZONE_FOR_STATE } from './dive/diveController';
 import type { DiveInput, DiveStats } from './dive/diveController';
@@ -21,6 +28,8 @@ import { ResultsCard } from './screens/ResultsCard';
 import { SettingsSheet } from './screens/SettingsSheet';
 import { useAppStrings } from './strings';
 import { playInhale, useSoundscape } from './sound/useSoundscape';
+import { useHaptics } from './haptics/useHaptics';
+import { haptics } from './native/fathomHaptics';
 import './styles/screens.css';
 
 /**
@@ -47,6 +56,10 @@ function Game() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Read by the soundscape (Plan 2); saved as soon as it changes.
   const [volume, setVolume] = useState(loadVolume);
+  const [hapticsOn, setHapticsOn] = useState(loadHaptics);
+  // Read inside controller callbacks, which are built once.
+  const hapticsRef = useRef(hapticsOn);
+  hapticsRef.current = hapticsOn;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<SessionState>('idle');
@@ -69,6 +82,7 @@ function Game() {
               onState: (next) => {
                 setState(next);
                 const z = ZONE_FOR_STATE[next];
+                if ((next === 'zone-2' || next === 'zone-3') && hapticsRef.current) haptics.tap('zone');
                 if (next !== 'calibrating' && z !== undefined) setZone(z);
                 if (next === 'calibrating') {
                   setRing((r) => ({ step: 'calibrating', sweepMs: CALIBRATION_MS / timeScale, seq: r.seq + 1 }));
@@ -76,7 +90,10 @@ function Game() {
               },
               onPrompt: (window, sweepMs) => {
                 setRing((r) => ({ step: window.step, sweepMs, seq: r.seq + 1 }));
-                if (window.step === 'inhale' || window.step === 'top-up') playInhale();
+                if (window.step === 'inhale' || window.step === 'top-up') {
+                  playInhale();
+                  if (hapticsRef.current) haptics.tap('inhale');
+                }
               },
               onResult: (finished, code, diveStats) => {
                 setResult(finished);
@@ -102,6 +119,13 @@ function Game() {
     };
   }, [flow.screen, scene]);
 
+  useHaptics({
+    enabled: hapticsOn,
+    diving: flow.screen === 'dive',
+    input: inputCode === 'microphone' ? 'mic' : inputCode === 'scripted' ? 'scripted' : 'touch',
+    exhaling: () => controller?.exhaling ?? false,
+  });
+
   useSoundscape({
     screen: flow.screen,
     depth: () => (flow.screen === 'dive' || flow.screen === 'results' ? (scene?.depth ?? 0) : 0),
@@ -125,6 +149,7 @@ function Game() {
       const started = await controller.start({ plan: flow.plan, input, timeScale });
       if (!started) return;
       setTouch(controller.touch);
+      setInputCode(started.code);
       if (started.fellBack) setNotice(a.micFellBack);
       send({ type: 'begin' });
     } catch (e) {
@@ -179,6 +204,11 @@ function Game() {
       volume={volume}
       input={flow.input}
       diving={flow.screen === 'dive'}
+      haptics={hapticsOn}
+      onHaptics={(on) => {
+        setHapticsOn(on);
+        saveHaptics(on);
+      }}
       onVolume={changeVolume}
       onInput={changeInput}
       onClose={() => setSettingsOpen(false)}

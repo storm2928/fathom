@@ -7,5 +7,6 @@ class FathomViewController: CAPBridgeViewController {
     AudioSession.configure()
     bridge?.registerPluginInstance(FathomMicPlugin())
     bridge?.registerPluginInstance(FathomSoundPlugin())
+    bridge?.registerPluginInstance(FathomHapticsPlugin())
   }
 }

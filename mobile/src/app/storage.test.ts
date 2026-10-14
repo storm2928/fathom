@@ -1,5 +1,13 @@
 import { test, equal } from '@fathom/game/testing/harness.ts';
-import { DEFAULT_VOLUME, loadChoices, loadVolume, saveChoices, saveVolume } from './storage.ts';
+import {
+  DEFAULT_VOLUME,
+  loadChoices,
+  loadHaptics,
+  loadVolume,
+  saveChoices,
+  saveHaptics,
+  saveVolume,
+} from './storage.ts';
 import type { KeyValueStore } from './storage.ts';
 
 function memory(): KeyValueStore {
@@ -64,4 +72,13 @@ test('volume is kept between silent and full', () => {
 test('volume survives a storage that throws', () => {
   equal(loadVolume(broken), DEFAULT_VOLUME);
   saveVolume(0.5, broken);
+});
+
+test('haptics default on, round-trip, and survive a broken storage', () => {
+  const store = memory();
+  equal(loadHaptics(store), true);
+  saveHaptics(false, store);
+  equal(loadHaptics(store), false);
+  equal(loadHaptics(broken), true);
+  saveHaptics(false, broken);
 });

@@ -11,6 +11,7 @@
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
+		E3124409DF8F19AF6A0CDFDB /* FathomHapticsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 182D831CAA154AA750D2C20A /* FathomHapticsPlugin.swift */; };
 		FAC180D6B2E6E1B465E55130 /* AudioSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6577428C2F6D6BC64E5A22 /* AudioSession.swift */; };
 		4D3334955D46AF783B52901A /* Soundscape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD2D2490CA4C616E8C4BF14 /* Soundscape.swift */; };
 		E2ED829AF48D9D59CE6CA6B0 /* FathomSoundPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCACCDB251BCE79793A67C9 /* FathomSoundPlugin.swift */; };
@@ -29,6 +30,7 @@
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		182D831CAA154AA750D2C20A /* FathomHapticsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FathomHapticsPlugin.swift; sourceTree = "<group>"; };
 		CC6577428C2F6D6BC64E5A22 /* AudioSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSession.swift; sourceTree = "<group>"; };
 		5FD2D2490CA4C616E8C4BF14 /* Soundscape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Soundscape.swift; sourceTree = "<group>"; };
 		6CCACCDB251BCE79793A67C9 /* FathomSoundPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FathomSoundPlugin.swift; sourceTree = "<group>"; };
@@ -79,6 +81,7 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+				182D831CAA154AA750D2C20A /* FathomHapticsPlugin.swift */,
 				CC6577428C2F6D6BC64E5A22 /* AudioSession.swift */,
 				5FD2D2490CA4C616E8C4BF14 /* Soundscape.swift */,
 				6CCACCDB251BCE79793A67C9 /* FathomSoundPlugin.swift */,
@@ -177,6 +180,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				E3124409DF8F19AF6A0CDFDB /* FathomHapticsPlugin.swift in Sources */,
 				FAC180D6B2E6E1B465E55130 /* AudioSession.swift in Sources */,
 				4D3334955D46AF783B52901A /* Soundscape.swift in Sources */,
 				E2ED829AF48D9D59CE6CA6B0 /* FathomSoundPlugin.swift in Sources */,

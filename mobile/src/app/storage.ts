@@ -77,3 +77,24 @@ export function saveVolume(volume: number, store: KeyValueStore | null = default
     // Not remembered; the slider still applies until the app closes.
   }
 }
+
+/** Haptics on or off. On unless the player turned them off. */
+const HAPTICS_KEY = 'fathom.app.haptics';
+
+export function loadHaptics(store: KeyValueStore | null = defaultStore()): boolean {
+  if (!store) return true;
+  try {
+    return store.getItem(HAPTICS_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+export function saveHaptics(on: boolean, store: KeyValueStore | null = defaultStore()): void {
+  if (!store) return;
+  try {
+    store.setItem(HAPTICS_KEY, on ? 'on' : 'off');
+  } catch {
+    // Not remembered; the toggle still applies until the app closes.
+  }
+}

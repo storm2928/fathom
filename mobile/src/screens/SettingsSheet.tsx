@@ -10,11 +10,15 @@ export function SettingsSheet({
   volume,
   input,
   diving,
+  haptics,
   onVolume,
   onInput,
+  onHaptics,
   onClose,
 }: {
   volume: number;
+  haptics: boolean;
+  onHaptics: (on: boolean) => void;
   input: InputChoice;
   diving: boolean;
   onVolume: (volume: number) => void;
@@ -42,6 +46,20 @@ export function SettingsSheet({
           onChange={(e) => onVolume(Number(e.target.value) / 100)}
           style={{ '--fill': `${volume * 100}%` } as CSSProperties}
         />
+
+        <button
+          type="button"
+          className="settings__toggle"
+          role="switch"
+          aria-checked={haptics}
+          onClick={() => onHaptics(!haptics)}
+        >
+          <span>
+            {a.haptics}
+            <span className="settings__hint">{a.hapticsHint}</span>
+          </span>
+          <span className="settings__switch" aria-hidden="true" />
+        </button>
 
         <p className="settings__row">{a.breathingMode}</p>
         <div className="choice">

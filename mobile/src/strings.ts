@@ -45,6 +45,10 @@ const en = {
   settings: 'Settings',
   volume: 'Volume',
   breathingMode: 'Breathing mode',
+  haptics: 'Haptics',
+  hapticsHint: 'Feel the rhythm and each breath out',
+  on: 'On',
+  off: 'Off',
   modeNextDive: 'This dive keeps its current mode. The change applies from your next dive.',
 };
 
@@ -89,6 +93,10 @@ const fr: typeof en = {
   settings: 'Réglages',
   volume: 'Volume',
   breathingMode: 'Mode de respiration',
+  haptics: 'Retours haptiques',
+  hapticsHint: 'Sentez le rythme et chaque expiration',
+  on: 'Activés',
+  off: 'Désactivés',
   modeNextDive: 'Cette plongée garde son mode actuel. Le changement s’applique à la prochaine plongée.',
 };
 
