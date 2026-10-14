@@ -16,8 +16,10 @@
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.4",
     "@capacitor/ios": "^8.5.3",
     "@capacitor/preferences": "^8.0.1",
+    "@capacitor/share": "^8.0.3",
     "@capacitor/status-bar": "^8.0.4",
     "pixi.js": "^8.19.0",
     "react": "^19.2.8",

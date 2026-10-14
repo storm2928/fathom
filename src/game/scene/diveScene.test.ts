@@ -119,3 +119,28 @@ test('a fast-forwarded dive charges the light at the same speed-up as everything
   assert(real > 0 && real < 0.3, `real-time charge ${real}`);
   assert(fast > real * 5, `at 10x the light only reached ${fast} (real time: ${real})`);
 });
+
+test('ascend rises smoothly back to the surface and the first zone', () => {
+  queued.length = 0;
+  const renderer = new NullRenderer();
+  const scene = new DiveScene(renderer, canvas, { reducedMotion: true });
+  const emitter = new BreathEmitter();
+  scene.attach(stubEngine(emitter), new BreathConductor());
+  scene.start();
+  emitter.emit('phase-change', { phase: 'exhale', at: 0 });
+  emitter.emit('exhale-end', { durationMs: 6_000, quality: 1 });
+  scene.setZone(2);
+  pump(2);
+  const deep = renderer.last?.depth ?? 0;
+  assert(deep > 5, 'test needs depth to rise from');
+
+  scene.ascend(1);
+  pump(10); // half a second
+  const halfway = renderer.last?.depth ?? 0;
+  assert(halfway > 0 && halfway < deep, `halfway depth ${halfway} of ${deep}`);
+  equal(renderer.last?.zone, 0, 'the water did not start back toward the first zone');
+
+  pump(14); // past the end
+  equal(renderer.last?.depth, 0, 'the ascent did not reach the surface');
+  scene.stop();
+});

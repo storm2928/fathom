@@ -5,3 +5,5 @@ ios/App/App/capacitor.config.json
 ios/App/App/config.xml
 ios/App/build
 ios/DerivedData
+# iCloud Desktop sync makes Finder duplicates like "config 2.xml"
+* 2.*

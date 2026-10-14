@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { useLanguage } from '@fathom/shell/i18n';
 import { formatMetres } from '@fathom/shell/format';
@@ -81,13 +81,19 @@ export function DiveHud({
           ? t.dive.prompt.exhaleMic
           : undefined;
 
+  // One finger is one breath: a second finger landing or lifting must not
+  // start or end the hold the first one is making.
+  const holding = useRef<number | null>(null);
   const press = (down: boolean) => (event: PointerEvent<HTMLDivElement>) => {
     if (!touch) return;
     event.preventDefault();
     if (down) {
+      if (holding.current !== null) return;
+      holding.current = event.pointerId;
       event.currentTarget.setPointerCapture(event.pointerId);
       touch.beginHold();
-    } else {
+    } else if (event.pointerId === holding.current) {
+      holding.current = null;
       touch.endHold();
     }
   };
@@ -102,6 +108,7 @@ export function DiveHud({
           onPointerDown={press(true)}
           onPointerUp={press(false)}
           onPointerCancel={press(false)}
+          onLostPointerCapture={press(false)}
         />
       )}
 

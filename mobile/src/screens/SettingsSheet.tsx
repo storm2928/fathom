@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'react';
 import type { InputChoice } from '../app/flow';
 import { useAppStrings } from '../strings';
+import { useLanguage } from '@fathom/shell/i18n';
+import { LANGUAGES } from '@fathom/shell/strings';
 
 /**
  * Volume and breathing mode, from the title or mid-dive. A dive already under
@@ -14,8 +16,10 @@ export function SettingsSheet({
   onVolume,
   onInput,
   onHaptics,
+  onReread,
   onClose,
 }: {
+  onReread: () => void;
   volume: number;
   haptics: boolean;
   onHaptics: (on: boolean) => void;
@@ -26,6 +30,7 @@ export function SettingsSheet({
   onClose: () => void;
 }) {
   const a = useAppStrings();
+  const { language, setLanguage } = useLanguage();
   return (
     <div className="safe settings fade-in" onPointerDown={(e) => e.stopPropagation()}>
       <div className="sheet" role="dialog" aria-labelledby="settings-title">
@@ -83,6 +88,25 @@ export function SettingsSheet({
           </button>
         </div>
         {diving && <p className="settings__note">{a.modeNextDive}</p>}
+
+        <p className="settings__row">{a.language}</p>
+        <div className="settings__segmented" role="radiogroup" aria-label={a.language}>
+          {LANGUAGES.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              role="radio"
+              aria-checked={language === l.code}
+              onClick={() => setLanguage(l.code)}
+            >
+              {l.code === 'en' ? 'English' : 'Français'}
+            </button>
+          ))}
+        </div>
+
+        <button type="button" className="game-btn game-btn--quiet settings__reread" onClick={onReread}>
+          {a.reread}
+        </button>
 
         <div className="sheet__actions">
           <button type="button" className="game-btn game-btn--primary" onClick={onClose}>

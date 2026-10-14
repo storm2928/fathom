@@ -14,6 +14,7 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
   public let pluginMethods: [CAPPluginMethod] = [
     CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "requestPermission", returnType: CAPPluginReturnPromise),
   ]
 
   private let engine = AVAudioEngine()
@@ -23,7 +24,7 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
   private let queue = DispatchQueue(label: "app.fathom.mic")
 
   @objc func start(_ call: CAPPluginCall) {
-    requestPermission { granted in
+    askForMicrophone { granted in
       self.queue.async {
         guard granted else {
           call.reject("Microphone permission was denied.", "DENIED")
@@ -34,6 +35,12 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
 
+  /// Asks iOS for the microphone without starting it — for onboarding, where
+  /// the choice is made.
+  @objc func requestPermission(_ call: CAPPluginCall) {
+    askForMicrophone { granted in call.resolve(["granted": granted]) }
+  }
+
   @objc func stop(_ call: CAPPluginCall) {
     queue.async {
       self.end()
@@ -41,7 +48,7 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
 
-  private func requestPermission(_ done: @escaping (Bool) -> Void) {
+  private func askForMicrophone(_ done: @escaping (Bool) -> Void) {
     if #available(iOS 17.0, *) {
       AVAudioApplication.requestRecordPermission(completionHandler: done)
     } else {

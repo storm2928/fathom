@@ -23,6 +23,7 @@ export interface FramesEvent {
 
 export interface FathomMicPlugin {
   start(): Promise<{ sampleRate: number; deviceLabel: string }>;
+  requestPermission?(): Promise<{ granted: boolean }>;
   stop(): Promise<void>;
   addListener(
     event: 'frames',

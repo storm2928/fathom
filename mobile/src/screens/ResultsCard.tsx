@@ -12,6 +12,7 @@ import type { DiveStats } from '../dive/diveController';
 import { useAppStrings } from '../strings';
 import { clock, exhaleSeconds, wholeMetres } from './resultsFormat';
 import { useCountUp } from './useCountUp';
+import { shareDiveLog } from '../native/shareDiveLog';
 import { CrisisLine } from './CrisisLine';
 import { CreatureIcon } from '../journal/CreatureIcon';
 import { entryFor } from '../journal/catalogue';
@@ -38,9 +39,12 @@ export function ResultsCard({
   input,
   stats,
   newlyFound,
+  plan,
   onDone,
 }: {
   result: SessionResult;
+  /** 'full' or 'quick', for the exported log */
+  plan: string;
   /** What actually drove the dive — not what was chosen. */
   input: InputCode;
   stats: DiveStats;
@@ -98,6 +102,7 @@ export function ResultsCard({
       stats={stats}
       newlyFound={newlyFound}
       inputLabel={inputLabel}
+      onShare={() => void shareDiveLog(result, plan, input).catch(() => {})}
       onDone={onDone}
     />
   );
@@ -117,12 +122,14 @@ function StatShowcase({
   stats,
   newlyFound,
   inputLabel,
+  onShare,
   onDone,
 }: {
   result: SessionResult;
   stats: DiveStats;
   newlyFound: string[];
   inputLabel: string;
+  onShare: () => void;
   onDone: () => void;
 }) {
   const words = useCreatureWords();
@@ -272,7 +279,10 @@ function StatShowcase({
             <p style={{ color: 'var(--hud-text)' }}>{s.exit}</p>
             <CrisisRail />
             <div className="sheet__actions">
-              <button type="button" className="game-btn" onClick={() => setAboutOpen(false)}>
+              <button type="button" className="game-btn" onClick={onShare}>
+                {s.save}
+              </button>
+              <button type="button" className="game-btn game-btn--quiet" onClick={() => setAboutOpen(false)}>
                 {a.close}
               </button>
             </div>

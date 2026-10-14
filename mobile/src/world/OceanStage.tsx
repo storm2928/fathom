@@ -22,6 +22,7 @@ export function useOcean(): DiveScene | null {
 export function OceanStage({ children }: { children: ReactNode }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [scene, setScene] = useState<DiveScene | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -34,6 +35,7 @@ export function OceanStage({ children }: { children: ReactNode }) {
     let disposed = false;
     let built: DiveScene | null = null;
     void createDiveRenderer(canvas).then((renderer) => {
+      setFailed(false);
       // A build that finishes after its effect was cleaned up is thrown away.
       if (disposed) {
         renderer.destroy();
@@ -42,6 +44,10 @@ export function OceanStage({ children }: { children: ReactNode }) {
       built = new DiveScene(renderer, canvas);
       built.start();
       setScene(built);
+    }).catch(() => {
+      // Neither WebGL nor a 2D canvas would start: say so rather than leave a
+      // dark screen whose Begin button never wakes.
+      if (!disposed) setFailed(true);
     });
     return () => {
       disposed = true;
@@ -54,6 +60,11 @@ export function OceanStage({ children }: { children: ReactNode }) {
   return (
     <OceanContext.Provider value={scene}>
       <div ref={hostRef} style={{ position: 'fixed', inset: 0, touchAction: 'none' }} />
+      {failed && (
+        <p className="ocean-failed" role="alert">
+          The ocean could not be drawn on this device. Close Fathom and open it again.
+        </p>
+      )}
       {children}
     </OceanContext.Provider>
   );

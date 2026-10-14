@@ -1,0 +1,199 @@
+/* First run: three cards side by side, swiped or stepped with Next. */
+.onboard {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(3, 8, 17, 0.35) 0%, rgba(3, 8, 17, 0.88) 45%);
+  z-index: 6;
+}
+.onboard__track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  touch-action: pan-x;
+  scrollbar-width: none;
+}
+.onboard__track::-webkit-scrollbar {
+  display: none;
+}
+.onboard__card {
+  flex: none;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 44px);
+}
+.onboard__body {
+  flex: 1;
+  overflow-y: auto;
+  touch-action: pan-y;
+  padding-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.onboard__body h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  font-weight: 600;
+}
+.onboard__body p,
+.onboard__body li {
+  margin: 0 0 12px;
+  color: var(--hud-muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.onboard__body strong {
+  color: var(--hud-text);
+}
+.onboard__small {
+  font-size: 13px !important;
+}
+.onboard__note {
+  color: var(--caution) !important;
+  margin-top: 10px !important;
+}
+.onboard__care {
+  margin: 0 0 4px;
+  padding-left: 18px;
+}
+.onboard__care li::marker {
+  color: var(--hud-accent);
+}
+.onboard__dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 16px);
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.onboard__dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hud-track);
+  transition: background-color 200ms ease, transform 200ms ease;
+}
+.onboard__dots span.is-on {
+  background: var(--hud-accent);
+  transform: scale(1.25);
+}
+
+/* The breath orb: in, a little more, a long slow out, rest. 9 s per cycle. */
+.orb {
+  position: relative;
+  align-self: center;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 28px;
+  display: grid;
+  place-items: center;
+}
+.orb__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--hud-accent);
+  background: radial-gradient(circle, rgba(92, 227, 207, 0.22) 0%, rgba(92, 227, 207, 0.02) 70%);
+  box-shadow: 0 0 40px rgba(92, 227, 207, 0.25);
+  animation: orb-breathe 9s ease-in-out infinite;
+}
+@keyframes orb-breathe {
+  0% {
+    transform: scale(0.55);
+  }
+  18% {
+    transform: scale(0.88);
+  }
+  26% {
+    transform: scale(1);
+  }
+  78% {
+    transform: scale(0.55);
+  }
+  100% {
+    transform: scale(0.55);
+  }
+}
+.orb__label {
+  position: absolute;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hud-text);
+  opacity: 0;
+  animation: 9s linear infinite;
+}
+.orb__label--in {
+  animation-name: orb-in;
+}
+.orb__label--more {
+  animation-name: orb-more;
+}
+.orb__label--out {
+  animation-name: orb-out;
+}
+@keyframes orb-in {
+  0%,
+  17% {
+    opacity: 1;
+  }
+  19%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes orb-more {
+  0%,
+  18% {
+    opacity: 0;
+  }
+  19%,
+  25% {
+    opacity: 1;
+  }
+  27%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes orb-out {
+  0%,
+  26% {
+    opacity: 0;
+  }
+  28%,
+  76% {
+    opacity: 1;
+  }
+  80%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb__ring {
+    animation: none;
+    transform: scale(0.8);
+  }
+  .orb__label--in {
+    animation: none;
+    opacity: 1;
+  }
+  .orb__label--more,
+  .orb__label--out {
+    display: none;
+  }
+}
+.onboard__body .choice + p,
+.onboard__body .choice + .onboard__note + p {
+  margin-top: 14px;
+}

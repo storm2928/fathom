@@ -105,6 +105,8 @@ export class DiveScene {
   private startedAt = 0;
   private zone = 0;
   private epochCount = 0;
+  /** A rise back to the surface in progress: where it began, when, how long. */
+  private ascent: { from: number; startedAt: number | null; seconds: number } | null = null;
 
   constructor(
     renderer: SceneRenderer,
@@ -168,6 +170,27 @@ export class DiveScene {
     this.timeScale = timeScale > 0 ? timeScale : 1;
   }
 
+  /**
+   * Rise back to the surface over `seconds`, eased in and out, with the water
+   * fading back to the first zone — the end of a dive. The loop restarts if it
+   * had stopped, and comes to rest at the surface.
+   */
+  ascend(seconds: number): void {
+    this.release();
+    this.exhaleStartedAt = null;
+    this.charging = false;
+    this.promptStartedAt = null;
+    this.promptDurationMs = 0;
+    this.pose = 'level';
+    this.zone = 0;
+    // Timed from the first frame that draws it, on the frame clock.
+    this.ascent = { from: this.shownDepth, startedAt: null, seconds: Math.max(0.1, seconds) };
+    this.settling = true;
+    this.restSeconds = 0;
+    if (!this.frame) this.start();
+    this.settling = true;
+  }
+
   /** What lives in the water this dive. Cleared by reset(). */
   setCreatures(creatures: SceneCreature[]): void {
     this.renderer.setCreatures?.(creatures);
@@ -198,6 +221,7 @@ export class DiveScene {
     this.promptDurationMs = 0;
     this.pose = 'level';
     this.zone = 0;
+    this.ascent = null;
     this.renderer.setCreatures?.([]);
     this.settling = false;
     this.restSeconds = 0;
@@ -316,6 +340,7 @@ export class DiveScene {
 
   /** Close enough that another frame would not change a pixel. */
   private atRest(): boolean {
+    if (this.ascent) return false;
     return Math.abs(this.targetDepth - this.shownDepth) < 0.05 && this.lightCharge < 0.02;
   }
 
@@ -354,6 +379,17 @@ export class DiveScene {
     // than teleporting. It used to teleport: the dangling preview of a single
     // runaway span snapped a diver from 30m back to 5m at the start of the
     // next breath.
+    if (this.ascent) {
+      if (this.ascent.startedAt === null) this.ascent.startedAt = now;
+      const u = Math.min(1, (now - this.ascent.startedAt) / 1000 / this.ascent.seconds);
+      const eased = u * u * (3 - 2 * u);
+      this.shownDepth = this.ascent.from * (1 - eased);
+      this.targetDepth = this.shownDepth;
+      this.earnedDepth = this.shownDepth;
+      if (u >= 1) this.ascent = null;
+      return;
+    }
+
     const truth =
       this.exhaleStartedAt !== null
         ? this.depthAtExhaleStart +

@@ -378,3 +378,47 @@
 .settings__toggle[aria-checked='true'] .settings__switch::after {
   transform: translateX(20px);
 }
+
+.settings__segmented {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--hud-line);
+}
+.settings__segmented button {
+  appearance: none;
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hud-muted);
+  font: 500 15px/1 var(--font-sans);
+}
+.settings__segmented button[aria-checked='true'] {
+  background: rgba(92, 227, 207, 0.16);
+  color: var(--hud-text);
+}
+.settings__reread {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.ocean-failed {
+  position: fixed;
+  top: 40%;
+  left: 24px;
+  right: 24px;
+  text-align: center;
+  color: var(--hud-text);
+}
+
+/* Zone cards cross the bright surface early in a dive; keep them legible. */
+.zone-card {
+  text-shadow: 0 1px 14px rgba(3, 8, 17, 0.7);
+}
+.zone-card__over {
+  color: var(--hud-text);
+  opacity: 0.85;
+}

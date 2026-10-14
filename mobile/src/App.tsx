@@ -21,7 +21,7 @@ import { productionInputs } from './dive/inputs';
 import { DiveHud } from './dive/DiveHud';
 import type { RingView } from './dive/DiveHud';
 import { OceanStage, useOcean } from './world/OceanStage';
-import { SafetyGate } from './screens/SafetyGate';
+import { Onboarding } from './screens/Onboarding';
 import { TitleScreen } from './screens/TitleScreen';
 import { PreDive } from './screens/PreDive';
 import { ResultsCard } from './screens/ResultsCard';
@@ -61,6 +61,7 @@ function Game() {
   const send = (event: FlowEvent) => setFlow((state) => nextFlow(state, event));
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [rereading, setRereading] = useState(false);
   // Read by the soundscape (Plan 2); saved as soon as it changes.
   const [volume, setVolume] = useState(loadVolume);
   const [hapticsOn, setHapticsOn] = useState(loadHaptics);
@@ -137,6 +138,8 @@ function Game() {
                   found: diveStats.found,
                 });
                 setNewlyFound(newlyFoundRef.current);
+                // Rise back to the light behind the results.
+                scene.ascend(4);
                 setResult(finished);
                 setInputCode(code);
                 setStats(diveStats);
@@ -259,16 +262,23 @@ function Game() {
         saveHaptics(on);
       }}
       onVolume={changeVolume}
+      onReread={() => {
+        setSettingsOpen(false);
+        setRereading(true);
+      }}
       onInput={changeInput}
       onClose={() => setSettingsOpen(false)}
     />
+  ) : rereading ? (
+    <Onboarding review initialInput={flow.input} onDone={() => setRereading(false)} />
   ) : null;
 
   switch (flow.screen) {
     case 'safety':
       return (
-        <SafetyGate
-          onAcknowledge={(input) => {
+        <Onboarding
+          initialInput={flow.input}
+          onDone={(input) => {
             saveChoices({ acknowledged: true, input });
             send({ type: 'acknowledge', input });
           }}
@@ -320,7 +330,14 @@ function Game() {
         </>
       );
     case 'results':
-      return result ? <ResultsCard result={result} input={inputCode} stats={stats} newlyFound={newlyFound} onDone={done} /> : null;
+      return result ? <ResultsCard
+          result={result}
+          plan={flow.plan}
+          input={inputCode}
+          stats={stats}
+          newlyFound={newlyFound}
+          onDone={done}
+        /> : null;
   }
 }
 
