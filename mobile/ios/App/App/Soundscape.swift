@@ -78,6 +78,7 @@ final class Soundscape {
   private var target = SoundMixParams(
     master: 0, surface: 1, beds: (1, 0, 0), lowpassHz: 2400, bubbles: 0, highCut: false)
   private var inhaleRequested = false
+  private var pingRequested = false
 
   // Smoothed state.
   private var master: Smooth
@@ -110,6 +111,8 @@ final class Soundscape {
   private var nextClick = 3.0
   private var clicksLeft = 0
   private var inhaleT = -1.0
+  private var pingT = -1.0
+  private var pingPhase = 0.0
 
   // Whale echo.
   private let echo: UnsafeMutablePointer<Double>
@@ -152,6 +155,11 @@ final class Soundscape {
     target = mix
   }
 
+  /// A soft sonar ping with one echo, for a discovery.
+  func ping() {
+    pingRequested = true
+  }
+
   /// A soft rising breath of filtered noise, for the inhale prompt.
   func inhale() {
     inhaleRequested = true
@@ -164,6 +172,10 @@ final class Soundscape {
     if inhaleRequested {
       inhaleRequested = false
       inhaleT = 0
+    }
+    if pingRequested {
+      pingRequested = false
+      pingT = 0
     }
     let dt = 1 / rate
     let twoPi = 2 * Double.pi
@@ -304,7 +316,20 @@ final class Soundscape {
         }
       }
 
-      var mix = muffled + bubbleSound + inhaleSound
+      // The discovery ping: a pure tone sliding gently down, and its echo.
+      var pingSound = 0.0
+      if pingT >= 0 {
+        if pingT > 2.2 {
+          pingT = -1
+        } else {
+          pingPhase += (880 - 40 * min(pingT, 1)) * dt
+          let env = Soundscape.pingVoice(pingT) + 0.35 * Soundscape.pingVoice(pingT - 0.42)
+          pingSound = sin(twoPi * pingPhase) * env * 0.22
+          pingT += dt
+        }
+      }
+
+      var mix = muffled + bubbleSound + inhaleSound + pingSound
 
       // Speaker safety: crossfade into a 24 dB/oct 500 Hz low-pass.
       let safe = safety2.step(safety1.step(mix).0).0
@@ -317,6 +342,11 @@ final class Soundscape {
   }
 
   // MARK: - Helpers
+
+  /// A ping's envelope: a 6 ms attack and a long, soft decay.
+  private static func pingVoice(_ t: Double) -> Double {
+    t < 0 ? 0 : min(1, t / 0.006) * exp(-t / 0.45)
+  }
 
   private func spawnBubble(gain: Double) {
     for j in 0..<bubbles.count where !bubbles[j].active {

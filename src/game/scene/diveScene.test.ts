@@ -96,3 +96,26 @@ test('reset detaches the previous dive’s engine', () => {
   equal(renderer.last?.depth, 0, 'a stale engine still moved the diver after reset');
   scene.stop();
 });
+
+test('a fast-forwarded dive charges the light at the same speed-up as everything else', async () => {
+  const lightAfter = async (timeScale: number) => {
+    queued.length = 0; // frames left behind by earlier, stopped scenes
+    const renderer = new NullRenderer();
+    const scene = new DiveScene(renderer, canvas, { reducedMotion: true, timeScale });
+    const conductor = new BreathConductor({ timeScale });
+    scene.attach(stubEngine(new BreathEmitter()), conductor);
+    scene.start();
+    conductor.start();
+    // The breath-in prompt, which charges the light, arrives on the next tick.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    pump(3); // 150 ms of wall clock
+    const light = renderer.last?.light ?? 0;
+    conductor.stop();
+    scene.stop();
+    return light;
+  };
+  const real = await lightAfter(1);
+  const fast = await lightAfter(10);
+  assert(real > 0 && real < 0.3, `real-time charge ${real}`);
+  assert(fast > real * 5, `at 10x the light only reached ${fast} (real time: ${real})`);
+});

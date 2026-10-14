@@ -118,6 +118,22 @@ public class FathomHapticsPlugin: CAPPlugin, CAPBridgedPlugin {
               CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.0),
             ], relativeTime: 0.02, duration: 0.3),
         ]
+      case "discovery":
+        // Delicate: a light, bright tick and a fainter one after it.
+        events = [
+          CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+              CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.4),
+              CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8),
+            ], relativeTime: 0),
+          CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+              CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.22),
+              CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8),
+            ], relativeTime: 0.12),
+        ]
       case "onset":
         events = [
           CHHapticEvent(

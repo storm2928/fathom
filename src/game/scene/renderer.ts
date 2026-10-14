@@ -52,10 +52,33 @@ export interface SceneState {
   epoch: number;
 }
 
+/**
+ * Something living in the water at a fixed depth: an outline and its points of
+ * light, in a 100 x 100 drawing box. The scene draws it where it is, lit by the
+ * dive light. Who it is and why it is there is the caller's business.
+ */
+export interface SceneCreature {
+  key: string;
+  /** metres; passes the diver when the drawn depth reaches it */
+  depth: number;
+  /** 0-1 across the screen */
+  x: number;
+  /** silhouette path data, 100 x 100 box */
+  body: string[];
+  /** [cx, cy, r] in the same box */
+  lights: [number, number, number][];
+  /** size relative to the diver */
+  scale: number;
+  /** 0xRRGGBB for its rim and lights */
+  colour: number;
+}
+
 export interface SceneRenderer {
   render(state: SceneState, dtSeconds: number): void;
   resize(): void;
   destroy(): void;
+  /** Optional: renderers that can draw creatures. */
+  setCreatures?(creatures: SceneCreature[]): void;
 }
 
 /** Pixels drawn per metre of depth on the diver's own layer. */

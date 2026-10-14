@@ -27,8 +27,15 @@ import { PreDive } from './screens/PreDive';
 import { ResultsCard } from './screens/ResultsCard';
 import { SettingsSheet } from './screens/SettingsSheet';
 import { useAppStrings } from './strings';
-import { playInhale, useSoundscape } from './sound/useSoundscape';
+import { playInhale, playPing, useSoundscape } from './sound/useSoundscape';
 import { useHaptics } from './haptics/useHaptics';
+import { JournalScreen } from './journal/JournalScreen';
+import { rollEncounters } from './journal/encounters';
+import { loadJournal, recordDive, recordFound } from './journal/journalStore';
+import { CREATURE_ART } from './journal/creatureArt';
+import type { CreatureId } from './journal/catalogue';
+import { ZONE_HEX } from './journal/zoneColours';
+import { defaultStore } from './app/storage';
 import { haptics } from './native/fathomHaptics';
 import './styles/screens.css';
 
@@ -70,7 +77,12 @@ function Game() {
   const [notice, setNotice] = useState<string | null>(null);
   const [result, setResult] = useState<SessionResult | null>(null);
   const [inputCode, setInputCode] = useState<InputCode>('microphone');
-  const [stats, setStats] = useState<DiveStats>({ depth: 0, zone: 0, longestExhaleMs: 0 });
+  const [stats, setStats] = useState<DiveStats>({ depth: 0, zone: 0, longestExhaleMs: 0, found: [] });
+  const [newlyFound, setNewlyFound] = useState<string[]>([]);
+  const newlyFoundRef = useRef<string[]>([]);
+  const [discovery, setDiscovery] = useState<{ id: CreatureId; zone: number; key: number } | null>(null);
+  const planRef = useRef(flow.plan);
+  planRef.current = flow.plan;
   const timeScale = SCRIPTED ? 10 : 1;
 
   const controller = useMemo(
@@ -95,7 +107,36 @@ function Game() {
                   if (hapticsRef.current) haptics.tap('inhale');
                 }
               },
+              onPlaced: (placed) =>
+                scene.setCreatures(
+                  placed.map((p) => ({
+                    key: p.id,
+                    depth: p.depth,
+                    x: p.x,
+                    ...CREATURE_ART[p.id],
+                    colour: ZONE_HEX[p.zone],
+                  })),
+                ),
+              onFound: (encounter, depth) => {
+                const isNew = recordFound(defaultStore(), encounter.id, depth, new Date());
+                if (isNew) newlyFoundRef.current = [...newlyFoundRef.current, encounter.id];
+                setDiscovery({ id: encounter.id, zone: encounter.zone, key: Date.now() });
+                playPing();
+                if (hapticsRef.current) haptics.tap('discovery');
+              },
               onResult: (finished, code, diveStats) => {
+                recordDive(defaultStore(), {
+                  date: new Date().toISOString(),
+                  plan: planRef.current,
+                  durationMs: finished.durationMs,
+                  baselineRR: finished.baselineRR,
+                  finalRR: finished.finalRR,
+                  depth: diveStats.depth,
+                  ending: finished.ending,
+                  calibrated: finished.calibrated,
+                  found: diveStats.found,
+                });
+                setNewlyFound(newlyFoundRef.current);
                 setResult(finished);
                 setInputCode(code);
                 setStats(diveStats);
@@ -143,10 +184,18 @@ function Game() {
     setZone(null);
     setDepth(0);
     setRing({ step: null, sweepMs: 0, seq: 0 });
+    newlyFoundRef.current = [];
+    setDiscovery(null);
+    // What this dive can meet: fixed now, never added to while it runs.
+    const encounters = rollEncounters({
+      seed: Date.now() >>> 0,
+      zones: flow.plan === 'full' ? [0, 1, 2] : [0],
+      found: new Set(Object.keys(loadJournal().found)),
+    });
     const input: DiveInput = SCRIPTED ? 'scripted' : AUTOPLAY_MIC ? 'mic' : flow.input;
     try {
       // Called directly from the tap so the microphone opens inside the gesture.
-      const started = await controller.start({ plan: flow.plan, input, timeScale });
+      const started = await controller.start({ plan: flow.plan, input, timeScale, encounters });
       if (!started) return;
       setTouch(controller.touch);
       setInputCode(started.code);
@@ -231,10 +280,13 @@ function Game() {
           <TitleScreen
             onChoose={(plan) => send({ type: 'choose-dive', plan })}
             onSettings={() => setSettingsOpen(true)}
+            onJournal={() => send({ type: 'open-journal' })}
           />
           {settings}
         </>
       );
+    case 'journal':
+      return <JournalScreen onBack={() => send({ type: 'back' })} />;
     case 'predive':
       return (
         <PreDive
@@ -262,12 +314,13 @@ function Game() {
           notice={notice}
           onLeave={() => controller?.stop()}
           onSettings={() => setSettingsOpen(true)}
+          discovery={discovery}
         />
         {settings}
         </>
       );
     case 'results':
-      return result ? <ResultsCard result={result} input={inputCode} stats={stats} onDone={done} /> : null;
+      return result ? <ResultsCard result={result} input={inputCode} stats={stats} newlyFound={newlyFound} onDone={done} /> : null;
   }
 }
 

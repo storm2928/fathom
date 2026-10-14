@@ -112,3 +112,19 @@ test('only slow, long breaths reach the rare band in a zone', () => {
   assert(fast < BANDS.rare[0], `fast breathing reached ${fast.toFixed(1)}m into a zone`);
   assert(slow > BANDS.rare[1], `slow breathing only reached ${slow.toFixed(1)}m`);
 });
+
+test('a long breath out keeps the light it began with', () => {
+  const tracker = new DiscoveryTracker([one]);
+  tracker.enterZone(0, 0);
+  // The double inhale charged the light; the breath out begins lit.
+  tracker.update({ depth: 2, light: 0.9, exhaling: true, now: 0 });
+  // Six seconds later the lamp has faded, but this is still the same lit breath.
+  equal(tracker.update({ depth: 11, light: 0.05, exhaling: true, now: 6_000 }).length, 1);
+});
+
+test('a breath out that began without the light charged finds nothing', () => {
+  const tracker = new DiscoveryTracker([one]);
+  tracker.enterZone(0, 0);
+  tracker.update({ depth: 2, light: 0.1, exhaling: true, now: 0 });
+  equal(tracker.update({ depth: 11, light: 0.1, exhaling: true, now: 3_000 }).length, 0);
+});

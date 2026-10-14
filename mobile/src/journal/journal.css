@@ -1,0 +1,218 @@
+/* The field journal: dark paper over the water, one zone per page. */
+.journal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(3, 8, 17, 0.9);
+  padding: calc(env(safe-area-inset-top) + 8px) 18px 0;
+}
+.journal__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.journal__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+.journal__tabs {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0 6px;
+}
+.journal__tab {
+  appearance: none;
+  flex: 1;
+  min-height: 40px;
+  border: 1px solid var(--hud-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hud-muted);
+  font: 500 14px/1 var(--font-sans);
+}
+.journal__tab[aria-selected='true'] {
+  color: var(--hud-text);
+  border-color: var(--zc, var(--hud-text));
+  background: color-mix(in srgb, var(--zc, #eaf3f7) 14%, transparent);
+}
+.journal__page {
+  flex: 1;
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 0 calc(env(safe-area-inset-bottom) + 16px);
+}
+.journal__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.journal__entry {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 8px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--hud-line);
+  background: rgba(234, 243, 247, 0.03);
+  color: var(--hud-text);
+  font: 500 14px/1.2 var(--font-sans);
+}
+.journal__entry:disabled {
+  color: var(--hud-muted);
+  opacity: 0.75;
+}
+.journal__entry:not(:disabled):active {
+  transform: scale(0.98);
+}
+.journal__name {
+  text-align: center;
+}
+.journal__empty {
+  margin-top: 40px;
+  text-align: center;
+  color: var(--hud-muted);
+}
+.journal__detail {
+  background: rgba(3, 8, 17, 0.6);
+  z-index: 5;
+}
+.journal__detail-art {
+  display: grid;
+  place-items: center;
+  margin: -6px 0 4px;
+}
+.journal__zone-line {
+  margin-top: -6px;
+  color: var(--zc) !important;
+  font-weight: 500;
+}
+.journal__first {
+  font-size: 13px !important;
+}
+
+/* Logbook */
+.logbook {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.logbook__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.logbook__when {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 15px;
+}
+.logbook__plan {
+  font-size: 13px;
+  color: var(--hud-muted);
+}
+.logbook__numbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.logbook__depth {
+  font-size: 17px;
+}
+.logbook__rates {
+  font-size: 13px;
+  color: var(--hud-muted);
+}
+
+/* The in-dive discovery toast */
+.found-toast {
+  position: absolute;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 64px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--zc) 55%, transparent);
+  background: rgba(3, 8, 17, 0.7);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  white-space: nowrap;
+  animation: found-toast 3.8s ease both;
+}
+.found-toast__label {
+  font-size: 12px;
+  color: var(--zc);
+}
+.found-toast__name {
+  font-size: 15px;
+  font-weight: 600;
+}
+@keyframes found-toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  12%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Results: what this dive found */
+.found-row {
+  margin-top: 14px;
+}
+.found-row__label {
+  font-size: 13px;
+  color: var(--hud-muted);
+}
+.found-row__list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+.found-row__item {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  background: rgba(234, 243, 247, 0.04);
+}
+.found-row__new {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--zc);
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 700;
+}

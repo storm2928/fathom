@@ -10,7 +10,7 @@
  * the microphone cannot hear them.
  */
 
-export type SoundScreen = 'safety' | 'title' | 'predive' | 'dive' | 'results';
+export type SoundScreen = 'safety' | 'title' | 'predive' | 'dive' | 'results' | 'journal';
 
 export interface SoundInput {
   screen: SoundScreen;
@@ -62,6 +62,7 @@ const SCREEN_LEVEL: Record<SoundScreen, number> = {
   predive: 0.6,
   dive: 1,
   results: 0.45,
+  journal: 0.4,
 };
 
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);

@@ -5,9 +5,11 @@ import { SettingsButton } from './SettingsSheet';
 export function TitleScreen({
   onChoose,
   onSettings,
+  onJournal,
 }: {
   onChoose: (plan: DivePlan) => void;
   onSettings: () => void;
+  onJournal: () => void;
 }) {
   const a = useAppStrings();
   return (
@@ -26,6 +28,9 @@ export function TitleScreen({
           <button type="button" className="game-btn" onClick={() => onChoose('quick')}>
             {a.quick}
             <span className="title__sub">{a.quickLength}</span>
+          </button>
+          <button type="button" className="game-btn game-btn--quiet" onClick={onJournal}>
+            {a.journal}
           </button>
         </div>
         <p className="title__scope">{a.scopeLine}</p>

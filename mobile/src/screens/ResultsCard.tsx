@@ -13,6 +13,12 @@ import { useAppStrings } from '../strings';
 import { clock, exhaleSeconds, wholeMetres } from './resultsFormat';
 import { useCountUp } from './useCountUp';
 import { CrisisLine } from './CrisisLine';
+import { CreatureIcon } from '../journal/CreatureIcon';
+import { entryFor } from '../journal/catalogue';
+import type { CreatureId } from '../journal/catalogue';
+import { useCreatureWords } from '../journal/creatureStrings';
+import { ZONE_CSS } from '../journal/zoneColours';
+import '../journal/journal.css';
 import './results.css';
 
 /** What actually drove the dive, in the words the results card uses. */
@@ -31,12 +37,15 @@ export function ResultsCard({
   result,
   input,
   stats,
+  newlyFound,
   onDone,
 }: {
   result: SessionResult;
   /** What actually drove the dive — not what was chosen. */
   input: InputCode;
   stats: DiveStats;
+  /** ids found for the first time on this dive */
+  newlyFound: string[];
   onDone: () => void;
 }) {
   const { t } = useLanguage();
@@ -84,7 +93,13 @@ export function ResultsCard({
   }
 
   return (
-    <StatShowcase result={result} stats={stats} inputLabel={inputLabel} onDone={onDone} />
+    <StatShowcase
+      result={result}
+      stats={stats}
+      newlyFound={newlyFound}
+      inputLabel={inputLabel}
+      onDone={onDone}
+    />
   );
 }
 
@@ -100,14 +115,17 @@ const ZONE_COLOUR = ['var(--zone-1)', 'var(--zone-2)', 'var(--zone-3)'];
 function StatShowcase({
   result,
   stats,
+  newlyFound,
   inputLabel,
   onDone,
 }: {
   result: SessionResult;
   stats: DiveStats;
+  newlyFound: string[];
   inputLabel: string;
   onDone: () => void;
 }) {
+  const words = useCreatureWords();
   const { t, language } = useLanguage();
   const a = useAppStrings();
   const s = t.surface;
@@ -195,6 +213,28 @@ function StatShowcase({
             </li>
           ))}
         </ul>
+
+        {stats.found.length > 0 && (
+          <section className="found-row" aria-label={a.foundThisDive}>
+            <span className="found-row__label">{a.foundThisDive}</span>
+            <ul className="found-row__list">
+              {stats.found.map((id) => {
+                const zone = entryFor(id as CreatureId).zone;
+                return (
+                  <li
+                    key={id}
+                    className="found-row__item"
+                    style={{ ['--zc' as string]: ZONE_CSS[zone] }}
+                    aria-label={words[id as CreatureId].name}
+                  >
+                    <CreatureIcon id={id as CreatureId} found colour={ZONE_CSS[zone]} size={46} />
+                    {newlyFound.includes(id) && <span className="found-row__new">{a.newFind}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         <div className="stats__caveat">
           <span>{a.caveat}</span>

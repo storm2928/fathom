@@ -73,6 +73,11 @@ export function useSoundscape(source: SoundSource): void {
   }, [native]);
 }
 
+/** The discovery ping. */
+export function playPing(): void {
+  if (Capacitor.isNativePlatform()) void FathomSound.ping().catch(() => {});
+}
+
 /** The soft inhale swell, on each breath-in prompt. */
 export function playInhale(): void {
   if (Capacitor.isNativePlatform()) void FathomSound.inhale().catch(() => {});

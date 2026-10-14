@@ -8,6 +8,11 @@ import type { SessionState } from '@fathom/game/session/sessionMachine';
 import type { SpacebarBreathEngine } from '@fathom/game/input/spacebarEngine';
 import { useAppStrings } from '../strings';
 import { SettingsButton } from '../screens/SettingsSheet';
+import { CreatureIcon } from '../journal/CreatureIcon';
+import { useCreatureWords } from '../journal/creatureStrings';
+import type { CreatureId } from '../journal/catalogue';
+import { ZONE_CSS } from '../journal/zoneColours';
+import '../journal/journal.css';
 
 export interface RingView {
   step: PromptStep | 'calibrating' | null;
@@ -32,6 +37,7 @@ export function DiveHud({
   notice,
   onLeave,
   onSettings,
+  discovery,
 }: {
   state: SessionState;
   zone: number | null;
@@ -41,9 +47,12 @@ export function DiveHud({
   notice: string | null;
   onLeave: () => void;
   onSettings: () => void;
+  /** the latest find, keyed so each one shows its own toast */
+  discovery: { id: CreatureId; zone: number; key: number } | null;
 }) {
   const { t, language } = useLanguage();
   const a = useAppStrings();
+  const words = useCreatureWords();
   const [cardZone, setCardZone] = useState<number | null>(null);
 
   // A zone card each time the arc enters a new zone; it animates itself out.
@@ -110,6 +119,22 @@ export function DiveHud({
             {a.zoneLabel} {cardZone + 1}
           </div>
           <div className="zone-card__name">{a.zones[cardZone]}</div>
+        </div>
+      )}
+
+      {discovery && (
+        <div
+          key={discovery.key}
+          className="found-toast"
+          role="status"
+          style={{ ['--zc' as string]: ZONE_CSS[discovery.zone] }}
+        >
+          <CreatureIcon id={discovery.id} found colour={ZONE_CSS[discovery.zone]} size={40} />
+          <span>
+            <span className="found-toast__label">{a.found}</span>
+            <br />
+            <span className="found-toast__name">{words[discovery.id].name}</span>
+          </span>
         </div>
       )}
 

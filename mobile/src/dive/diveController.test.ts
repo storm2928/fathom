@@ -6,6 +6,7 @@ import { SpacebarBreathEngine } from '@fathom/game/input/spacebarEngine.ts';
 import type { SessionResult, SessionState } from '@fathom/game/session/sessionMachine.ts';
 import type { BreathEngine, BreathEventMap, CalibrationResult } from '@fathom/breath/types.ts';
 import type { InputCode } from '@fathom/game/surface/diveLog.ts';
+import { BreathEmitter } from '@fathom/game/input/emitter.ts';
 
 /**
  * A whole Quick Dive, compressed 500x, through the same wiring the app uses.
@@ -35,6 +36,9 @@ class RecordingScene implements DiveSceneLike {
   }
   settle() {
     this.calls.push('settle');
+  }
+  setTimeScale(timeScale: number) {
+    this.calls.push(`timeScale:${timeScale}`);
   }
 }
 
@@ -99,7 +103,8 @@ test('a scripted quick dive runs start to surface and settles the scene', async 
 
   await finished(controller, () => controller.start({ plan: 'quick', input: 'scripted', timeScale: 500 }));
 
-  equal(scene.calls[0], 'reset', 'the scene was not reset before the dive');
+  assert(scene.calls.includes('timeScale:500'), 'the scene was not told the dive runs fast');
+  assert(scene.calls.includes('reset'), 'the scene was not reset before the dive');
   assert(scene.calls.includes('attach'));
   assert(scene.calls.includes('zone:0'));
   assert(scene.calls.includes('settle'), 'the scene was never settled');
@@ -265,4 +270,46 @@ test('before the prompt starts, any breath out could be scored', async () => {
   await controller.start({ plan: 'full', input: 'touch' });
   equal(controller.exhaleWindow, true, 'calibration listens to every breath');
   controller.stop();
+});
+
+test('passing an encounter with the light on while breathing out finds it', async () => {
+  const emitter = new BreathEmitter();
+  const engine: BreathEngine = {
+    start: () => Promise.resolve(),
+    stop() {},
+    calibrate: () =>
+      new Promise((resolve) => setTimeout(() => resolve({ baselineRR: 12, noiseFloor: 0, ok: true }), 10)),
+    on: <K extends keyof BreathEventMap>(e: K, h: (p: BreathEventMap[K]) => void) => emitter.on(e, h),
+    setExhaleExpected() {},
+    usingFallbackInput: false,
+  };
+  const scene = new RecordingScene();
+  const found: string[] = [];
+  let placed: string[] = [];
+  let stats: DiveStats | null = null;
+  const controller = new DiveController(
+    scene,
+    {
+      onState: () => {},
+      onPrompt: () => {},
+      onResult: (_r, _c, s) => (stats = s),
+      onFound: (e) => found.push(e.id),
+      onPlaced: (list) => (placed = list.map((p) => p.id)),
+    },
+    factories({ mic: () => engine }),
+  );
+  await controller.start({
+    plan: 'full',
+    input: 'mic',
+    encounters: [{ id: 'moon-jelly', zone: 0, metresIntoZone: 5, x: 0.5 }],
+  });
+  await new Promise((r) => setTimeout(r, 40));
+  assert(placed.includes('moon-jelly'), 'the encounter was never placed in the water');
+  scene.depth = 6;
+  scene.light = 0.9;
+  emitter.emit('phase-change', { phase: 'exhale', at: 0 });
+  await new Promise((r) => setTimeout(r, 120));
+  equal(found.join(','), 'moon-jelly');
+  controller.stop();
+  equal((stats as DiveStats | null)?.found.join(','), 'moon-jelly');
 });

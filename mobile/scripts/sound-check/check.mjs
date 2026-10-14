@@ -25,7 +25,7 @@ execFileSync('swiftc', [
 
 const measure = (scenario) => JSON.parse(execFileSync(bin, [scenario], { encoding: 'utf8' }));
 const m = Object.fromEntries(
-  ['silent', 'shallow', 'deep', 'bubbles', 'speaker-window', 'midnight', 'abyss'].map((s) => [s, measure(s)]),
+  ['silent', 'shallow', 'deep', 'bubbles', 'speaker-window', 'midnight', 'abyss', 'ping'].map((s) => [s, measure(s)]),
 );
 
 let failures = 0;

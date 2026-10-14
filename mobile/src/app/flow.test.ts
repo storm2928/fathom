@@ -77,3 +77,21 @@ test('changing the mode does not get past the scope', () => {
   const start = initialFlow(null);
   equal(nextFlow(start, { type: 'set-input', input: 'touch' }).screen, 'safety');
 });
+
+test('the journal opens from the title and goes back to it', () => {
+  const title = initialFlow({ acknowledged: true, input: 'mic' });
+  const journal = nextFlow(title, { type: 'open-journal' });
+  equal(journal.screen, 'journal');
+  equal(nextFlow(journal, { type: 'begin' }).screen, 'journal', 'a dive started from the journal');
+  equal(nextFlow(journal, { type: 'back' }).screen, 'title');
+});
+
+test('the journal is not reachable before the scope, or from a dive', () => {
+  equal(nextFlow(initialFlow(null), { type: 'open-journal' }).screen, 'safety');
+  const diving = run(
+    initialFlow({ acknowledged: true, input: 'mic' }),
+    { type: 'choose-dive', plan: 'full' },
+    { type: 'begin' },
+  );
+  equal(nextFlow(diving, { type: 'open-journal' }).screen, 'dive');
+});

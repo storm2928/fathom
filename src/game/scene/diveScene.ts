@@ -3,7 +3,7 @@ import type { BreathConductor, PromptWindow } from '../session/conductor';
 import { metresForExhale, stepTowardTruth } from './descent';
 import { CanvasSceneRenderer } from './canvasRenderer';
 import { PixiSceneRenderer } from './pixiRenderer';
-import type { DiverPose, PromptBeat, SceneRenderer, SceneState } from './renderer';
+import type { DiverPose, PromptBeat, SceneCreature, SceneRenderer, SceneState } from './renderer';
 
 /**
  * The dive: descent, dive light, camera.
@@ -74,7 +74,7 @@ export async function createDiveRenderer(
 export class DiveScene {
   private readonly renderer: SceneRenderer;
   private readonly canvas: HTMLCanvasElement;
-  private readonly timeScale: number;
+  private timeScale: number;
   private readonly reducedMotion: boolean;
 
   private detach: (() => void)[] = [];
@@ -160,6 +160,19 @@ export class DiveScene {
     this.zone = zone;
   }
 
+  /**
+   * Match a dive that plays faster than real time (the scripted fixture), so
+   * the glide and the light keep pace with its shorter prompts. 1 otherwise.
+   */
+  setTimeScale(timeScale: number): void {
+    this.timeScale = timeScale > 0 ? timeScale : 1;
+  }
+
+  /** What lives in the water this dive. Cleared by reset(). */
+  setCreatures(creatures: SceneCreature[]): void {
+    this.renderer.setCreatures?.(creatures);
+  }
+
   /** Told by the view how the diver should hold itself: level or head-down. */
   setPose(pose: DiverPose): void {
     this.pose = pose;
@@ -185,6 +198,7 @@ export class DiveScene {
     this.promptDurationMs = 0;
     this.pose = 'level';
     this.zone = 0;
+    this.renderer.setCreatures?.([]);
     this.settling = false;
     this.restSeconds = 0;
     this.epochCount += 1;
@@ -322,9 +336,14 @@ export class DiveScene {
 
   private update(dt: number, now: number): void {
     if (this.charging) {
-      this.lightCharge = clamp01(this.lightCharge + dt * 0.9);
+      // Protocol time, like the glide: a fast-forwarded dive's prompts are
+      // shorter, so its light must charge and fade faster to match.
+      this.lightCharge = clamp01(this.lightCharge + dt * this.timeScale * 0.9);
     } else {
-      this.lightCharge = Math.max(0, this.lightCharge - dt * LIGHT_DECAY_PER_SECOND);
+      this.lightCharge = Math.max(
+        0,
+        this.lightCharge - dt * this.timeScale * LIGHT_DECAY_PER_SECOND,
+      );
     }
 
     // Depth follows the truth: metres committed by scored breaths, plus a

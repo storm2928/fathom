@@ -9,7 +9,7 @@ import type { SavedChoices } from './storage';
  * title only — never into another dive.
  */
 
-export type Screen = 'safety' | 'title' | 'predive' | 'dive' | 'results';
+export type Screen = 'safety' | 'title' | 'predive' | 'dive' | 'results' | 'journal';
 export type DivePlan = 'full' | 'quick';
 export type InputChoice = 'mic' | 'touch';
 
@@ -25,6 +25,7 @@ export type FlowEvent =
   /** From settings, on any screen. Takes effect from the next dive. */
   | { type: 'set-input'; input: InputChoice }
   | { type: 'choose-dive'; plan: DivePlan }
+  | { type: 'open-journal' }
   | { type: 'begin' }
   | { type: 'back' }
   | { type: 'surfaced' }
@@ -45,7 +46,11 @@ export function nextFlow(state: FlowState, event: FlowEvent): FlowState {
   if (event.type === 'set-input') return { ...state, input: event.input };
   switch (state.screen) {
     case 'title':
-      return event.type === 'choose-dive' ? { ...state, screen: 'predive', plan: event.plan } : state;
+      if (event.type === 'choose-dive') return { ...state, screen: 'predive', plan: event.plan };
+      if (event.type === 'open-journal') return { ...state, screen: 'journal' };
+      return state;
+    case 'journal':
+      return event.type === 'back' ? { ...state, screen: 'title' } : state;
     case 'predive':
       if (event.type === 'begin') return { ...state, screen: 'dive' };
       if (event.type === 'back') return { ...state, screen: 'title' };

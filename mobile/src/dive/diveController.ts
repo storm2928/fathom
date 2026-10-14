@@ -8,6 +8,9 @@ import type { PromptWindow } from '@fathom/game/session/conductor';
 import { SessionMachine } from '@fathom/game/session/sessionMachine';
 import type { SessionPlan, SessionResult, SessionState } from '@fathom/game/session/sessionMachine';
 import type { InputCode } from '@fathom/game/surface/diveLog';
+import { DiscoveryTracker } from '../journal/discovery';
+import type { PlacedEncounter } from '../journal/discovery';
+import type { Encounter } from '../journal/encounters';
 
 /**
  * One dive, wired: input → conductor → session → scene. The same order the
@@ -24,6 +27,8 @@ export interface DiveSceneLike {
   setPose(pose: DiverPose): void;
   reset(): void;
   settle(): void;
+  /** How fast this dive plays; only the scripted fixture runs faster than 1. */
+  setTimeScale(timeScale: number): void;
   readonly depth: number;
   readonly light: number;
 }
@@ -36,6 +41,8 @@ export interface DiveStats {
   zone: number;
   /** the longest scored exhale, ms; 0 when none was scored */
   longestExhaleMs: number;
+  /** ids of the encounters found on this dive, in order */
+  found: string[];
 }
 
 export interface DiveCallbacks {
@@ -43,6 +50,10 @@ export interface DiveCallbacks {
   /** `sweepMs` is the window in wall-clock time, for the breath ring. */
   onPrompt(window: PromptWindow, sweepMs: number): void;
   onResult(result: SessionResult, input: InputCode, stats: DiveStats): void;
+  /** An encounter was found, at this depth. */
+  onFound?(encounter: Encounter, depth: number): void;
+  /** The encounters now in the water, whenever a zone begins. */
+  onPlaced?(placed: PlacedEncounter[]): void;
 }
 
 export type DiveInput = 'mic' | 'touch' | 'scripted';
@@ -89,6 +100,9 @@ export class DiveController {
   private zone = 0;
   private longestExhaleMs = 0;
   private breathingOut = false;
+  private tracker: DiscoveryTracker | null = null;
+  private found: string[] = [];
+  private discoveryTick: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     scene: DiveSceneLike,
@@ -133,6 +147,8 @@ export class DiveController {
     plan: SessionPlan;
     input: DiveInput;
     timeScale?: number;
+    /** what this dive can meet, rolled by the caller */
+    encounters?: Encounter[];
   }): Promise<StartedInput | null> {
     if (this.starting || this.running) return null;
     this.starting = true;
@@ -158,7 +174,11 @@ export class DiveController {
 
       this.zone = 0;
       this.longestExhaleMs = 0;
+      this.found = [];
+      this.tracker = new DiscoveryTracker(config.encounters ?? []);
+      this.callbacks.onPlaced?.([]);
       this.scene.reset();
+      this.scene.setTimeScale(timeScale);
       this.detach.push(this.scene.attach(started.engine, conductor));
       this.breathingOut = false;
       this.detach.push(
@@ -183,6 +203,7 @@ export class DiveController {
       });
       this.machine = machine;
       this.watchLifecycle();
+      this.discoveryTick = setInterval(() => this.checkDiscoveries(), 50);
       this.scene.setPose('level');
       // The machine starts the conductor once calibration is done (#29).
       void machine.start();
@@ -242,6 +263,10 @@ export class DiveController {
     if (zone !== undefined) {
       this.scene.setZone(zone);
       this.zone = Math.max(this.zone, zone);
+      if (state !== 'calibrating' && this.tracker) {
+        this.tracker.enterZone(zone, this.scene.depth);
+        this.callbacks.onPlaced?.(this.tracker.placed);
+      }
     }
     if (state === 'calibrating' || state === 'surfacing') this.scene.setPose('level');
     else if (zone !== undefined) this.scene.setPose('descending');
@@ -250,17 +275,38 @@ export class DiveController {
 
   private onResult(result: SessionResult): void {
     const code = this.code;
+    this.checkDiscoveries();
     const stats: DiveStats = {
       depth: this.scene.depth,
       zone: this.zone,
       longestExhaleMs: this.longestExhaleMs,
+      found: [...this.found],
     };
     this.teardown();
     this.scene.settle();
     this.callbacks.onResult(result, code, stats);
   }
 
+  private checkDiscoveries(): void {
+    const tracker = this.tracker;
+    if (!tracker || !this.running) return;
+    const depth = this.scene.depth;
+    const found = tracker.update({
+      depth,
+      light: this.scene.light,
+      exhaling: this.breathingOut,
+      now: performance.now(),
+    });
+    for (const encounter of found) {
+      this.found.push(encounter.id);
+      this.callbacks.onFound?.(encounter, depth);
+    }
+  }
+
   private teardown(): void {
+    if (this.discoveryTick !== null) clearInterval(this.discoveryTick);
+    this.discoveryTick = null;
+    this.tracker = null;
     for (const off of this.detach) off();
     this.detach = [];
     this.conductor?.stop();

@@ -20,6 +20,7 @@ import { ZONE_LOOKS, lookForZone } from './art/palette';
 import type { ZoneLook } from './art/palette';
 import { DescentSurge } from './art/surge';
 import { SurfaceLight } from './art/surfaceLight';
+import { CreatureLayer } from './art/creatureLayer';
 import { PRESSURE_VIGNETTE, pressure } from './art/depthLight';
 import { buildTextures } from './art/textures';
 import type { SceneTextures } from './art/textures';
@@ -28,7 +29,7 @@ import { MidnightZone } from './art/zones/midnight';
 import { TwilightZone } from './art/zones/twilight';
 import { DiverWake } from './art/wake';
 import { driftMotes, seedMotes } from './renderer';
-import type { Mote, SceneRenderer, SceneState } from './renderer';
+import type { Mote, SceneCreature, SceneRenderer, SceneState } from './renderer';
 
 /**
  * The WebGL renderer.
@@ -70,6 +71,7 @@ export class PixiSceneRenderer implements SceneRenderer {
   private readonly fog: Sprite;
   private readonly vignette: Sprite;
   private readonly surface = new SurfaceLight();
+  private readonly creatures: CreatureLayer;
 
   private readonly rig: DiverRig;
   private readonly bubbles: BubbleTrail;
@@ -112,6 +114,7 @@ export class PixiSceneRenderer implements SceneRenderer {
     this.vignette.tint = 0x000000;
 
     this.rig = new DiverRig(tx);
+    this.creatures = new CreatureLayer(tx.dot);
     this.bubbles = new BubbleTrail(tx.bubble);
     this.wake = new DiverWake(tx.dot);
     this.zones = [
@@ -133,6 +136,7 @@ export class PixiSceneRenderer implements SceneRenderer {
     }
     this.baseLayer.addChild(
       this.moteLayers[2],
+      this.creatures.container,
       this.rig.pool,
       this.rig.cone,
       this.bubbles.container,
@@ -277,6 +281,7 @@ export class PixiSceneRenderer implements SceneRenderer {
     // every other element's reveal reads.
     this.rig.update(f, state, lightTint);
     this.surface.update(f);
+    this.creatures.update(f, toLook.silhouette);
 
     if (!reduced) driftMotes(this.motes, dtSeconds * surge);
     const toCount = visibleMotes(toLook, reduced);
@@ -315,6 +320,10 @@ export class PixiSceneRenderer implements SceneRenderer {
     if (fading && !this.fade.done) this.zones[fromIndex].update(f);
 
     this.app.renderer.render(this.app.stage);
+  }
+
+  setCreatures(creatures: SceneCreature[]): void {
+    this.creatures.set(creatures);
   }
 
   destroy(): void {

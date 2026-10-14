@@ -26,6 +26,8 @@ let scenarios: [String: SoundMixParams] = [
   "speaker-window": mix { $0.bubbles = 1; $0.highCut = true },
   "midnight": mix { $0.surface = 0; $0.beds = (0, 1, 0); $0.lowpassHz = 700 },
   "abyss": mix { $0.surface = 0; $0.beds = (0, 0, 1); $0.lowpassHz = 300 },
+  // Nothing else playing: only the discovery ping, fired once after settling.
+  "ping": mix { $0.surface = 0; $0.beds = (0, 0, 0) },
 ]
 guard let params = scenarios[args[1]] else {
   FileHandle.standardError.write("unknown scenario \(args[1])\n".data(using: .utf8)!)
@@ -41,6 +43,8 @@ var buffer = [Float](repeating: 0, count: block)
 for _ in 0..<Int(rate * 4.0) / block {
   buffer.withUnsafeMutableBufferPointer { soundscape.render($0.baseAddress!, frames: block) }
 }
+
+if args[1] == "ping" { soundscape.ping() }
 
 // Measure: a 4th-order 1 kHz high-pass (two cascaded TPT sections) isolates
 // the band the breath detector listens to.
