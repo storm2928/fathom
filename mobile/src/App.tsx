@@ -220,6 +220,7 @@ function Game() {
   };
 
   const autoplayDives = useRef(0);
+  const autoplayJournal = useRef(false);
   useEffect(() => {
     if (!AUTOPLAY) return;
     const after = (ms: number, fn: () => void) => {
@@ -230,7 +231,15 @@ function Game() {
       case 'safety':
         return after(4000, () => send({ type: 'acknowledge', input: 'touch' }));
       case 'title':
-        return after(4000, () => send({ type: 'choose-dive', plan: 'quick' }));
+        // After the first dive, look in the journal before the second.
+        return autoplayDives.current === 1 && !autoplayJournal.current
+          ? after(3000, () => {
+              autoplayJournal.current = true;
+              send({ type: 'open-journal' });
+            })
+          : after(4000, () => send({ type: 'choose-dive', plan: 'quick' }));
+      case 'journal':
+        return after(5000, () => send({ type: 'back' }));
       case 'predive':
         return controller ? after(3000, () => void begin()) : undefined;
       case 'dive':

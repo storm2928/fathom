@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Fathom app icon: the depth gauge on deep water. Rendered to AppIcon-512@2x.png. -->
+  <defs>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f4a5a"/>
+      <stop offset="0.45" stop-color="#082a3a"/>
+      <stop offset="1" stop-color="#030811"/>
+    </linearGradient>
+    <linearGradient id="ray" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fe7e6" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#9fe7e6" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#5ce3cf" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5ce3cf" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#water)"/>
+  <polygon points="380,0 620,0 760,1024 260,1024" fill="url(#ray)"/>
+  <g fill="#bff7ef" opacity="0.55">
+    <circle cx="180" cy="240" r="5"/><circle cx="860" cy="180" r="4"/><circle cx="120" cy="720" r="4"/>
+    <circle cx="900" cy="640" r="6"/><circle cx="300" cy="900" r="3"/><circle cx="760" cy="880" r="4"/>
+    <circle cx="640" cy="120" r="3"/><circle cx="90" cy="460" r="3"/>
+  </g>
+  <circle cx="512" cy="512" r="300" fill="url(#glow)"/>
+  <g fill="none" stroke="#eaf3f7" stroke-width="44" stroke-linecap="round" opacity="0.95">
+    <circle cx="512" cy="512" r="300"/>
+    <path d="M512 212v86M812 512h-86M512 812v-86M212 512h86"/>
+  </g>
+  <path d="M512 512 L382 671" stroke="#5ce3cf" stroke-width="64" stroke-linecap="round" filter="url(#soft)"/>
+  <path d="M512 512 L382 671" stroke="#5ce3cf" stroke-width="52" stroke-linecap="round"/>
+  <circle cx="512" cy="512" r="58" fill="#5ce3cf"/>
+  <circle cx="512" cy="512" r="58" fill="#5ce3cf" filter="url(#soft)"/>
+</svg>
