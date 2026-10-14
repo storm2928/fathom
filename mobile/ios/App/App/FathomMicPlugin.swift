@@ -52,15 +52,9 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
   private func begin(_ call: CAPPluginCall) {
     if running { end() }
     do {
+      // The session itself is configured once at launch (AudioSession), so
+      // starting the microphone never interrupts the soundscape.
       let session = AVAudioSession.sharedInstance()
-      // Measurement mode turns off the voice processing (echo cancellation,
-      // noise suppression, gain control) that would delete a slow exhale.
-      // Play-and-record so Plan 2's soundscape can play during a dive.
-      try session.setCategory(
-        .playAndRecord, mode: .measurement,
-        options: [.defaultToSpeaker, .allowBluetoothA2DP, .mixWithOthers])
-      try session.setActive(true)
-
       let input = engine.inputNode
       let format = input.outputFormat(forBus: 0)
       guard format.sampleRate > 0, format.channelCount > 0 else {
@@ -102,6 +96,5 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
     engine.inputNode.removeTap(onBus: 0)
     engine.stop()
     running = false
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
 }

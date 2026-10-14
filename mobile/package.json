@@ -11,7 +11,8 @@
     "sync": "npm run build && cap sync ios",
     "ios": "npm run sync && sh scripts/run-ios.sh",
     "ios:autoplay": "VITE_FATHOM_AUTOPLAY=1 vite build --mode simulator && cap sync ios && sh scripts/run-ios.sh",
-    "test:dsp": "node scripts/dsp-parity/parity.mjs"
+    "test:dsp": "node scripts/dsp-parity/parity.mjs",
+    "test:sound": "node scripts/sound-check/check.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
