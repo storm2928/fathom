@@ -1,6 +1,6 @@
 import { test, assert, equal } from '@fathom/game/testing/harness.ts';
 import { DiveController } from './diveController.ts';
-import type { DiveSceneLike, InputFactories } from './diveController.ts';
+import type { DiveSceneLike, DiveStats, InputFactories } from './diveController.ts';
 import { ScriptedBreathEngine } from '@fathom/game/input/scriptedEngine.ts';
 import { SpacebarBreathEngine } from '@fathom/game/input/spacebarEngine.ts';
 import type { SessionResult, SessionState } from '@fathom/game/session/sessionMachine.ts';
@@ -221,4 +221,20 @@ test('sending the app to the background ends the dive as left early', async () =
   equal((result as SessionResult | null)?.ending, 'stopped', 'the dive kept running in the background');
   equal(controller.running, false);
   equal(onVisibility, null, 'the visibility listener outlived the dive');
+});
+
+test('a finished dive reports its depth, deepest zone and longest exhale', async () => {
+  const scene = new RecordingScene();
+  scene.depth = 37.5;
+  let stats: DiveStats | null = null;
+  const controller = new DiveController(
+    scene,
+    { onState: () => {}, onPrompt: () => {}, onResult: (_r, _code, s) => (stats = s) },
+    factories(),
+  );
+  await finished(controller, () => controller.start({ plan: 'quick', input: 'scripted', timeScale: 500 }));
+  const reported = stats as DiveStats | null;
+  equal(reported?.depth, 37.5, 'depth was not taken from the scene');
+  equal(reported?.zone, 0, 'a quick dive reached a zone it does not have');
+  assert((reported?.longestExhaleMs ?? 0) > 1_000, `longest exhale ${reported?.longestExhaleMs}ms is not a real breath`);
 });

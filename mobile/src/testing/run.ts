@@ -8,6 +8,7 @@ import '../app/flow.test.ts';
 import '../app/storage.test.ts';
 import '../dive/diveController.test.ts';
 import '../native/nativeMicCapture.test.ts';
+import '../screens/resultsFormat.test.ts';
 import { runAll } from '@fathom/game/testing/harness.ts';
 
 await runAll();

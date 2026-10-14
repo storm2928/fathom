@@ -8,7 +8,7 @@ import { initialFlow, nextFlow } from './app/flow';
 import type { FlowEvent, FlowState } from './app/flow';
 import { loadChoices, saveChoices } from './app/storage';
 import { DiveController, ZONE_FOR_STATE } from './dive/diveController';
-import type { DiveInput } from './dive/diveController';
+import type { DiveInput, DiveStats } from './dive/diveController';
 import { productionInputs } from './dive/inputs';
 import { DiveHud } from './dive/DiveHud';
 import type { RingView } from './dive/DiveHud';
@@ -51,6 +51,7 @@ function Game() {
   const [notice, setNotice] = useState<string | null>(null);
   const [result, setResult] = useState<SessionResult | null>(null);
   const [inputCode, setInputCode] = useState<InputCode>('microphone');
+  const [stats, setStats] = useState<DiveStats>({ depth: 0, zone: 0, longestExhaleMs: 0 });
   const timeScale = SCRIPTED ? 10 : 1;
 
   const controller = useMemo(
@@ -69,9 +70,10 @@ function Game() {
               },
               onPrompt: (window, sweepMs) =>
                 setRing((r) => ({ step: window.step, sweepMs, seq: r.seq + 1 })),
-              onResult: (finished, code) => {
+              onResult: (finished, code, diveStats) => {
                 setResult(finished);
                 setInputCode(code);
+                setStats(diveStats);
                 setTouch(null);
                 send({ type: 'surfaced' });
               },
@@ -187,7 +189,7 @@ function Game() {
         />
       );
     case 'results':
-      return result ? <ResultsCard result={result} input={inputCode} onDone={done} /> : null;
+      return result ? <ResultsCard result={result} input={inputCode} stats={stats} onDone={done} /> : null;
   }
 }
 

@@ -28,11 +28,21 @@ export interface DiveSceneLike {
   readonly light: number;
 }
 
+/** What the dive itself did, for the end-of-dive screen. */
+export interface DiveStats {
+  /** metres earned by the end, from the scene */
+  depth: number;
+  /** 0-based index of the deepest zone the arc entered */
+  zone: number;
+  /** the longest scored exhale, ms; 0 when none was scored */
+  longestExhaleMs: number;
+}
+
 export interface DiveCallbacks {
   onState(state: SessionState): void;
   /** `sweepMs` is the window in wall-clock time, for the breath ring. */
   onPrompt(window: PromptWindow, sweepMs: number): void;
-  onResult(result: SessionResult, input: InputCode): void;
+  onResult(result: SessionResult, input: InputCode, stats: DiveStats): void;
 }
 
 export type DiveInput = 'mic' | 'touch' | 'scripted';
@@ -76,6 +86,8 @@ export class DiveController {
   private machine: SessionMachine | null = null;
   private detach: (() => void)[] = [];
   private code: InputCode = 'microphone';
+  private zone = 0;
+  private longestExhaleMs = 0;
 
   constructor(
     scene: DiveSceneLike,
@@ -129,8 +141,15 @@ export class DiveController {
       conductor.attach(started.engine);
       this.conductor = conductor;
 
+      this.zone = 0;
+      this.longestExhaleMs = 0;
       this.scene.reset();
       this.detach.push(this.scene.attach(started.engine, conductor));
+      this.detach.push(
+        started.engine.on('exhale-end', ({ durationMs }) => {
+          this.longestExhaleMs = Math.max(this.longestExhaleMs, durationMs);
+        }),
+      );
       this.detach.push(
         conductor.on((window) => this.callbacks.onPrompt(window, window.durationMs / timeScale)),
       );
@@ -199,7 +218,10 @@ export class DiveController {
 
   private onState(state: SessionState): void {
     const zone = ZONE_FOR_STATE[state];
-    if (zone !== undefined) this.scene.setZone(zone);
+    if (zone !== undefined) {
+      this.scene.setZone(zone);
+      this.zone = Math.max(this.zone, zone);
+    }
     if (state === 'calibrating' || state === 'surfacing') this.scene.setPose('level');
     else if (zone !== undefined) this.scene.setPose('descending');
     this.callbacks.onState(state);
@@ -207,9 +229,14 @@ export class DiveController {
 
   private onResult(result: SessionResult): void {
     const code = this.code;
+    const stats: DiveStats = {
+      depth: this.scene.depth,
+      zone: this.zone,
+      longestExhaleMs: this.longestExhaleMs,
+    };
     this.teardown();
     this.scene.settle();
-    this.callbacks.onResult(result, code);
+    this.callbacks.onResult(result, code, stats);
   }
 
   private teardown(): void {

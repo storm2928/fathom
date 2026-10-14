@@ -31,6 +31,17 @@ const en = {
   lostFixMic: 'A quieter room usually fixes it — or choose touch and hold instead of the microphone.',
   lostFixTouch:
     'No holds were felt while your starting rate was being read. Hold a finger on the screen for each breath out, from the very first one.',
+  diveComplete: 'Dive complete',
+  deepestZone: 'Deepest zone: {zone}',
+  metresUnit: 'm',
+  breathing: 'Breathing',
+  inWater: 'In the water',
+  breaths: 'Breaths',
+  longestExhale: 'Longest breath out',
+  caveat: 'Measured from your breaths out. Not a health test.',
+  aboutNumbers: 'About these numbers',
+  needPerson: 'Need to talk to someone?',
+  close: 'Close',
 };
 
 const fr: typeof en = {
@@ -60,6 +71,17 @@ const fr: typeof en = {
     'Un endroit plus calme règle généralement le problème — ou choisissez l’appui maintenu plutôt que le microphone.',
   lostFixTouch:
     'Aucun appui n’a été senti pendant la lecture de votre rythme de départ. Gardez un doigt sur l’écran à chaque expiration, dès la première.',
+  diveComplete: 'Plongée terminée',
+  deepestZone: 'Zone la plus profonde : {zone}',
+  metresUnit: 'm',
+  breathing: 'Respiration',
+  inWater: 'Dans l’eau',
+  breaths: 'Respirations',
+  longestExhale: 'Plus longue expiration',
+  caveat: 'Mesuré à partir de vos expirations. Pas un test de santé.',
+  aboutNumbers: 'À propos de ces chiffres',
+  needPerson: 'Besoin de parler à quelqu’un ?',
+  close: 'Fermer',
 };
 
 export type AppStrings = typeof en;
