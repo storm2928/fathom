@@ -347,3 +347,23 @@ test('#15: a new session does not inherit the last one’s target', async () => 
 
   equal(engine.exhaleTargetMs < 11000, true, 'the ratchet should not survive a session');
 });
+
+test('a microphone the system takes away mid-dive is an unusable signal, not silence', async () => {
+  let lose: (() => void) | null = null;
+  const capture: MicCapture = {
+    ...createFakeCapture(),
+    onLost(listener: () => void) {
+      lose = listener;
+      return () => {
+        lose = null;
+      };
+    },
+  };
+  const engine = createBreathEngine({ capture });
+  const levels: string[] = [];
+  engine.on('signal-quality', ({ level }) => levels.push(level));
+  await engine.start();
+  (lose as (() => void) | null)?.();
+  equal(levels[levels.length - 1], 'unusable', 'a lost microphone was not reported');
+  engine.stop();
+});

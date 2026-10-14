@@ -65,3 +65,29 @@ test('Preferences failing to load still gives a working store', async () => {
   equal(store.getItem('fathom.app.volume'), '0.3');
   assert(true);
 });
+
+test('a key that fails to load is never overwritten on the strength of a blank read', async () => {
+  const stored = new Map([
+    ['fathom.journal.found', '{"moon-jelly":{"date":"2026-10-13T09:00:00.000Z","depth":8}}'],
+    ['fathom.app.volume', '0.4'],
+  ]);
+  const writes: string[] = [];
+  const flaky: PreferencesLike = {
+    keys: () => Promise.resolve({ keys: [...stored.keys()] }),
+    get: ({ key }) =>
+      key === 'fathom.journal.found'
+        ? Promise.reject(new Error('read failed'))
+        : Promise.resolve({ value: stored.get(key) ?? null }),
+    set: ({ key, value }) => {
+      writes.push(key);
+      stored.set(key, value);
+      return Promise.resolve();
+    },
+  };
+  const store = await hydrate(flaky, null, []);
+  equal(store.getItem('fathom.app.volume'), '0.4', 'one failed key stopped the rest loading');
+  store.setItem('fathom.journal.found', '{}');
+  await Promise.resolve();
+  assert(!writes.includes('fathom.journal.found'), 'a journal that failed to load was overwritten');
+  equal(stored.get('fathom.journal.found')?.includes('moon-jelly'), true);
+});

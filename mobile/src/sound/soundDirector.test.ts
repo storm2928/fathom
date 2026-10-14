@@ -14,6 +14,8 @@ const diving: SoundInput = {
   zone: 0,
   exhaling: false,
   exhaleWindow: false,
+  scoringSoon: false,
+  micDive: true,
   headphones: true,
   volume: 1,
 };
@@ -74,4 +76,29 @@ test('menus are quieter than the water', () => {
   const dive = mixFor(diving).master;
   assert(mixFor({ ...diving, screen: 'title' }).master < dive);
   assert(mixFor({ ...diving, screen: 'results' }).master < dive);
+});
+
+test('on the speaker a microphone dive never plays bubbles, even with the window closed', () => {
+  // An audible inhale often reads as a breath out while the window is closed;
+  // bubbles on the speaker would then keep that "breath" going.
+  const mix = mixFor({ ...diving, headphones: false, exhaling: true, exhaleWindow: false });
+  equal(mix.bubbles, 0, 'bubbles played into the microphone');
+  equal(mix.highCut, true, 'an exhale on the speaker was not cut');
+});
+
+test('the cut is armed from the top-up, before the window opens', () => {
+  const mix = mixFor({ ...diving, headphones: false, scoringSoon: true });
+  equal(mix.highCut, true);
+});
+
+test('on the speaker the cut also ducks the low mix the detector hears as voice', () => {
+  const open = mixFor({ ...diving, headphones: false, exhaleWindow: true }).master;
+  const closed = mixFor({ ...diving, headphones: false }).master;
+  assert(open <= closed * 0.2, `ducked master ${open} vs ${closed}`);
+});
+
+test('a touch dive has no microphone to protect: full mix on the speaker', () => {
+  const mix = mixFor({ ...diving, micDive: false, headphones: false, exhaling: true, exhaleWindow: true });
+  equal(mix.highCut, false);
+  assert(mix.bubbles > 0);
 });

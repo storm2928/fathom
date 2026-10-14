@@ -88,7 +88,10 @@ public class FathomSoundPlugin: CAPPlugin, CAPBridgedPlugin {
   }
 
   @objc func getRoute(_ call: CAPPluginCall) {
-    call.resolve(["headphones": AudioSession.headphones])
+    call.resolve([
+      "headphones": AudioSession.headphones,
+      "otherAudio": AudioSession.otherAudioPlaying,
+    ])
   }
 
   // MARK: - Engine

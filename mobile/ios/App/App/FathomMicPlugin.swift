@@ -19,6 +19,7 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
 
   private let engine = AVAudioEngine()
   private var running = false
+  private var tapInstalled = false
   /// Audio session and engine setup block on the audio server; keep them off
   /// the main thread (Apple's own runtime warning says the same).
   private let queue = DispatchQueue(label: "app.fathom.mic")
@@ -32,6 +33,34 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         self.begin(call)
       }
+    }
+  }
+
+  override public func load() {
+    // iOS stops the input engine for calls, Siri and alarms, and on a route
+    // change (headphones with a mic plugged in, say). A dive must not carry on
+    // as if it were still listening: tell JavaScript, which ends it as
+    // signal-lost rather than invent the rest of the measurement.
+    let center = NotificationCenter.default
+    center.addObserver(
+      self, selector: #selector(inputLost(_:)),
+      name: AVAudioSession.interruptionNotification, object: nil)
+    center.addObserver(
+      self, selector: #selector(inputLost(_:)),
+      name: .AVAudioEngineConfigurationChange, object: engine)
+  }
+
+  @objc private func inputLost(_ note: Notification) {
+    if note.name == AVAudioSession.interruptionNotification {
+      guard
+        let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+        AVAudioSession.InterruptionType(rawValue: raw) == .began
+      else { return }
+    }
+    queue.async {
+      guard self.running else { return }
+      self.end()
+      self.notifyListeners("lost", data: [:])
     }
   }
 
@@ -57,7 +86,7 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
   }
 
   private func begin(_ call: CAPPluginCall) {
-    if running { end() }
+    end()  // clears any tap a failed or interrupted start left behind
     do {
       // The session itself is configured once at launch (AudioSession), so
       // starting the microphone never interrupts the soundscape.
@@ -74,8 +103,10 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
         pending.append(frame.dictionary)
       }
 
-      // ~20 ms buffers; whatever frames each buffer completes go over in one
-      // event, so the bridge carries ~50 small messages a second at most.
+      // iOS may deliver larger buffers than asked for (up to ~100 ms); frame
+      // times are counted in samples, so only latency changes. Each buffer's
+      // frames go over in one event.
+      tapInstalled = true
       input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
         guard let self, let channel = buffer.floatChannelData?[0] else { return }
         processor.process(channel, count: Int(buffer.frameLength))
@@ -98,9 +129,13 @@ public class FathomMicPlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
 
+  /// Removes the tap and stops the engine — also after a start that failed
+  /// half-way, so the next start never installs a second tap on the bus.
   private func end() {
-    guard running else { return }
-    engine.inputNode.removeTap(onBus: 0)
+    if tapInstalled {
+      engine.inputNode.removeTap(onBus: 0)
+      tapInstalled = false
+    }
     engine.stop()
     running = false
   }

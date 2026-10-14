@@ -47,6 +47,9 @@ import './styles/screens.css';
 // Its own switch rather than DEV: a simulator build is a `vite build`, where DEV
 // is false. Never set for a release, so the constant folds to false there.
 const AUTOPLAY = import.meta.env.VITE_FATHOM_AUTOPLAY === '1';
+// A marker the Release build phase looks for (see the "Refuse autoplay"
+// script in the Xcode project). Folded away entirely when AUTOPLAY is off.
+if (AUTOPLAY) console.info('FATHOM_AUTOPLAY_BUILD');
 /** Dev builds can drive a whole dive with the scripted fixture: add ?scripted to the URL. */
 const AUTOPLAY_MIC = AUTOPLAY && import.meta.env.VITE_FATHOM_AUTOPLAY_INPUT === 'mic';
 const SCRIPTED =
@@ -104,7 +107,9 @@ function Game() {
               onPrompt: (window, sweepMs) => {
                 setRing((r) => ({ step: window.step, sweepMs, seq: r.seq + 1 }));
                 if (window.step === 'inhale' || window.step === 'top-up') {
-                  playInhale();
+                  // The swell only on the first breath in: from the top-up it
+                  // would still be sounding as the exhale window opens.
+                  if (window.step === 'inhale') playInhale();
                   if (hapticsRef.current) haptics.tap('inhale');
                 }
               },
@@ -176,6 +181,8 @@ function Game() {
     zone: flow.screen === 'dive' ? (zone ?? 0) : flow.screen === 'results' ? stats.zone : 0,
     exhaling: () => controller?.exhaling ?? false,
     exhaleWindow: () => controller?.exhaleWindow ?? false,
+    scoringSoon: () => controller?.scoringSoon ?? false,
+    micDive: inputCode === 'microphone',
     volume,
   });
 
@@ -310,6 +317,7 @@ function Game() {
       return (
         <PreDive
           plan={flow.plan}
+          mic={flow.input === 'mic'}
           busy={busy || !controller}
           error={error}
           onBegin={() => void begin()}

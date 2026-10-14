@@ -17,6 +17,7 @@ class FakePlugin implements FathomMicPlugin {
   started = 0;
   stopped = 0;
   handler: ((event: FramesEvent) => void) | null = null;
+  lostHandler: (() => void) | null = null;
   refuse: string | null = null;
 
   start() {
@@ -29,7 +30,16 @@ class FakePlugin implements FathomMicPlugin {
     this.stopped += 1;
     return Promise.resolve();
   }
-  addListener(_event: 'frames', handler: (event: FramesEvent) => void) {
+  addListener(event: 'frames' | 'lost', handler: (event: FramesEvent) => void) {
+    if (event === 'lost') {
+      this.lostHandler = () => handler({ frames: [] });
+      return Promise.resolve({
+        remove: () => {
+          this.lostHandler = null;
+          return Promise.resolve();
+        },
+      });
+    }
     this.handler = handler;
     return Promise.resolve({
       remove: () => {
@@ -90,4 +100,35 @@ test('after stop the microphone is released and frames stop arriving', async () 
   equal(seen.length, 0, 'a frame arrived after stop');
   equal(capture.running, false);
   equal(capture.settings, null);
+});
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+test('the system taking the microphone away is reported as lost', async () => {
+  const plugin = new FakePlugin();
+  const capture = createNativeMicCapture(plugin, { silenceMs: 10_000 });
+  let lost = 0;
+  capture.onLost?.(() => (lost += 1));
+  await capture.start();
+  plugin.lostHandler?.();
+  equal(lost, 1);
+  await capture.stop();
+});
+
+test('frames that stop arriving are reported as lost', async () => {
+  const plugin = new FakePlugin();
+  const capture = createNativeMicCapture(plugin, { silenceMs: 40 });
+  let lost = 0;
+  capture.onLost?.(() => (lost += 1));
+  await capture.start();
+  plugin.send(frame(20));
+  await sleep(20);
+  plugin.send(frame(40));
+  await sleep(20);
+  equal(lost, 0, 'a microphone still sending frames was called lost');
+  await sleep(80);
+  equal(lost, 1, 'silence from the input was never noticed');
+  await capture.stop();
+  await sleep(80);
+  equal(lost, 1, 'a stopped capture kept watching');
 });

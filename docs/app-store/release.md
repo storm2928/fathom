@@ -55,5 +55,8 @@ npm run ios:autoplay -w mobile    # unattended scripted playthrough (never for r
 npm test -w mobile && npm run test:dsp -w mobile && npm run test:sound -w mobile
 ```
 
-The autoplay switch is refused by any build that is not `--mode simulator`, so
-a release archive cannot include it.
+The autoplay switch is refused by any web build that is not `--mode
+simulator`; `ios:autoplay` restores the normal bundle into the iOS project when
+it finishes; and an Xcode build phase ("Refuse autoplay") fails any Release
+build whose bundled web app still carries the autoplay marker. Before
+archiving, run `npm run sync -w mobile` anyway.

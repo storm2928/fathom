@@ -24,23 +24,34 @@ export async function hydrate(
   legacyKeys: string[],
 ): Promise<KeyValueStore> {
   const values = new Map<string, string>();
+  // Keys that exist but could not be read. Writing them would replace real
+  // saved data (a whole journal) with whatever this launch thinks is there,
+  // so they are kept in memory only, for this launch.
+  const unreadable = new Set<string>();
+  let listed = true;
 
   try {
     const { keys } = await preferences.keys();
     for (const key of keys) {
-      const { value } = await preferences.get({ key });
-      if (value !== null) values.set(key, value);
+      try {
+        const { value } = await preferences.get({ key });
+        if (value !== null) values.set(key, value);
+      } catch {
+        unreadable.add(key);
+      }
     }
   } catch {
-    // Preferences unavailable: run from memory for this launch.
+    // Could not even list what is stored: write nothing back this launch.
+    listed = false;
   }
 
   const write = (key: string, value: string) => {
     values.set(key, value);
+    if (!listed || unreadable.has(key)) return;
     void preferences.set({ key, value }).catch(() => {});
   };
 
-  if (legacy) {
+  if (legacy && listed) {
     for (const key of legacyKeys) {
       if (values.has(key)) continue;
       try {

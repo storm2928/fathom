@@ -81,6 +81,12 @@ export interface MicCapture {
   start(): Promise<AppliedSettings>;
   stop(): Promise<void>;
   onFrame(listener: CaptureFrameListener): () => void;
+  /**
+   * Optional: the system took the input away (a call, Siri, a route change).
+   * Frames stop without the capture being stopped, so this is the only way to
+   * know the silence is not a quiet room.
+   */
+  onLost?(listener: () => void): () => void;
   readonly running: boolean;
   readonly settings: AppliedSettings | null;
 }

@@ -266,6 +266,11 @@ export function createBreathEngine(
   }
 
   capture.onFrame(onFrame);
+  // A capture that loses its input is not a quiet room: the session ends on an
+  // unusable signal instead of carrying on with nothing being measured.
+  capture.onLost?.(() => {
+    if (running) setSignalQuality('unusable');
+  });
 
   function teardown(): void {
     running = false;

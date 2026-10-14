@@ -10,7 +10,7 @@
     "test": "node --import ../src/game/testing/resolve.mjs src/testing/run.ts",
     "sync": "npm run build && cap sync ios",
     "ios": "npm run sync && sh scripts/run-ios.sh",
-    "ios:autoplay": "VITE_FATHOM_AUTOPLAY=1 vite build --mode simulator && cap sync ios && sh scripts/run-ios.sh",
+    "ios:autoplay": "VITE_FATHOM_AUTOPLAY=1 vite build --mode simulator && cap sync ios && sh scripts/run-ios.sh && npm run sync",
     "test:dsp": "node scripts/dsp-parity/parity.mjs",
     "test:sound": "node scripts/sound-check/check.mjs"
   },

@@ -15,6 +15,10 @@ import type {
  * same frame measurements the web worklet does (BreathFrameProcessor.swift,
  * checked frame-for-frame by scripts/dsp-parity), and hands the frames to the
  * unchanged breath engine through its `capture` option.
+ *
+ * If iOS takes the input away (a call, Siri, a route change) the plugin says
+ * so, and if frames simply stop arriving a watchdog does — either way the
+ * engine hears "lost" and ends the dive, rather than measuring silence.
  */
 
 export interface FramesEvent {
@@ -26,35 +30,67 @@ export interface FathomMicPlugin {
   requestPermission?(): Promise<{ granted: boolean }>;
   stop(): Promise<void>;
   addListener(
-    event: 'frames',
+    event: 'frames' | 'lost',
     handler: (event: FramesEvent) => void,
   ): Promise<{ remove: () => Promise<void> }>;
 }
 
-export function createNativeMicCapture(plugin: FathomMicPlugin): MicCapture {
+/** A live microphone sends ~50 frames a second; this much silence means it is gone. */
+const DEFAULT_SILENCE_MS = 1_500;
+
+export function createNativeMicCapture(
+  plugin: FathomMicPlugin,
+  options: { silenceMs?: number } = {},
+): MicCapture {
+  const silenceMs = options.silenceMs ?? DEFAULT_SILENCE_MS;
   const listeners = new Set<CaptureFrameListener>();
-  let subscription: { remove: () => Promise<void> } | null = null;
+  const lostListeners = new Set<() => void>();
+  let subscriptions: { remove: () => Promise<void> }[] = [];
+  let running = false;
   let applied: AppliedSettings | null = null;
+  let watchdog: ReturnType<typeof setTimeout> | null = null;
+
+  const lose = () => {
+    if (!running) return;
+    for (const listener of lostListeners) listener();
+  };
+  const arm = () => {
+    if (watchdog !== null) clearTimeout(watchdog);
+    watchdog = running ? setTimeout(lose, silenceMs) : null;
+  };
+  const disarm = () => {
+    if (watchdog !== null) clearTimeout(watchdog);
+    watchdog = null;
+  };
 
   const deliver = ({ frames }: FramesEvent) => {
+    if (frames.length) arm();
     for (const frame of frames) for (const listener of listeners) listener(frame);
+  };
+
+  const unsubscribe = async () => {
+    const current = subscriptions;
+    subscriptions = [];
+    await Promise.all(current.map((s) => s.remove()));
   };
 
   return {
     async start() {
-      if (subscription) throw new Error('capture is already running');
+      if (running || subscriptions.length) throw new Error('capture is already running');
       // Listening before starting, so the first frames are not dropped.
-      subscription = await plugin.addListener('frames', deliver);
+      subscriptions.push(await plugin.addListener('frames', deliver));
+      subscriptions.push(await plugin.addListener('lost', () => lose()));
       let info: { sampleRate: number; deviceLabel: string };
       try {
         info = await plugin.start();
       } catch (cause) {
-        await subscription.remove();
-        subscription = null;
+        await unsubscribe();
         throw new MicPermissionError(
           `Microphone unavailable: ${cause instanceof Error ? cause.message : String(cause)}`,
         );
       }
+      running = true;
+      arm();
       // The session runs in AVAudioSession's measurement mode, which turns off
       // the voice processing (echo cancellation, noise suppression, gain
       // control) that would otherwise delete a slow exhale.
@@ -70,11 +106,12 @@ export function createNativeMicCapture(plugin: FathomMicPlugin): MicCapture {
     },
 
     async stop() {
-      const current = subscription;
-      subscription = null;
+      const wasRunning = running || subscriptions.length > 0;
+      running = false;
       applied = null;
-      if (!current) return;
-      await current.remove();
+      disarm();
+      if (!wasRunning) return;
+      await unsubscribe();
       await plugin.stop();
     },
 
@@ -83,8 +120,13 @@ export function createNativeMicCapture(plugin: FathomMicPlugin): MicCapture {
       return () => listeners.delete(listener);
     },
 
+    onLost(listener) {
+      lostListeners.add(listener);
+      return () => lostListeners.delete(listener);
+    },
+
     get running() {
-      return subscription !== null;
+      return running;
     },
 
     get settings() {

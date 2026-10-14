@@ -63,8 +63,13 @@ export function saveChoices(
   }
 }
 
-/** Soundscape volume, 0–1. Read by the sound layer; saved from settings. */
-export const DEFAULT_VOLUME = 0.8;
+/**
+ * Soundscape volume, 0–1. Read by the sound layer; saved from settings.
+ * Half by default: the app's audio session ignores the silent switch (it has
+ * to, to keep the microphone and the soundscape on one session), so the first
+ * launch should not be loud in a quiet room.
+ */
+export const DEFAULT_VOLUME = 0.5;
 const VOLUME_KEY = 'fathom.app.volume';
 
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);

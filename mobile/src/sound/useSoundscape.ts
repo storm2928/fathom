@@ -11,6 +11,9 @@ export interface SoundSource {
   zone: number;
   exhaling: () => boolean;
   exhaleWindow: () => boolean;
+  scoringSoon: () => boolean;
+  /** the microphone is this dive's input */
+  micDive: boolean;
   volume: number;
 }
 
@@ -52,6 +55,8 @@ export function useSoundscape(source: SoundSource): void {
           zone: s.zone,
           exhaling: s.exhaling(),
           exhaleWindow: s.exhaleWindow(),
+          scoringSoon: s.scoringSoon(),
+          micDive: s.micDive,
           headphones: headphones.current,
           volume: s.volume,
         }),

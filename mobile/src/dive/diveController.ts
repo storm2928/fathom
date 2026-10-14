@@ -30,6 +30,8 @@ export interface DiveSceneLike {
   /** How fast this dive plays; only the scripted fixture runs faster than 1. */
   setTimeScale(timeScale: number): void;
   readonly depth: number;
+  /** metres committed by scored breaths only — no live preview */
+  readonly earnedDepth: number;
   readonly light: number;
 }
 
@@ -132,6 +134,11 @@ export class DiveController {
    */
   get exhaleWindow(): boolean {
     return this.running && (this.conductor?.exhaleExpected ?? false);
+  }
+
+  /** The top-up beat: the exhale window opens next. */
+  get scoringSoon(): boolean {
+    return this.running && this.conductor?.step === 'top-up';
   }
 
   /** The engine a finger presses, when the dive is on touch. */
@@ -290,7 +297,9 @@ export class DiveController {
   private checkDiscoveries(): void {
     const tracker = this.tracker;
     if (!tracker || !this.running) return;
-    const depth = this.scene.depth;
+    // Committed depth, not the preview of a breath in progress: a breath the
+    // detector refuses commits nothing, and must not fill the journal.
+    const depth = this.scene.earnedDepth;
     const found = tracker.update({
       depth,
       light: this.scene.light,

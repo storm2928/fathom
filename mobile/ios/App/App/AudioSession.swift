@@ -15,10 +15,20 @@ enum AudioSession {
       try session.setCategory(
         .playAndRecord, mode: .measurement,
         options: [.defaultToSpeaker, .allowBluetoothA2DP, .mixWithOthers])
+      // iOS mutes haptics while an app records unless it opts in. Microphone
+      // dives use only short transients (taps, the onset pulse, the zone
+      // thud) — never the continuous rumble, whose hum could reach the mic.
+      try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
       try session.setActive(true)
     } catch {
       print("Fathom: audio session could not be configured: \(error)")
     }
+  }
+
+  /// Another app is playing audio (music, a podcast). With the speaker on, it
+  /// reaches the breath microphone like any other room noise.
+  static var otherAudioPlaying: Bool {
+    AVAudioSession.sharedInstance().isOtherAudioPlaying
   }
 
   /// True when sound goes somewhere the microphone cannot hear it well:

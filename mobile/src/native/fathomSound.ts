@@ -8,7 +8,7 @@ export interface FathomSoundPlugin {
   setMix(mix: SoundMix): Promise<void>;
   inhale(): Promise<void>;
   ping(): Promise<void>;
-  getRoute(): Promise<{ headphones: boolean }>;
+  getRoute(): Promise<{ headphones: boolean; otherAudio?: boolean }>;
   addListener(
     event: 'route',
     handler: (route: { headphones: boolean }) => void,

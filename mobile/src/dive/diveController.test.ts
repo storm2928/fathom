@@ -20,6 +20,7 @@ scope.document ??= { ...quiet, visibilityState: 'visible' };
 class RecordingScene implements DiveSceneLike {
   calls: string[] = [];
   depth = 0;
+  earnedDepth = 0;
   light = 0;
   attach() {
     this.calls.push('attach');
@@ -305,9 +306,15 @@ test('passing an encounter with the light on while breathing out finds it', asyn
   });
   await new Promise((r) => setTimeout(r, 40));
   assert(placed.includes('moon-jelly'), 'the encounter was never placed in the water');
-  scene.depth = 6;
   scene.light = 0.9;
   emitter.emit('phase-change', { phase: 'exhale', at: 0 });
+  // The breath's live preview passes the encounter — but nothing is earned yet,
+  // and a breath the detector refuses would commit nothing.
+  scene.depth = 60;
+  await new Promise((r) => setTimeout(r, 120));
+  equal(found.length, 0, 'an unearned preview found something');
+  // The breath is scored: its depth is earned.
+  scene.earnedDepth = 6;
   await new Promise((r) => setTimeout(r, 120));
   equal(found.join(','), 'moon-jelly');
   controller.stop();

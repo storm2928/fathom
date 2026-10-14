@@ -2,12 +2,17 @@
  * What the soundscape should be playing right now, from the state of the game.
  * Pure: the native synth (Soundscape.swift) renders whatever this returns.
  *
- * The rule this file exists to keep: the breath detector listens for
- * broadband energy above 1 kHz (public/breath-processor.js). On the phone's
- * speaker, while a breath out can be scored, the mix carries nothing above
- * SPEAKER_SAFE_HZ and no bubbles — otherwise the game's own sound could read as
- * a breath, or keep a real one going after it ended. Headphones are exempt:
- * the microphone cannot hear them.
+ * The rule this file exists to keep: on a microphone dive played through the
+ * phone's speaker, the game must not be heard as breath. The detector wants
+ * broadband energy above 1 kHz and judges it against the voice band
+ * (100 Hz–1 kHz). So on the speaker:
+ *   - bubbles never play on a microphone dive — an audible inhale often reads
+ *     as a breath out, and bubbles answering it would keep it going;
+ *   - from the top-up beat (the window is about to open), through the breath
+ *     out and rest, and whenever a breath out is under way, everything above
+ *     SPEAKER_SAFE_HZ is cut and the rest is ducked to near-silence.
+ * Headphones are exempt: the microphone cannot hear them. Touch dives are
+ * exempt: nothing is listening.
  */
 
 export type SoundScreen = 'safety' | 'title' | 'predive' | 'dive' | 'results' | 'journal';
@@ -22,6 +27,10 @@ export interface SoundInput {
   exhaling: boolean;
   /** the conductor would score a breath out that started now */
   exhaleWindow: boolean;
+  /** the top-up beat: the exhale window opens next */
+  scoringSoon: boolean;
+  /** the microphone is the input (as opposed to touch or the fixture) */
+  micDive: boolean;
   /** output goes to headphones rather than the speaker */
   headphones: boolean;
   /** settings volume, 0-1 */
@@ -45,6 +54,8 @@ export interface SoundMix {
 
 /** Above this the breath detector starts to listen (its voice band ends at 1 kHz). */
 export const SPEAKER_SAFE_HZ = 500;
+/** "Near-silence": what the speaker keeps of the mix while it could be heard as breath. */
+export const SPEAKER_DUCK = 0.12;
 
 /** Just under the surface: the waves are already muffled, but bright. */
 const SURFACE_LOWPASS_HZ = 2400;
@@ -82,16 +93,19 @@ export function mixFor(input: SoundInput): SoundMix {
   const beds: [number, number, number] = [0, 0, 0];
   beds[zone] = 0.7 + 0.3 * (1 - surface);
 
-  let bubbles = input.exhaling && input.screen === 'dive' ? 1 : 0;
+  const listening = input.screen === 'dive' && input.micDive && !input.headphones;
+  let bubbles = input.exhaling && input.screen === 'dive' && !listening ? 1 : 0;
 
-  const highCut = !input.headphones && input.exhaleWindow && input.screen === 'dive';
+  const highCut = listening && (input.exhaleWindow || input.scoringSoon || input.exhaling);
+  let master = clamp01(input.volume) * SCREEN_LEVEL[input.screen];
   if (highCut) {
     bubbles = 0;
     lowpassHz = Math.min(lowpassHz, SPEAKER_SAFE_HZ);
+    master *= SPEAKER_DUCK;
   }
 
   return {
-    master: clamp01(input.volume) * SCREEN_LEVEL[input.screen],
+    master,
     surface,
     beds,
     lowpassHz,

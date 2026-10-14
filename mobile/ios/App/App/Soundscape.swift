@@ -177,6 +177,8 @@ final class Soundscape {
       pingRequested = false
       pingT = 0
     }
+    // Speaker safety outranks the inhale swell: it is breathy noise.
+    if p.highCut { inhaleT = -1 }
     let dt = 1 / rate
     let twoPi = 2 * Double.pi
 

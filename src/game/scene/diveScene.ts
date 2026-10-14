@@ -85,7 +85,7 @@ export class DiveScene {
   private restSeconds = 0;
 
   /** Depth earned by completed breaths, in metres. */
-  private earnedDepth = 0;
+  private committed = 0;
   /** Depth including the breath currently in progress. */
   private targetDepth = 0;
   /** Depth actually drawn, easing toward the target. */
@@ -127,7 +127,7 @@ export class DiveScene {
       engine.on('phase-change', ({ phase }) => {
         if (phase === 'exhale') {
           this.exhaleStartedAt = performance.now();
-          this.depthAtExhaleStart = this.earnedDepth;
+          this.depthAtExhaleStart = this.committed;
         } else {
           this.exhaleStartedAt = null;
         }
@@ -141,7 +141,7 @@ export class DiveScene {
         // was an estimate using the previous quality, so update() closes the
         // small gap rather than jumping — forward immediately, backward at the
         // retreat rate.
-        this.earnedDepth = this.depthAtExhaleStart + metresForExhale(durationMs, quality);
+        this.committed = this.depthAtExhaleStart + metresForExhale(durationMs, quality);
         this.exhaleStartedAt = null;
         // The light is spent by descending: it has to be recharged each cycle,
         // which is what makes the double inhale part of the loop rather than
@@ -208,7 +208,7 @@ export class DiveScene {
    */
   reset(): void {
     this.release();
-    this.earnedDepth = 0;
+    this.committed = 0;
     this.targetDepth = 0;
     this.shownDepth = 0;
     this.exhaleStartedAt = null;
@@ -298,6 +298,11 @@ export class DiveScene {
     return this.targetDepth;
   }
 
+  /** Metres committed by scored breaths only — never the preview of one in progress. */
+  get earnedDepth(): number {
+    return this.committed;
+  }
+
   /** What is on screen right now. Trails `depth` while the glide settles. */
   get drawnDepth(): number {
     return this.shownDepth;
@@ -385,7 +390,7 @@ export class DiveScene {
       const eased = u * u * (3 - 2 * u);
       this.shownDepth = this.ascent.from * (1 - eased);
       this.targetDepth = this.shownDepth;
-      this.earnedDepth = this.shownDepth;
+      this.committed = this.shownDepth;
       if (u >= 1) this.ascent = null;
       return;
     }
@@ -394,7 +399,7 @@ export class DiveScene {
       this.exhaleStartedAt !== null
         ? this.depthAtExhaleStart +
           metresForExhale(now - this.exhaleStartedAt, this.lastQuality)
-        : this.earnedDepth;
+        : this.committed;
     this.targetDepth = stepTowardTruth(this.targetDepth, truth, dt * this.timeScale);
 
     const catchUp = this.reducedMotion
