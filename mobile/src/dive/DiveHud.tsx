@@ -7,6 +7,7 @@ import type { PromptStep } from '@fathom/game/session/conductor';
 import type { SessionState } from '@fathom/game/session/sessionMachine';
 import type { SpacebarBreathEngine } from '@fathom/game/input/spacebarEngine';
 import { useAppStrings } from '../strings';
+import { SettingsButton } from '../screens/SettingsSheet';
 
 export interface RingView {
   step: PromptStep | 'calibrating' | null;
@@ -30,6 +31,7 @@ export function DiveHud({
   touch,
   notice,
   onLeave,
+  onSettings,
 }: {
   state: SessionState;
   zone: number | null;
@@ -38,6 +40,7 @@ export function DiveHud({
   touch: SpacebarBreathEngine | null;
   notice: string | null;
   onLeave: () => void;
+  onSettings: () => void;
 }) {
   const { t, language } = useLanguage();
   const a = useAppStrings();
@@ -140,6 +143,7 @@ export function DiveHud({
       >
         ×
       </button>
+      <SettingsButton className="hud__settings" onClick={onSettings} />
     </div>
   );
 }

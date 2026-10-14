@@ -61,3 +61,19 @@ test('pre-dive can go back to the title', () => {
   );
   equal(state.screen, 'title');
 });
+
+test('the breathing mode can be changed from any screen without moving', () => {
+  const title = initialFlow({ acknowledged: true, input: 'mic' });
+  const changed = nextFlow(title, { type: 'set-input', input: 'touch' });
+  equal(changed.screen, 'title');
+  equal(changed.input, 'touch');
+  const diving = run(title, { type: 'choose-dive', plan: 'full' }, { type: 'begin' });
+  const mid = nextFlow(diving, { type: 'set-input', input: 'touch' });
+  equal(mid.screen, 'dive', 'changing the mode left the dive');
+  equal(mid.input, 'touch');
+});
+
+test('changing the mode does not get past the scope', () => {
+  const start = initialFlow(null);
+  equal(nextFlow(start, { type: 'set-input', input: 'touch' }).screen, 'safety');
+});

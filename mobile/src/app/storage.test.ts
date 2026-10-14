@@ -1,5 +1,5 @@
 import { test, equal } from '@fathom/game/testing/harness.ts';
-import { loadChoices, saveChoices } from './storage.ts';
+import { DEFAULT_VOLUME, loadChoices, loadVolume, saveChoices, saveVolume } from './storage.ts';
 import type { KeyValueStore } from './storage.ts';
 
 function memory(): KeyValueStore {
@@ -42,4 +42,26 @@ test('corrupt values mean first launch, not a crash', () => {
 test('a storage that throws is survivable', () => {
   equal(loadChoices(broken), null);
   saveChoices({ acknowledged: true, input: 'mic' }, broken);
+});
+
+test('volume defaults when nothing is saved, and round-trips', () => {
+  const store = memory();
+  equal(loadVolume(store), DEFAULT_VOLUME);
+  saveVolume(0.35, store);
+  equal(loadVolume(store), 0.35);
+});
+
+test('volume is kept between silent and full', () => {
+  const store = memory();
+  saveVolume(1.7, store);
+  equal(loadVolume(store), 1);
+  saveVolume(-2, store);
+  equal(loadVolume(store), 0);
+  store.setItem('fathom.app.volume', 'loud');
+  equal(loadVolume(store), DEFAULT_VOLUME);
+});
+
+test('volume survives a storage that throws', () => {
+  equal(loadVolume(broken), DEFAULT_VOLUME);
+  saveVolume(0.5, broken);
 });

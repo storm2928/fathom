@@ -230,3 +230,102 @@
   font-size: 12px;
   color: var(--hud-muted);
 }
+
+/* Ring and caption stack on one centre line: a caption wider than the ring
+   (the breathe-out one) must not push the ring off centre. */
+.hud__ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Crisis numbers, compact. Shared by the safety screen and the end of a dive. */
+.crisis-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--hud-line);
+  font-size: 14px;
+  color: var(--hud-text);
+}
+.crisis-line__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.crisis-line__links a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(234, 243, 247, 0.06);
+  color: var(--hud-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* Round icon buttons: the gear, sized like the leave button. */
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.title__settings {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 8px);
+  right: 16px;
+}
+.hud__settings {
+  pointer-events: auto;
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 8px);
+  left: 64px;
+}
+
+/* Settings */
+.settings {
+  background: rgba(3, 8, 17, 0.55);
+  z-index: 5;
+}
+.settings__row {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 0 8px;
+  color: var(--hud-text);
+  font-size: 15px;
+}
+.settings__value {
+  color: var(--hud-muted);
+  font-variant-numeric: tabular-nums;
+}
+.settings__slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--hud-accent) var(--fill),
+    var(--hud-track) var(--fill)
+  );
+  touch-action: none;
+}
+.settings__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--hud-text);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+.settings__note {
+  margin: 10px 0 0;
+  font-size: 13px;
+}

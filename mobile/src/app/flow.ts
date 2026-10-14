@@ -22,6 +22,8 @@ export interface FlowState {
 
 export type FlowEvent =
   | { type: 'acknowledge'; input: InputChoice }
+  /** From settings, on any screen. Takes effect from the next dive. */
+  | { type: 'set-input'; input: InputChoice }
   | { type: 'choose-dive'; plan: DivePlan }
   | { type: 'begin' }
   | { type: 'back' }
@@ -40,6 +42,7 @@ export function nextFlow(state: FlowState, event: FlowEvent): FlowState {
       ? { ...state, screen: 'title', acknowledged: true, input: event.input }
       : state;
   }
+  if (event.type === 'set-input') return { ...state, input: event.input };
   switch (state.screen) {
     case 'title':
       return event.type === 'choose-dive' ? { ...state, screen: 'predive', plan: event.plan } : state;

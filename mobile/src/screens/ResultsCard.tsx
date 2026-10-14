@@ -12,6 +12,7 @@ import type { DiveStats } from '../dive/diveController';
 import { useAppStrings } from '../strings';
 import { clock, exhaleSeconds, wholeMetres } from './resultsFormat';
 import { useCountUp } from './useCountUp';
+import { CrisisLine } from './CrisisLine';
 import './results.css';
 
 /** What actually drove the dive, in the words the results card uses. */
@@ -207,16 +208,7 @@ function StatShowcase({
           </button>
         </div>
 
-        <div className="stats__crisis">
-          <span>{a.needPerson}</span>
-          <span className="stats__crisis-links">
-            <a href="tel:988">988</a>
-            <a href="tel:988">9-8-8</a>
-            <a href="https://findahelpline.com" target="_blank" rel="noreferrer">
-              findahelpline.com
-            </a>
-          </span>
-        </div>
+        <CrisisLine />
 
         <button type="button" className="game-btn game-btn--primary stats__done" onClick={onDone}>
           {a.done}

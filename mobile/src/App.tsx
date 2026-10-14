@@ -6,7 +6,8 @@ import type { SpacebarBreathEngine } from '@fathom/game/input/spacebarEngine';
 import type { InputCode } from '@fathom/game/surface/diveLog';
 import { initialFlow, nextFlow } from './app/flow';
 import type { FlowEvent, FlowState } from './app/flow';
-import { loadChoices, saveChoices } from './app/storage';
+import { loadChoices, loadVolume, saveChoices, saveVolume } from './app/storage';
+import type { InputChoice } from './app/flow';
 import { DiveController, ZONE_FOR_STATE } from './dive/diveController';
 import type { DiveInput, DiveStats } from './dive/diveController';
 import { productionInputs } from './dive/inputs';
@@ -17,6 +18,7 @@ import { SafetyGate } from './screens/SafetyGate';
 import { TitleScreen } from './screens/TitleScreen';
 import { PreDive } from './screens/PreDive';
 import { ResultsCard } from './screens/ResultsCard';
+import { SettingsSheet } from './screens/SettingsSheet';
 import { useAppStrings } from './strings';
 import './styles/screens.css';
 
@@ -41,6 +43,9 @@ function Game() {
   const [flow, setFlow] = useState<FlowState>(() => initialFlow(loadChoices()));
   const send = (event: FlowEvent) => setFlow((state) => nextFlow(state, event));
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Read by the soundscape (Plan 2); saved as soon as it changes.
+  const [volume, setVolume] = useState(loadVolume);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<SessionState>('idle');
@@ -149,6 +154,25 @@ function Game() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow.screen, controller]);
 
+  const changeVolume = (next: number) => {
+    setVolume(next);
+    saveVolume(next);
+  };
+  const changeInput = (input: InputChoice) => {
+    saveChoices({ acknowledged: true, input });
+    send({ type: 'set-input', input });
+  };
+  const settings = settingsOpen ? (
+    <SettingsSheet
+      volume={volume}
+      input={flow.input}
+      diving={flow.screen === 'dive'}
+      onVolume={changeVolume}
+      onInput={changeInput}
+      onClose={() => setSettingsOpen(false)}
+    />
+  ) : null;
+
   switch (flow.screen) {
     case 'safety':
       return (
@@ -160,7 +184,15 @@ function Game() {
         />
       );
     case 'title':
-      return <TitleScreen onChoose={(plan) => send({ type: 'choose-dive', plan })} />;
+      return (
+        <>
+          <TitleScreen
+            onChoose={(plan) => send({ type: 'choose-dive', plan })}
+            onSettings={() => setSettingsOpen(true)}
+          />
+          {settings}
+        </>
+      );
     case 'predive':
       return (
         <PreDive
@@ -178,6 +210,7 @@ function Game() {
       );
     case 'dive':
       return (
+        <>
         <DiveHud
           state={state}
           zone={zone}
@@ -186,7 +219,10 @@ function Game() {
           touch={touch}
           notice={notice}
           onLeave={() => controller?.stop()}
+          onSettings={() => setSettingsOpen(true)}
         />
+        {settings}
+        </>
       );
     case 'results':
       return result ? <ResultsCard result={result} input={inputCode} stats={stats} onDone={done} /> : null;

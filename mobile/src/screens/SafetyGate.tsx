@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@fathom/shell/i18n';
-import { CrisisRail } from '@fathom/shell/CrisisRail';
+import { CrisisLine } from './CrisisLine';
 import type { InputChoice } from '../app/flow';
 import { useAppStrings } from '../strings';
 
@@ -43,7 +43,7 @@ export function SafetyGate({ onAcknowledge }: { onAcknowledge: (input: InputChoi
           </button>
         </div>
 
-        <CrisisRail />
+        <CrisisLine />
 
         <div className="sheet__actions">
           <button

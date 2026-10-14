@@ -42,6 +42,10 @@ const en = {
   aboutNumbers: 'About these numbers',
   needPerson: 'Need to talk to someone?',
   close: 'Close',
+  settings: 'Settings',
+  volume: 'Volume',
+  breathingMode: 'Breathing mode',
+  modeNextDive: 'This dive keeps its current mode. The change applies from your next dive.',
 };
 
 const fr: typeof en = {
@@ -82,6 +86,10 @@ const fr: typeof en = {
   aboutNumbers: 'À propos de ces chiffres',
   needPerson: 'Besoin de parler à quelqu’un ?',
   close: 'Fermer',
+  settings: 'Réglages',
+  volume: 'Volume',
+  breathingMode: 'Mode de respiration',
+  modeNextDive: 'Cette plongée garde son mode actuel. Le changement s’applique à la prochaine plongée.',
 };
 
 export type AppStrings = typeof en;

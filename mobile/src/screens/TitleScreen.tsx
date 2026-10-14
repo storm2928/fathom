@@ -1,10 +1,18 @@
 import type { DivePlan } from '../app/flow';
 import { useAppStrings } from '../strings';
+import { SettingsButton } from './SettingsSheet';
 
-export function TitleScreen({ onChoose }: { onChoose: (plan: DivePlan) => void }) {
+export function TitleScreen({
+  onChoose,
+  onSettings,
+}: {
+  onChoose: (plan: DivePlan) => void;
+  onSettings: () => void;
+}) {
   const a = useAppStrings();
   return (
     <div className="safe title fade-in">
+      <SettingsButton className="title__settings" onClick={onSettings} />
       <div className="title__brand">
         <span className="wordmark">Fathom</span>
         <p className="title__tagline">{a.tagline}</p>

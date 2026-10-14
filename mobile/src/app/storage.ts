@@ -50,3 +50,30 @@ export function saveChoices(
     // Not remembered this time; the player sees the scope again next launch.
   }
 }
+
+/** Soundscape volume, 0–1. Read by the sound layer; saved from settings. */
+export const DEFAULT_VOLUME = 0.8;
+const VOLUME_KEY = 'fathom.app.volume';
+
+const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
+
+export function loadVolume(store: KeyValueStore | null = defaultStore()): number {
+  if (!store) return DEFAULT_VOLUME;
+  try {
+    const raw = store.getItem(VOLUME_KEY);
+    if (raw === null) return DEFAULT_VOLUME;
+    const value = Number(raw);
+    return Number.isFinite(value) ? clamp01(value) : DEFAULT_VOLUME;
+  } catch {
+    return DEFAULT_VOLUME;
+  }
+}
+
+export function saveVolume(volume: number, store: KeyValueStore | null = defaultStore()): void {
+  if (!store) return;
+  try {
+    store.setItem(VOLUME_KEY, String(clamp01(volume)));
+  } catch {
+    // Not remembered; the slider still applies until the app closes.
+  }
+}
