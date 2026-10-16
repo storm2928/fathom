@@ -422,3 +422,20 @@
   color: var(--hud-text);
   opacity: 0.85;
 }
+
+/* The privacy policy sheet: reading text, full height. */
+.privacy {
+  margin-top: calc(env(safe-area-inset-top) + 12px);
+}
+.privacy__updated {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.privacy h2 {
+  margin: 20px 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.privacy p {
+  margin: 0 0 10px;
+}

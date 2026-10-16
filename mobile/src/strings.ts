@@ -72,6 +72,7 @@ const en = {
   on: 'On',
   off: 'Off',
   modeNextDive: 'This dive keeps its current mode. The change applies from your next dive.',
+  privacyPolicy: 'Privacy policy',
 };
 
 const fr: typeof en = {
@@ -142,6 +143,7 @@ const fr: typeof en = {
   on: 'Activés',
   off: 'Désactivés',
   modeNextDive: 'Cette plongée garde son mode actuel. Le changement s’applique à la prochaine plongée.',
+  privacyPolicy: 'Politique de confidentialité',
 };
 
 export type AppStrings = typeof en;

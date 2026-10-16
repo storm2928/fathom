@@ -1,0 +1,81 @@
+/* The privacy policy and support pages: plain reading pages in Fathom's colours. */
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-latin.woff2') format('woff2');
+  font-weight: 100 1000;
+  font-display: swap;
+}
+
+:root {
+  --bg: #070e17;
+  --ink: #eaf3f7;
+  --muted: #9fb3bf;
+  --accent: #5ce3cf;
+  --line: rgba(234, 243, 247, 0.14);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #f2f6f8;
+    --ink: #0b1a26;
+    --muted: #3f5563;
+    --accent: #0c7f72;
+    --line: rgba(11, 26, 38, 0.14);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.6 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: max(32px, env(safe-area-inset-top)) 16px 64px;
+}
+.brand {
+  margin: 0 0 40px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+.brand a {
+  color: var(--ink);
+  text-decoration: none;
+}
+h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.updated {
+  margin: 6px 0 32px;
+  color: var(--muted);
+  font-size: 15px;
+}
+h2 {
+  margin: 32px 0 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 20px;
+  font-weight: 600;
+}
+p {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+.foot {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}

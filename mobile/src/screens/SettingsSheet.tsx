@@ -17,9 +17,11 @@ export function SettingsSheet({
   onInput,
   onHaptics,
   onReread,
+  onPrivacy,
   onClose,
 }: {
   onReread: () => void;
+  onPrivacy: () => void;
   volume: number;
   haptics: boolean;
   onHaptics: (on: boolean) => void;
@@ -106,6 +108,9 @@ export function SettingsSheet({
 
         <button type="button" className="game-btn game-btn--quiet settings__reread" onClick={onReread}>
           {a.reread}
+        </button>
+        <button type="button" className="game-btn game-btn--quiet settings__reread" onClick={onPrivacy}>
+          {a.privacyPolicy}
         </button>
 
         <div className="sheet__actions">

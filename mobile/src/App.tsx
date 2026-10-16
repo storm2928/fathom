@@ -26,6 +26,7 @@ import { TitleScreen } from './screens/TitleScreen';
 import { PreDive } from './screens/PreDive';
 import { ResultsCard } from './screens/ResultsCard';
 import { SettingsSheet } from './screens/SettingsSheet';
+import { PrivacySheet } from './screens/PrivacySheet';
 import { useAppStrings } from './strings';
 import { playInhale, playPing, useSoundscape } from './sound/useSoundscape';
 import { useHaptics } from './haptics/useHaptics';
@@ -65,6 +66,7 @@ function Game() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [rereading, setRereading] = useState(false);
+  const [readingPolicy, setReadingPolicy] = useState(false);
   // Read by the soundscape (Plan 2); saved as soon as it changes.
   const [volume, setVolume] = useState(loadVolume);
   const [hapticsOn, setHapticsOn] = useState(loadHaptics);
@@ -282,11 +284,17 @@ function Game() {
         setSettingsOpen(false);
         setRereading(true);
       }}
+      onPrivacy={() => {
+        setSettingsOpen(false);
+        setReadingPolicy(true);
+      }}
       onInput={changeInput}
       onClose={() => setSettingsOpen(false)}
     />
   ) : rereading ? (
     <Onboarding review initialInput={flow.input} onDone={() => setRereading(false)} />
+  ) : readingPolicy ? (
+    <PrivacySheet onClose={() => setReadingPolicy(false)} />
   ) : null;
 
   switch (flow.screen) {

@@ -14,6 +14,7 @@ import '../sound/soundDirector.test.ts';
 import '../haptics/hapticDirector.test.ts';
 import '../journal/discovery.test.ts';
 import '../journal/journalStore.test.ts';
+import '../privacy/policy.test.ts';
 import { runAll } from '@fathom/game/testing/harness.ts';
 
 await runAll();
