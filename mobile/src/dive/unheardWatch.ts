@@ -17,6 +17,8 @@ export class UnheardWatch {
   /** an exhale window has opened and not yet been judged */
   private pending = false;
   private unheard = false;
+  /** the prompts have begun; breaths out before that were the calibration read */
+  private prompting = false;
 
   constructor(missesToWarn = 2) {
     this.missesToWarn = missesToWarn;
@@ -24,6 +26,7 @@ export class UnheardWatch {
 
   /** A prompt window began. Returns the new state when it changed, else null. */
   window(step: PromptStep): boolean | null {
+    this.prompting = true;
     if (step === 'exhale') {
       this.pending = true;
       return null;
@@ -40,6 +43,7 @@ export class UnheardWatch {
 
   /** The microphone heard a breath out begin. */
   heard(): boolean | null {
+    if (!this.prompting) return null;
     this.heardSince = true;
     this.misses = 0;
     return this.set(false);

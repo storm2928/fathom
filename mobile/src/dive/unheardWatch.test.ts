@@ -39,3 +39,11 @@ test('a miss followed by a breath out starts the count again', () => {
   cycle(watch, true);
   equal(cycle(watch, false), '', 'misses were added across a heard breath');
 });
+
+test('breaths out during the calibration read do not count for the first prompt', () => {
+  const watch = new UnheardWatch();
+  watch.heard();
+  watch.heard();
+  equal(cycle(watch, false), '');
+  equal(cycle(watch, false), 'true', 'a calibration breath hid the first missed prompt');
+});
