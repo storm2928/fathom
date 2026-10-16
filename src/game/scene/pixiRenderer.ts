@@ -3,6 +3,9 @@ import { BubbleTrail } from './art/bubbles';
 import { Boat } from './art/boat';
 import { Splash } from './art/splash';
 import { SPLASH_AT, entryPose } from './entry';
+
+/** Bubbles stream from the diver while they swim in from the splash, until nearly in place. */
+const ENTRY_BUBBLES_UNTIL = 0.9;
 import { SURFACE_ABOVE_DIVER_PX, surfaceY } from './art/depthLight';
 import { ZoneCrossfade } from './art/crossfade';
 import { DiverRig } from './art/diver';
@@ -153,8 +156,9 @@ export class PixiSceneRenderer implements SceneRenderer {
       this.bubbles.container,
       this.wake.container,
       this.rig.container,
-      this.boat.container,
+      // The splash sits behind the boat: its ring spreads along the water, not across the hull.
       this.splash.container,
+      this.boat.container,
     );
     this.waterB.visible = false;
 
@@ -331,7 +335,9 @@ export class PixiSceneRenderer implements SceneRenderer {
         clamp01(mote.glow * (0.22 + glow * 1.1)) * moteAlpha * LAYER_FOG[layer] * countK;
     }
 
-    this.bubbles.update(f);
+    const swimmingIn =
+      state.entry !== null && state.entry > SPLASH_AT && state.entry < ENTRY_BUBBLES_UNTIL;
+    this.bubbles.update(f, swimmingIn);
     this.wake.update(f, this.surge.wake);
     this.zones[zone].update(f);
     if (fading && !this.fade.done) this.zones[fromIndex].update(f);

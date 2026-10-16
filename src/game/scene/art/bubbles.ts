@@ -45,10 +45,11 @@ export class BubbleTrail {
     }
   }
 
-  update(f: Frame): void {
+  /** `streaming`: bubbles trail as they do on a breath out, for other reasons (swimming in). */
+  update(f: Frame, streaming = false): void {
     if (f.reduced) return;
 
-    if (f.exhaling) {
+    if (f.exhaling || streaming) {
       this.accumulator += f.dt * PER_SECOND;
       while (this.accumulator >= 1) {
         this.accumulator -= 1;

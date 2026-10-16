@@ -24,6 +24,8 @@ const LEVEL_THETA = 1.74;
 const DESCENDING_THETA = 2.79;
 /** Seated in the boat, the legs fold forward from the hip by this much. */
 const SEATED_LEG_FOLD = -1.4;
+/** Swimming in from the boat is brisker than the slow glide of a breath out. */
+const ENTRY_KICK_HZ = 1.3;
 /** The beam leaves the forehead a little toward the belly side of the head axis. */
 const BEAM_TILT = 0.15;
 const KICK_HZ = 0.55;
@@ -192,7 +194,7 @@ export class DiverRig {
     const reduced = f.reduced;
 
     let rot: number;
-    const phase = TWO_PI * KICK_HZ * t;
+    let phase = TWO_PI * KICK_HZ * t;
     const entry = state.entry;
     if (entry !== null && entry < 1) {
       // Aboard, or rolling in off the boat: the roll places the diver.
@@ -206,9 +208,12 @@ export class DiverRig {
       c.x = f.dx + p.x;
       c.y = f.dy + p.y + aboard * bob.y;
       c.alpha = p.alpha;
-      this.kick = 0;
-      this.legL.rotation = SEATED_LEG_FOLD * p.legFold;
-      this.legR.rotation = SEATED_LEG_FOLD * p.legFold;
+      // Folded into the boat, then straight and kicking as they swim in.
+      this.kick = p.kick;
+      phase = TWO_PI * ENTRY_KICK_HZ * t;
+      const swing = p.kick * 0.32 * Math.sin(phase);
+      this.legL.rotation = SEATED_LEG_FOLD * p.legFold + swing;
+      this.legR.rotation = SEATED_LEG_FOLD * p.legFold - swing;
       this.inEntry = true;
     } else {
       if (this.inEntry) {
