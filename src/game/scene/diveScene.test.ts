@@ -233,3 +233,23 @@ test('a fast-forwarded dive rolls in faster', async () => {
   equal(done, true, 'the fixture waited out the full roll');
   scene.stop();
 });
+
+test('breaths during the roll in earn nothing: the dive has not begun', async () => {
+  queued.length = 0;
+  const renderer = new BoatRenderer();
+  const scene = new DiveScene(renderer, canvas, { reducedMotion: true, boat: true });
+  const emitter = new BreathEmitter();
+  scene.attach(stubEngine(emitter), new BreathConductor());
+  scene.start();
+  const going = scene.enterWater();
+  pump(2);
+  emitter.emit('phase-change', { phase: 'exhale', at: 0 });
+  pump(4);
+  emitter.emit('exhale-end', { durationMs: 6_000, quality: 1 });
+  pump(4);
+  equal(scene.depth, 0, 'a breath during the roll moved the diver');
+  equal(scene.earnedDepth, 0, 'a breath during the roll was committed');
+  scene.skipEntry();
+  await going;
+  scene.stop();
+});

@@ -55,7 +55,10 @@ it.
    diagnosis / crisis + the "take care" points). Stored once; reachable again
    from Settings. A one-line scope note stays on the title screen so it is
    never fully out of view.
-3. **Title** — water surface at dawn, FATHOM wordmark, diver bobbing.
+3. **Title** — water surface at dawn, FATHOM wordmark, the diver sitting on
+   the tube of a small inflatable dive boat (added 2026-10-16). Begin plays a
+   ~3 s backward roll off the boat into the water before calibration starts;
+   nothing is measured during it, and Reduce Motion replaces it with a fade.
    Actions: **Dive** (full, ~5 min), **Quick dive** (90 s), **Journal**.
    Gear icon → **Settings**: language (EN/FR), sound, haptics, input
    (mic / touch), safety, research.

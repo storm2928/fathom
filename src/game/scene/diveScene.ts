@@ -166,6 +166,9 @@ export class DiveScene {
   attach(engine: BreathEngine, conductor: BreathConductor): () => void {
     this.detach.push(
       engine.on('phase-change', ({ phase }) => {
+        // Still rolling in off the boat: the dive has not begun, so a breath
+        // (or a held finger) now moves nothing.
+        if (this.entryRun) return;
         if (phase === 'exhale') {
           this.exhaleStartedAt = performance.now();
           this.depthAtExhaleStart = this.committed;
@@ -177,6 +180,7 @@ export class DiveScene {
 
     this.detach.push(
       engine.on('exhale-end', ({ durationMs, quality }) => {
+        if (this.entryRun) return;
         this.lastQuality = quality;
         // Settle on the true value for the breath. The glide during the exhale
         // was an estimate using the previous quality, so update() closes the

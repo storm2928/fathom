@@ -101,11 +101,14 @@ export function DiveHud({
     }
   };
 
+  // Nothing to hold while the diver is still rolling in off the boat.
+  const holdable = touch !== null && state !== 'idle';
+
   const gaugeTop = `${Math.min(100, (depth / GAUGE_METRES) * 100)}%`;
 
   return (
     <div className="safe hud">
-      {touch && (
+      {holdable && (
         <div
           className="hud__press"
           role="button"
@@ -179,7 +182,7 @@ export function DiveHud({
           />
         </div>
       )}
-      {touch && <p className="hud__hint">{a.holdHint}</p>}
+      {holdable && <p className="hud__hint">{a.holdHint}</p>}
 
       <button
         type="button"
