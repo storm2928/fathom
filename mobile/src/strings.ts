@@ -73,6 +73,7 @@ const en = {
   off: 'Off',
   modeNextDive: 'This dive keeps its current mode. The change applies from your next dive.',
   privacyPolicy: 'Privacy policy',
+  micUnheard: 'Not hearing your breath out. Bring the phone a little closer and breathe out through your mouth.',
 };
 
 const fr: typeof en = {
@@ -144,6 +145,7 @@ const fr: typeof en = {
   off: 'Désactivés',
   modeNextDive: 'Cette plongée garde son mode actuel. Le changement s’applique à la prochaine plongée.',
   privacyPolicy: 'Politique de confidentialité',
+  micUnheard: 'Votre expiration ne s’entend pas. Rapprochez un peu le téléphone et expirez par la bouche.',
 };
 
 export type AppStrings = typeof en;

@@ -81,6 +81,7 @@ function Game() {
   const [ring, setRing] = useState<RingView>({ step: null, sweepMs: 0, seq: 0 });
   const [touch, setTouch] = useState<SpacebarBreathEngine | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [unheard, setUnheard] = useState(false);
   const [result, setResult] = useState<SessionResult | null>(null);
   const [inputCode, setInputCode] = useState<InputCode>('microphone');
   const [stats, setStats] = useState<DiveStats>({ depth: 0, zone: 0, longestExhaleMs: 0, found: [] });
@@ -125,6 +126,7 @@ function Game() {
                     colour: ZONE_HEX[p.zone],
                   })),
                 ),
+              onUnheard: setUnheard,
               onFound: (encounter, depth) => {
                 const isNew = recordFound(defaultStore(), encounter.id, depth, new Date());
                 if (isNew) newlyFoundRef.current = [...newlyFoundRef.current, encounter.id];
@@ -151,6 +153,7 @@ function Game() {
                 setInputCode(code);
                 setStats(diveStats);
                 setTouch(null);
+                setUnheard(false);
                 send({ type: 'surfaced' });
               },
             },
@@ -193,6 +196,7 @@ function Game() {
     setBusy(true);
     setError(null);
     setNotice(null);
+    setUnheard(false);
     setZone(null);
     setDepth(0);
     setRing({ step: null, sweepMs: 0, seq: 0 });
@@ -347,6 +351,7 @@ function Game() {
           ring={ring}
           touch={touch}
           notice={notice}
+          unheard={unheard}
           onLeave={() => controller?.stop()}
           onSettings={() => setSettingsOpen(true)}
           discovery={discovery}

@@ -11,6 +11,7 @@ import type { InputCode } from '@fathom/game/surface/diveLog';
 import { DiscoveryTracker } from '../journal/discovery';
 import type { PlacedEncounter } from '../journal/discovery';
 import type { Encounter } from '../journal/encounters';
+import { UnheardWatch } from './unheardWatch';
 
 /**
  * One dive, wired: input → conductor → session → scene. The same order the
@@ -56,6 +57,8 @@ export interface DiveCallbacks {
   onFound?(encounter: Encounter, depth: number): void;
   /** The encounters now in the water, whenever a zone begins. */
   onPlaced?(placed: PlacedEncounter[]): void;
+  /** Microphone dives: prompted breaths out are not being heard (true), or are again (false). */
+  onUnheard?(unheard: boolean): void;
 }
 
 export type DiveInput = 'mic' | 'touch' | 'scripted';
@@ -188,11 +191,18 @@ export class DiveController {
       this.scene.setTimeScale(timeScale);
       this.detach.push(this.scene.attach(started.engine, conductor));
       this.breathingOut = false;
+      // Only the microphone can fail to hear someone; a finger is always felt.
+      const watch = started.code === 'microphone' ? new UnheardWatch() : null;
+      const report = (change: boolean | null) => {
+        if (change !== null) this.callbacks.onUnheard?.(change);
+      };
       this.detach.push(
         started.engine.on('phase-change', ({ phase }) => {
           this.breathingOut = phase === 'exhale';
+          if (watch && phase === 'exhale') report(watch.heard());
         }),
       );
+      if (watch) this.detach.push(conductor.on((window) => report(watch.window(window.step))));
       this.detach.push(
         started.engine.on('exhale-end', ({ durationMs }) => {
           this.longestExhaleMs = Math.max(this.longestExhaleMs, durationMs);

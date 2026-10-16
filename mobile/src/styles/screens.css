@@ -439,3 +439,17 @@
 .privacy p {
   margin: 0 0 10px;
 }
+
+/* One quiet line above the breath ring when the microphone hears nothing. */
+.hud__unheard {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: calc(env(safe-area-inset-bottom) + 228px);
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--hud-muted);
+  pointer-events: none;
+}

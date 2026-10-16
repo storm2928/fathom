@@ -35,6 +35,7 @@ export function DiveHud({
   ring,
   touch,
   notice,
+  unheard,
   onLeave,
   onSettings,
   discovery,
@@ -45,6 +46,8 @@ export function DiveHud({
   ring: RingView;
   touch: SpacebarBreathEngine | null;
   notice: string | null;
+  /** a microphone dive is not hearing the breaths out it asks for */
+  unheard: boolean;
   onLeave: () => void;
   onSettings: () => void;
   /** the latest find, keyed so each one shows its own toast */
@@ -150,6 +153,10 @@ export function DiveHud({
           {notice}
         </p>
       )}
+
+      <p className="hud__unheard" role="status">
+        {unheard ? a.micUnheard : ''}
+      </p>
 
       {ring.step && (
         <div className="hud__ring">

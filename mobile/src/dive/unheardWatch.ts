@@ -1,0 +1,53 @@
+import type { PromptStep } from '@fathom/game/session/conductor';
+
+/**
+ * Notices when a microphone dive is not hearing the player. A breath out was
+ * prompted and none arrived — twice in a row — so a quiet line can suggest
+ * coming closer, instead of a dive that silently goes nowhere.
+ *
+ * Any breath out counts, wherever it falls: people start a little early, and
+ * the point is only whether the microphone hears them at all. One breath out
+ * heard clears the hint straight away.
+ */
+export class UnheardWatch {
+  private readonly missesToWarn: number;
+  private misses = 0;
+  /** a breath out was heard since the last exhale window opened */
+  private heardSince = false;
+  /** an exhale window has opened and not yet been judged */
+  private pending = false;
+  private unheard = false;
+
+  constructor(missesToWarn = 2) {
+    this.missesToWarn = missesToWarn;
+  }
+
+  /** A prompt window began. Returns the new state when it changed, else null. */
+  window(step: PromptStep): boolean | null {
+    if (step === 'exhale') {
+      this.pending = true;
+      return null;
+    }
+    // The breath in after a prompted breath out: judge that breath out.
+    if (step === 'inhale' && this.pending) {
+      this.pending = false;
+      this.misses = this.heardSince ? 0 : this.misses + 1;
+      this.heardSince = false;
+      if (this.misses >= this.missesToWarn) return this.set(true);
+    }
+    return null;
+  }
+
+  /** The microphone heard a breath out begin. */
+  heard(): boolean | null {
+    this.heardSince = true;
+    this.misses = 0;
+    return this.set(false);
+  }
+
+  private set(next: boolean): boolean | null {
+    if (next === this.unheard) return null;
+    this.unheard = next;
+    return next;
+  }
+}
