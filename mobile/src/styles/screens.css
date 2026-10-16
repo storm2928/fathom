@@ -18,7 +18,7 @@
 .title__tagline {
   margin: 14px 0 0;
   color: var(--hud-text);
-  font-size: 16px;
+  font-size: calc(16px * var(--ts, 1));
 }
 .title__actions {
   display: grid;
@@ -28,7 +28,7 @@
   display: block;
   margin-top: 4px;
   font-weight: 400;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
   opacity: 0.75;
 }
 .title__actions .game-btn {
@@ -38,7 +38,7 @@
 .title__scope {
   margin: 14px 0 0;
   text-align: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--ts, 1));
   color: var(--hud-muted);
 }
 
@@ -65,7 +65,7 @@
 .sheet p,
 .sheet li {
   color: var(--hud-muted);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts, 1));
   line-height: 1.5;
 }
 .sheet__actions {
@@ -92,7 +92,7 @@
   display: block;
   margin-top: 4px;
   font-weight: 400;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
   color: var(--hud-muted);
   letter-spacing: 0;
 }
@@ -166,7 +166,7 @@
   right: 0;
   bottom: calc(env(safe-area-inset-bottom) + 8px);
   text-align: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--ts, 1));
   color: var(--hud-muted);
 }
 .zone-card {
@@ -249,7 +249,7 @@
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid var(--hud-line);
-  font-size: 14px;
+  font-size: calc(14px * var(--ts, 1));
   color: var(--hud-text);
 }
 .crisis-line__links {
@@ -297,7 +297,7 @@
   justify-content: space-between;
   margin: 16px 0 8px;
   color: var(--hud-text);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts, 1));
 }
 .settings__value {
   color: var(--hud-muted);
@@ -327,7 +327,7 @@
 }
 .settings__note {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
 }
 
 /* A settings switch: the whole row is the control. */
@@ -343,13 +343,13 @@
   border: 0;
   background: none;
   color: var(--hud-text);
-  font: 15px/1.3 var(--font-sans);
+  font: calc(15px * var(--ts, 1))/1.3 var(--font-sans);
   text-align: left;
 }
 .settings__hint {
   display: block;
   margin-top: 2px;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
   color: var(--hud-muted);
 }
 .settings__switch {
@@ -394,7 +394,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--hud-muted);
-  font: 500 15px/1 var(--font-sans);
+  font: 500 calc(15px * var(--ts, 1))/1 var(--font-sans);
 }
 .settings__segmented button[aria-checked='true'] {
   background: rgba(92, 227, 207, 0.16);
@@ -429,11 +429,11 @@
 }
 .privacy__updated {
   margin: 0 0 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
 }
 .privacy h2 {
   margin: 20px 0 4px;
-  font-size: 17px;
+  font-size: calc(17px * var(--ts, 1));
   font-weight: 600;
 }
 .privacy p {
@@ -448,7 +448,7 @@
   bottom: calc(env(safe-area-inset-bottom) + 228px);
   margin: 0;
   text-align: center;
-  font-size: 15px;
+  font-size: calc(15px * var(--ts, 1));
   line-height: 1.4;
   color: var(--hud-muted);
   pointer-events: none;

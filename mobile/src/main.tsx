@@ -9,6 +9,7 @@ import App from './App';
 import { Preferences } from '@capacitor/preferences';
 import { hydrate } from './app/persistentStore';
 import { LEGACY_KEYS, setAppStore } from './app/storage';
+import { followTypeScale } from './app/typeScale';
 
 // The ocean is the whole screen. On the web (vite dev) there is no status bar
 // plugin, and that is fine.
@@ -28,6 +29,7 @@ async function boot() {
   if (Capacitor.isNativePlatform()) {
     setAppStore(await hydrate(Preferences, legacyStorage(), LEGACY_KEYS));
   }
+  followTypeScale();
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />

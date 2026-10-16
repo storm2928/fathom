@@ -46,14 +46,14 @@
 .onboard__body li {
   margin: 0 0 12px;
   color: var(--hud-muted);
-  font-size: 15px;
+  font-size: calc(15px * var(--ts, 1));
   line-height: 1.5;
 }
 .onboard__body strong {
   color: var(--hud-text);
 }
 .onboard__small {
-  font-size: 13px !important;
+  font-size: calc(13px * var(--ts, 1)) !important;
 }
 .onboard__note {
   color: var(--caution) !important;
@@ -126,7 +126,7 @@
 }
 .orb__label {
   position: absolute;
-  font-size: 15px;
+  font-size: calc(15px * var(--ts, 1));
   font-weight: 600;
   color: var(--hud-text);
   opacity: 0;

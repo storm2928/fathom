@@ -108,6 +108,8 @@ export function DiveHud({
       {touch && (
         <div
           className="hud__press"
+          role="button"
+          aria-label={a.holdHint}
           onPointerDown={press(true)}
           onPointerUp={press(false)}
           onPointerCancel={press(false)}
@@ -153,6 +155,11 @@ export function DiveHud({
           {notice}
         </p>
       )}
+
+      {/* VoiceOver hears each breath prompt as it changes; the haptic taps carry the rhythm. */}
+      <p className="sr-only" aria-live="polite">
+        {label}
+      </p>
 
       <p className="hud__unheard" role="status">
         {unheard ? a.micUnheard : ''}

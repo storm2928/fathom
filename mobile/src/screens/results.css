@@ -28,7 +28,7 @@
 
 .stats__title {
   margin: 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--ts, 1));
   font-weight: 500;
   color: var(--hud-muted);
 }
@@ -95,7 +95,7 @@
 }
 .stats__zone {
   margin-top: 10px;
-  font-size: 16px;
+  font-size: calc(16px * var(--ts, 1));
   font-weight: 500;
   color: var(--zc);
 }
@@ -114,7 +114,7 @@
 }
 .stats__label {
   margin: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--ts, 1));
   font-weight: 500;
   color: var(--hud-muted);
 }
@@ -140,7 +140,7 @@
 }
 .stats__rate-label {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
   color: var(--hud-muted);
 }
 .stats__arrow {
@@ -155,7 +155,7 @@
   stroke: var(--hud-muted);
 }
 .stats__unit {
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
   color: var(--hud-muted);
 }
 .stats__chip {
@@ -164,7 +164,7 @@
   margin-top: 12px;
   padding: 6px 14px;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: calc(14px * var(--ts, 1));
   font-weight: 500;
   border: 1px solid var(--hud-line);
   color: var(--hud-text);
@@ -222,11 +222,11 @@
 }
 .stats__tile-label {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
   color: var(--hud-muted);
 }
 .stats__tile-hint {
-  font-size: 12px;
+  font-size: calc(12px * var(--ts, 1));
   color: color-mix(in srgb, var(--hud-muted) 70%, transparent);
 }
 
@@ -237,7 +237,7 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: 16px;
-  font-size: 13px;
+  font-size: calc(13px * var(--ts, 1));
   color: var(--hud-muted);
 }
 .stats__info {
