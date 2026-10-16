@@ -18,6 +18,7 @@ public class FathomSoundPlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "setMix", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "inhale", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "ping", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "splash", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getRoute", returnType: CAPPluginReturnPromise),
   ]
 
@@ -84,6 +85,11 @@ public class FathomSoundPlugin: CAPPlugin, CAPBridgedPlugin {
 
   @objc func ping(_ call: CAPPluginCall) {
     soundscape?.ping()
+    call.resolve()
+  }
+
+  @objc func splash(_ call: CAPPluginCall) {
+    soundscape?.splash()
     call.resolve()
   }
 

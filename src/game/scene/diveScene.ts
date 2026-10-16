@@ -4,6 +4,7 @@ import { metresForExhale, stepTowardTruth } from './descent';
 import { CanvasSceneRenderer } from './canvasRenderer';
 import { PixiSceneRenderer } from './pixiRenderer';
 import type { DiverPose, PromptBeat, SceneCreature, SceneRenderer, SceneState } from './renderer';
+import { ENTRY_SECONDS, SPLASH_AT } from './entry';
 
 /**
  * The dive: descent, dive light, camera.
@@ -43,6 +44,11 @@ export interface DiveSceneOptions {
    */
   timeScale?: number;
   reducedMotion?: boolean;
+  /**
+   * Start each dive aboard a boat and roll in off it (the app). Off on the
+   * website, whose dive begins in the water.
+   */
+  boat?: boolean;
 }
 
 /**
@@ -76,6 +82,8 @@ export class DiveScene {
   private readonly canvas: HTMLCanvasElement;
   private timeScale: number;
   private readonly reducedMotion: boolean;
+  /** The boat is drawn: asked for, and the renderer can draw it. */
+  private readonly boat: boolean;
 
   private detach: (() => void)[] = [];
   private frame = 0;
@@ -107,6 +115,15 @@ export class DiveScene {
   private epochCount = 0;
   /** A rise back to the surface in progress: where it began, when, how long. */
   private ascent: { from: number; startedAt: number | null; seconds: number } | null = null;
+  /** 0 aboard … 1 in the water. Meaningless without the boat. */
+  private entryProgress = 0;
+  /** The roll in progress: timed from its first frame. */
+  private entryRun: {
+    startedAt: number | null;
+    onSplash?: () => void;
+    splashed: boolean;
+    done: () => void;
+  } | null = null;
 
   constructor(
     renderer: SceneRenderer,
@@ -119,6 +136,30 @@ export class DiveScene {
     this.reducedMotion =
       options.reducedMotion ??
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.boat = (options.boat ?? false) && renderer.drawsEntry === true;
+  }
+
+  /**
+   * Roll in off the boat, then resolve: the dive's breathing starts after
+   * this. `onSplash` is called once, as the diver goes through the waterline.
+   * Resolves at once where there is no boat. skipEntry() and reset() end it
+   * early, and still resolve it.
+   */
+  enterWater(onSplash?: () => void): Promise<void> {
+    this.finishEntry();
+    if (!this.boat) return Promise.resolve();
+    this.entryProgress = 0;
+    return new Promise<void>((resolve) => {
+      this.entryRun = { startedAt: null, onSplash, splashed: false, done: resolve };
+      if (!this.frame) this.start();
+    });
+  }
+
+  /** Put the diver in the water now — leaving during the roll. */
+  skipEntry(): void {
+    if (!this.entryRun) return;
+    this.entryProgress = 1;
+    this.finishEntry();
   }
 
   /** Wire up the breath source and the prompt. Returns a teardown. */
@@ -222,6 +263,8 @@ export class DiveScene {
     this.pose = 'level';
     this.zone = 0;
     this.ascent = null;
+    this.finishEntry();
+    this.entryProgress = 0;
     this.renderer.setCreatures?.([]);
     this.settling = false;
     this.restSeconds = 0;
@@ -340,13 +383,20 @@ export class DiveScene {
       pose: this.pose,
       elapsedSeconds: this.startedAt ? (now - this.startedAt) / 1000 : 0,
       epoch: this.epochCount,
+      entry: this.boat ? this.entryProgress : null,
     };
   }
 
   /** Close enough that another frame would not change a pixel. */
   private atRest(): boolean {
-    if (this.ascent) return false;
+    if (this.ascent || this.entryRun) return false;
     return Math.abs(this.targetDepth - this.shownDepth) < 0.05 && this.lightCharge < 0.02;
+  }
+
+  private finishEntry(): void {
+    const run = this.entryRun;
+    this.entryRun = null;
+    run?.done();
   }
 
   private release(): void {
@@ -365,6 +415,17 @@ export class DiveScene {
   }
 
   private update(dt: number, now: number): void {
+    const run = this.entryRun;
+    if (run) {
+      if (run.startedAt === null) run.startedAt = now;
+      const seconds = ENTRY_SECONDS / this.timeScale;
+      this.entryProgress = Math.min(1, (now - run.startedAt) / 1000 / seconds);
+      if (!run.splashed && this.entryProgress >= SPLASH_AT) {
+        run.splashed = true;
+        run.onSplash?.();
+      }
+      if (this.entryProgress >= 1) this.finishEntry();
+    }
     if (this.charging) {
       // Protocol time, like the glide: a fast-forwarded dive's prompts are
       // shorter, so its light must charge and fade faster to match.

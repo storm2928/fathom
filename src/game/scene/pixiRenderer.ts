@@ -1,5 +1,9 @@
 import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { BubbleTrail } from './art/bubbles';
+import { Boat } from './art/boat';
+import { Splash } from './art/splash';
+import { SPLASH_AT, entryPose } from './entry';
+import { SURFACE_ABOVE_DIVER_PX, surfaceY } from './art/depthLight';
 import { ZoneCrossfade } from './art/crossfade';
 import { DiverRig } from './art/diver';
 import {
@@ -53,6 +57,8 @@ const WATER_BANDS = 48;
 const MAX_BACKING_PIXELS = 2.6e6;
 
 export class PixiSceneRenderer implements SceneRenderer {
+  /** Draws the boat and the roll off it. */
+  readonly drawsEntry = true;
   private readonly app: Application;
   private readonly canvas: HTMLCanvasElement;
   private readonly reducedMotion: boolean;
@@ -76,6 +82,10 @@ export class PixiSceneRenderer implements SceneRenderer {
   private readonly rig: DiverRig;
   private readonly bubbles: BubbleTrail;
   private readonly wake: DiverWake;
+  private readonly boat = new Boat();
+  private readonly splash: Splash;
+  /** The entry as last drawn, to catch the frame it passes the waterline. */
+  private lastEntry: number | null = null;
   private readonly surge = new DescentSurge();
   private readonly zones: ZoneArt[];
   private readonly fade = new ZoneCrossfade();
@@ -117,6 +127,7 @@ export class PixiSceneRenderer implements SceneRenderer {
     this.creatures = new CreatureLayer(tx.dot);
     this.bubbles = new BubbleTrail(tx.bubble);
     this.wake = new DiverWake(tx.dot);
+    this.splash = new Splash(tx.softDot);
     this.zones = [
       new TwilightZone(ZONE_LOOKS[0], tx),
       new MidnightZone(ZONE_LOOKS[1], tx),
@@ -142,6 +153,8 @@ export class PixiSceneRenderer implements SceneRenderer {
       this.bubbles.container,
       this.wake.container,
       this.rig.container,
+      this.boat.container,
+      this.splash.container,
     );
     this.waterB.visible = false;
 
@@ -207,6 +220,8 @@ export class PixiSceneRenderer implements SceneRenderer {
       this.scroll = state.depth;
       this.lastDepth = state.depth;
       this.visualLight = state.light;
+      this.lastEntry = state.entry;
+      this.splash.clear();
     }
 
     // The light on screen trails the light in the simulation, so the spend at
@@ -281,6 +296,8 @@ export class PixiSceneRenderer implements SceneRenderer {
     // every other element's reveal reads.
     this.rig.update(f, state, lightTint);
     this.surface.update(f);
+    this.boat.update(f, state.entry);
+    this.updateSplash(f, state.entry);
     this.creatures.update(f, toLook.silhouette);
 
     if (!reduced) driftMotes(this.motes, dtSeconds * surge);
@@ -338,6 +355,25 @@ export class PixiSceneRenderer implements SceneRenderer {
 
   // ------------------------------------------------------------- internals
 
+  /** Spray and bubbles on the frame the diver goes through the waterline. */
+  private updateSplash(f: Frame, entry: number | null): void {
+    const before = this.lastEntry;
+    this.lastEntry = entry;
+    if (
+      !f.reduced &&
+      entry !== null &&
+      before !== null &&
+      before < SPLASH_AT &&
+      entry >= SPLASH_AT
+    ) {
+      const L = this.rig.length;
+      const x = f.dx + entryPose(SPLASH_AT, L, SURFACE_ABOVE_DIVER_PX, false).x;
+      this.splash.trigger(x, L);
+      this.bubbles.burst(f, x, surfaceY(f.depth, f.dy) + 0.3 * L, 10);
+    }
+    this.splash.update(f);
+  }
+
   private layout(w: number, h: number): void {
     this.width = w;
     this.height = h;
@@ -351,6 +387,7 @@ export class PixiSceneRenderer implements SceneRenderer {
     this.vignette.height = h;
     this.surface.layout(w, h);
     this.rig.layout(h);
+    this.boat.layout(this.rig.length);
     for (let z = 0; z < this.zones.length; z += 1) this.zones[z].layout(w, h);
     paintWater(this.waterA, lookForZone(this.fade.to), w, h);
     if (this.fade.from >= 0) paintWater(this.waterB, lookForZone(this.fade.from), w, h);

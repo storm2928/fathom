@@ -41,7 +41,8 @@ export function OceanStage({ children }: { children: ReactNode }) {
         renderer.destroy();
         return;
       }
-      built = new DiveScene(renderer, canvas);
+      // The app's dives begin aboard the boat (the website's begin in the water).
+      built = new DiveScene(renderer, canvas, { boat: true });
       built.start();
       setScene(built);
     }).catch(() => {

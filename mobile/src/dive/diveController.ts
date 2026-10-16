@@ -34,6 +34,10 @@ export interface DiveSceneLike {
   /** metres committed by scored breaths only — no live preview */
   readonly earnedDepth: number;
   readonly light: number;
+  /** Roll in off the boat; the breathing waits for it. Absent: already in the water. */
+  enterWater?(onSplash?: () => void): Promise<void>;
+  /** Cut the roll short: the diver is in the water now. */
+  skipEntry?(): void;
 }
 
 /** What the dive itself did, for the end-of-dive screen. */
@@ -59,6 +63,8 @@ export interface DiveCallbacks {
   onPlaced?(placed: PlacedEncounter[]): void;
   /** Microphone dives: prompted breaths out are not being heard (true), or are again (false). */
   onUnheard?(unheard: boolean): void;
+  /** The diver went through the waterline on the way in. */
+  onSplash?(): void;
 }
 
 export type DiveInput = 'mic' | 'touch' | 'scripted';
@@ -96,6 +102,10 @@ export class DiveController {
   private starting = false;
   /** Leave was pressed while the input was still starting. */
   private cancelled = false;
+  /** The diver is rolling in off the boat; the session waits for that. */
+  private entering = false;
+  /** Leave was pressed during the roll. */
+  private leaving = false;
   private engine: BreathEngine | null = null;
   private touchEngine: SpacebarBreathEngine | null = null;
   private conductor: BreathConductor | null = null;
@@ -121,8 +131,9 @@ export class DiveController {
     this.lifecycle = lifecycle;
   }
 
+  /** The breathing has begun: calibration or later. Not during the roll in. */
   get running(): boolean {
-    return this.machine !== null;
+    return this.machine !== null && !this.entering;
   }
 
   /** A breath out is under way right now (the engine's exhale phase). */
@@ -222,8 +233,7 @@ export class DiveController {
       this.watchLifecycle();
       this.discoveryTick = setInterval(() => this.checkDiscoveries(), 50);
       this.scene.setPose('level');
-      // The machine starts the conductor once calibration is done (#29).
-      void machine.start();
+      void this.enterThenBreathe(machine);
       return started;
     } finally {
       this.starting = false;
@@ -239,10 +249,35 @@ export class DiveController {
       this.cancelled = true;
       return;
     }
+    if (this.entering) {
+      this.leaving = true;
+      this.scene.skipEntry?.();
+      return;
+    }
     this.machine?.stop();
   }
 
   // ------------------------------------------------------------- internals
+
+  /**
+   * The input is already open (it had to be, inside the tap), but nothing is
+   * measured until the diver is in the water. Leaving during the roll ends the
+   * dive the way leaving at the start of calibration always has: stopped, with
+   * no starting rate to compare against.
+   */
+  private async enterThenBreathe(machine: SessionMachine): Promise<void> {
+    this.entering = true;
+    this.leaving = false;
+    try {
+      await this.scene.enterWater?.(() => this.callbacks.onSplash?.());
+    } finally {
+      this.entering = false;
+    }
+    if (this.machine !== machine) return;
+    // The machine starts the conductor once calibration is done (#29).
+    void machine.start();
+    if (this.leaving) machine.stop();
+  }
 
   /**
    * A dive does not carry on in the background. iOS interrupts the microphone

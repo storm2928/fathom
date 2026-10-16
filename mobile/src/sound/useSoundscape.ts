@@ -83,6 +83,11 @@ export function playPing(): void {
   if (Capacitor.isNativePlatform()) void FathomSound.ping().catch(() => {});
 }
 
+/** Going in off the boat. */
+export function playSplash(): void {
+  if (Capacitor.isNativePlatform()) void FathomSound.splash().catch(() => {});
+}
+
 /** The soft inhale swell, on each breath-in prompt. */
 export function playInhale(): void {
   if (Capacitor.isNativePlatform()) void FathomSound.inhale().catch(() => {});

@@ -4,7 +4,8 @@
   padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
 }
 .title__brand {
-  margin-top: 18vh;
+  /* High on the sky, clear of the diver sitting in the boat below. */
+  margin-top: 8vh;
   text-align: center;
 }
 .title__brand .wordmark {

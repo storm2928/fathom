@@ -28,6 +28,8 @@ let scenarios: [String: SoundMixParams] = [
   "abyss": mix { $0.surface = 0; $0.beds = (0, 0, 1); $0.lowpassHz = 300 },
   // Nothing else playing: only the discovery ping, fired once after settling.
   "ping": mix { $0.surface = 0; $0.beds = (0, 0, 0) },
+  // Nothing else playing: only the splash of going in off the boat.
+  "splash": mix { $0.surface = 0; $0.beds = (0, 0, 0) },
 ]
 guard let params = scenarios[args[1]] else {
   FileHandle.standardError.write("unknown scenario \(args[1])\n".data(using: .utf8)!)
@@ -45,6 +47,7 @@ for _ in 0..<Int(rate * 4.0) / block {
 }
 
 if args[1] == "ping" { soundscape.ping() }
+if args[1] == "splash" { soundscape.splash() }
 
 // Measure: a 4th-order 1 kHz high-pass (two cascaded TPT sections) isolates
 // the band the breath detector listens to.

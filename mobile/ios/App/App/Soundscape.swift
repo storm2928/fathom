@@ -79,6 +79,7 @@ final class Soundscape {
     master: 0, surface: 1, beds: (1, 0, 0), lowpassHz: 2400, bubbles: 0, highCut: false)
   private var inhaleRequested = false
   private var pingRequested = false
+  private var splashRequested = false
 
   // Smoothed state.
   private var master: Smooth
@@ -96,6 +97,7 @@ final class Soundscape {
   private var muffle = SVF(), muffle2 = SVF()
   private var safety1 = SVF(), safety2 = SVF()
   private var inhaleBand = SVF()
+  private var splashBand = SVF()
 
   // Oscillator phases.
   private var time = 0.0
@@ -113,6 +115,8 @@ final class Soundscape {
   private var inhaleT = -1.0
   private var pingT = -1.0
   private var pingPhase = 0.0
+  private var splashT = -1.0
+  private var thumpPhase = 0.0
 
   // Whale echo.
   private let echo: UnsafeMutablePointer<Double>
@@ -145,6 +149,7 @@ final class Soundscape {
     safety1.tune(500, q: 0.707, rate: sampleRate)
     safety2.tune(500, q: 0.707, rate: sampleRate)
     inhaleBand.tune(500, q: 1.5, rate: sampleRate)
+    splashBand.tune(1800, q: 0.8, rate: sampleRate)
   }
 
   deinit {
@@ -158,6 +163,12 @@ final class Soundscape {
   /// A soft sonar ping with one echo, for a discovery.
   func ping() {
     pingRequested = true
+  }
+
+  /// Going in off the boat: a wash of water falling in pitch, a soft low
+  /// thump, and a scatter of bubbles.
+  func splash() {
+    splashRequested = true
   }
 
   /// A soft rising breath of filtered noise, for the inhale prompt.
@@ -176,6 +187,12 @@ final class Soundscape {
     if pingRequested {
       pingRequested = false
       pingT = 0
+    }
+    if splashRequested {
+      splashRequested = false
+      splashT = 0
+      thumpPhase = 0
+      for _ in 0..<6 { spawnBubble(gain: 1) }
     }
     // Speaker safety outranks the inhale swell: it is breathy noise.
     if p.highCut { inhaleT = -1 }
@@ -331,7 +348,24 @@ final class Soundscape {
         }
       }
 
-      var mix = muffled + bubbleSound + inhaleSound + pingSound
+      // The splash: noise through a band sweeping down as the water closes over.
+      var splashSound = 0.0
+      if splashT >= 0 {
+        let u = splashT / 0.9
+        if u >= 1 {
+          splashT = -1
+        } else {
+          if tuneCountdown == 30 { splashBand.tune(1800 - 1400 * u, q: 0.8, rate: rate) }
+          let attack = min(1, splashT / 0.012)
+          let wash = splashBand.step(white).1 * attack * exp(-splashT / 0.22) * 0.55
+          thumpPhase += (75 - 30 * u) * dt
+          let thump = sin(twoPi * thumpPhase) * attack * exp(-splashT / 0.12) * 0.35
+          splashSound = wash + thump
+          splashT += dt
+        }
+      }
+
+      var mix = muffled + bubbleSound + inhaleSound + pingSound + splashSound
 
       // Speaker safety: crossfade into a 24 dB/oct 500 Hz low-pass.
       let safe = safety2.step(safety1.step(mix).0).0

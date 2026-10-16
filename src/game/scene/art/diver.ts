@@ -3,6 +3,9 @@ import type { Texture } from 'pixi.js';
 import type { SceneState } from '../renderer';
 import type { Frame } from './layers';
 import { DIVER } from './palette';
+import { boatBob } from './boat';
+import { SURFACE_ABOVE_DIVER_PX } from './depthLight';
+import { entryPose } from '../entry';
 
 /**
  * The diver: a readable silhouette built once from Graphics, animated only by
@@ -19,6 +22,8 @@ import { DIVER } from './palette';
 const LEVEL_THETA = 1.74;
 /** Descending: head down and to the right, fins trailing up and to the left. */
 const DESCENDING_THETA = 2.79;
+/** Seated in the boat, the legs fold forward from the hip by this much. */
+const SEATED_LEG_FOLD = -1.4;
 /** The beam leaves the forehead a little toward the belly side of the head axis. */
 const BEAM_TILT = 0.15;
 const KICK_HZ = 0.55;
@@ -52,6 +57,8 @@ export class DiverRig {
   private bodyLength = 60;
   private theta = LEVEL_THETA;
   private kick = 0;
+  /** last frame was the roll in off the boat */
+  private inEntry = false;
 
   constructor(textures: { cone: Texture; softDot: Texture }) {
     this.cone = new Sprite(textures.cone);
@@ -76,6 +83,11 @@ export class DiverRig {
       this.visor,
       this.lamp,
     );
+  }
+
+  /** Body length in pixels, for things sized to the diver. */
+  get length(): number {
+    return this.bodyLength;
   }
 
   /** Rebuild the parts for a viewport height. Never per frame. */
@@ -179,19 +191,45 @@ export class DiverRig {
     const t = f.t;
     const reduced = f.reduced;
 
-    const target = state.pose === 'descending' ? DESCENDING_THETA : LEVEL_THETA;
-    this.theta += (target - this.theta) * (1 - Math.exp(-2 * dt));
-    const rot = this.theta + (reduced ? 0 : 0.05 * Math.sin(0.5 * t));
-    c.rotation = rot;
-    c.x = f.dx;
-    c.y = f.dy + (reduced ? 0 : 3 * Math.sin(0.4 * t));
-
-    const kickTarget = state.exhaling && !reduced ? 1 : 0;
-    this.kick += (kickTarget - this.kick) * (1 - Math.exp(-4 * dt));
+    let rot: number;
     const phase = TWO_PI * KICK_HZ * t;
-    const legSwing = this.kick * 0.22 * Math.sin(phase);
-    this.legL.rotation = legSwing;
-    this.legR.rotation = -legSwing;
+    const entry = state.entry;
+    if (entry !== null && entry < 1) {
+      // Aboard, or rolling in off the boat: the roll places the diver.
+      const p = entryPose(entry, this.bodyLength, SURFACE_ABOVE_DIVER_PX, reduced);
+      // Riding the swell with the boat while seated, let go as they fall.
+      const aboard = 1 - clamp01(entry / 0.2);
+      const bob = boatBob(t, reduced);
+      this.theta = p.theta;
+      rot = p.theta + aboard * bob.rotation;
+      c.rotation = rot;
+      c.x = f.dx + p.x;
+      c.y = f.dy + p.y + aboard * bob.y;
+      c.alpha = p.alpha;
+      this.kick = 0;
+      this.legL.rotation = SEATED_LEG_FOLD * p.legFold;
+      this.legR.rotation = SEATED_LEG_FOLD * p.legFold;
+      this.inEntry = true;
+    } else {
+      if (this.inEntry) {
+        // The roll ended a full turn below the rig's angles; carry on from the same place.
+        this.inEntry = false;
+        while (this.theta < -Math.PI) this.theta += TWO_PI;
+      }
+      c.alpha = 1;
+      const target = state.pose === 'descending' ? DESCENDING_THETA : LEVEL_THETA;
+      this.theta += (target - this.theta) * (1 - Math.exp(-2 * dt));
+      rot = this.theta + (reduced ? 0 : 0.05 * Math.sin(0.5 * t));
+      c.rotation = rot;
+      c.x = f.dx;
+      c.y = f.dy + (reduced ? 0 : 3 * Math.sin(0.4 * t));
+
+      const kickTarget = state.exhaling && !reduced ? 1 : 0;
+      this.kick += (kickTarget - this.kick) * (1 - Math.exp(-4 * dt));
+      const legSwing = this.kick * 0.22 * Math.sin(phase);
+      this.legL.rotation = legSwing;
+      this.legR.rotation = -legSwing;
+    }
     const finLag = this.kick * 0.12 * Math.sin(phase - 0.6);
     this.finL.rotation = finLag;
     this.finR.rotation = -finLag;
@@ -226,8 +264,8 @@ export class DiverRig {
     cone.scale.set((0.55 + 0.75 * light) * (f.h / 420));
 
     const pool = this.pool;
-    pool.x = f.dx;
-    pool.y = f.dy;
+    pool.x = c.x;
+    pool.y = c.y;
     pool.tint = lightTint;
     const size = f.h * (0.34 + 0.8 * light);
     pool.width = size;

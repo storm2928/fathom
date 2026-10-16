@@ -50,6 +50,12 @@ export interface SceneState {
    * that is a new dive, not a movement.
    */
   epoch: number;
+  /**
+   * The boat, and going in off it (entry.ts): 0 aboard, 0–1 rolling in, 1 in
+   * the water with the boat overhead. null where there is no boat at all —
+   * the website, and any renderer that cannot draw one.
+   */
+  entry: number | null;
 }
 
 /**
@@ -79,6 +85,8 @@ export interface SceneRenderer {
   destroy(): void;
   /** Optional: renderers that can draw creatures. */
   setCreatures?(creatures: SceneCreature[]): void;
+  /** Optional: true for renderers that can draw the boat and the roll off it. */
+  readonly drawsEntry?: boolean;
 }
 
 /** Pixels drawn per metre of depth on the diver's own layer. */

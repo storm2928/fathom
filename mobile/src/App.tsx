@@ -30,7 +30,7 @@ import { ResultsCard } from './screens/ResultsCard';
 import { SettingsSheet } from './screens/SettingsSheet';
 import { PrivacySheet } from './screens/PrivacySheet';
 import { useAppStrings } from './strings';
-import { playInhale, playPing, useSoundscape } from './sound/useSoundscape';
+import { playInhale, playPing, playSplash, useSoundscape } from './sound/useSoundscape';
 import { useHaptics } from './haptics/useHaptics';
 import { JournalScreen } from './journal/JournalScreen';
 import { rollEncounters } from './journal/encounters';
@@ -140,6 +140,10 @@ function Game() {
                   })),
                 ),
               onUnheard: setUnheard,
+              onSplash: () => {
+                playSplash();
+                if (hapticsRef.current) haptics.tap('zone');
+              },
               onFound: (encounter, depth) => {
                 const isNew = recordFound(defaultStore(), encounter.id, depth, new Date());
                 if (isNew) newlyFoundRef.current = [...newlyFoundRef.current, encounter.id];

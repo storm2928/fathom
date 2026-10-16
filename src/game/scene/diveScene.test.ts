@@ -1,6 +1,7 @@
 import { test, assert, equal } from '../testing/harness.ts';
 import { DiveScene } from './diveScene.ts';
 import type { SceneRenderer, SceneState } from './renderer.ts';
+import { ENTRY_SECONDS, SPLASH_AT } from './entry.ts';
 import { BreathEmitter } from '../input/emitter.ts';
 import { BreathConductor } from '../session/conductor.ts';
 import type { BreathEngine, BreathEventMap } from '../../breath/types.ts';
@@ -142,5 +143,93 @@ test('ascend rises smoothly back to the surface and the first zone', () => {
 
   pump(14); // past the end
   equal(renderer.last?.depth, 0, 'the ascent did not reach the surface');
+  scene.stop();
+});
+
+/** A renderer that can draw the boat and the roll off it. */
+class BoatRenderer extends NullRenderer {
+  readonly drawsEntry = true;
+}
+
+test('without the boat (the website) there is no entry, and going in is instant', async () => {
+  queued.length = 0;
+  const renderer = new BoatRenderer();
+  const scene = new DiveScene(renderer, canvas, { reducedMotion: false });
+  scene.start();
+  pump();
+  equal(renderer.last?.entry, null);
+  let splashed = 0;
+  await scene.enterWater(() => (splashed += 1));
+  equal(splashed, 0);
+  scene.stop();
+});
+
+test('with the boat the diver starts aboard, rolls in over the entry time and splashes once', async () => {
+  queued.length = 0;
+  const renderer = new BoatRenderer();
+  const scene = new DiveScene(renderer, canvas, { reducedMotion: false, boat: true });
+  scene.start();
+  pump();
+  equal(renderer.last?.entry, 0, 'the diver was not aboard at the title');
+
+  let splashed = 0;
+  let done = false;
+  void scene.enterWater(() => (splashed += 1)).then(() => (done = true));
+  pump(Math.floor((ENTRY_SECONDS * SPLASH_AT * 1000) / 50) - 1);
+  equal(splashed, 0, 'splashed before reaching the water');
+  const mid = renderer.last?.entry ?? 0;
+  assert(mid > 0 && mid < SPLASH_AT, `entry ${mid} mid-fall`);
+  pump(Math.ceil((ENTRY_SECONDS * 1000) / 50));
+  await Promise.resolve();
+  equal(splashed, 1);
+  equal(done, true, 'going in never finished');
+  equal(renderer.last?.entry, 1);
+  scene.stop();
+});
+
+test('skipping the roll finishes it at once; a reset puts the diver back aboard', async () => {
+  queued.length = 0;
+  const renderer = new BoatRenderer();
+  const scene = new DiveScene(renderer, canvas, { reducedMotion: false, boat: true });
+  scene.start();
+  const going = scene.enterWater();
+  pump(5);
+  scene.skipEntry();
+  await going;
+  pump();
+  equal(renderer.last?.entry, 1);
+
+  scene.reset();
+  pump();
+  equal(renderer.last?.entry, 0, 'the next dive did not start aboard');
+  // A reset mid-roll lets whoever is waiting on it go.
+  const again = scene.enterWater();
+  pump(3);
+  scene.reset();
+  await again;
+  scene.stop();
+});
+
+test('a renderer that cannot draw the roll goes straight in, and shows no boat', async () => {
+  queued.length = 0;
+  const renderer = new NullRenderer();
+  const scene = new DiveScene(renderer, canvas, { reducedMotion: false, boat: true });
+  scene.start();
+  pump();
+  equal(renderer.last?.entry, null);
+  await scene.enterWater();
+  scene.stop();
+});
+
+test('a fast-forwarded dive rolls in faster', async () => {
+  queued.length = 0;
+  const renderer = new BoatRenderer();
+  const scene = new DiveScene(renderer, canvas, { reducedMotion: false, boat: true, timeScale: 10 });
+  scene.start();
+  let done = false;
+  void scene.enterWater().then(() => (done = true));
+  pump(Math.ceil((ENTRY_SECONDS * 1000) / 10 / 50) + 1);
+  await Promise.resolve();
+  equal(done, true, 'the fixture waited out the full roll');
   scene.stop();
 });

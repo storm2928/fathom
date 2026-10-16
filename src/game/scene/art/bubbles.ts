@@ -79,7 +79,18 @@ export class BubbleTrail {
     }
   }
 
+  /** A burst of bubbles at a screen point: the diver going in. */
+  burst(f: Frame, x: number, y: number, count: number): void {
+    for (let i = 0; i < count; i += 1) {
+      this.emitAt(f, x + (i % 2 ? 1 : -1) * (i * 1.7), y + i * 2.5);
+    }
+  }
+
   private emit(f: Frame): void {
+    this.emitAt(f, f.lampX, f.lampY);
+  }
+
+  private emitAt(f: Frame, x: number, y: number): void {
     for (let n = 0; n < POOL; n += 1) {
       const i = (this.cursor + n) % POOL;
       const b = this.bubbles[i];
@@ -87,12 +98,12 @@ export class BubbleTrail {
       this.cursor = i + 1;
       b.alive = true;
       b.age = 0;
-      b.x = f.lampX;
-      b.z = f.depth + (f.lampY - f.h / 2) / PIXELS_PER_METRE;
+      b.x = x;
+      b.z = f.depth + (y - f.h / 2) / PIXELS_PER_METRE;
       const sprite = this.sprites[i];
       sprite.visible = true;
       sprite.x = b.x;
-      sprite.y = f.lampY;
+      sprite.y = y;
       sprite.scale.set(0.6);
       sprite.alpha = 0.55;
       return;

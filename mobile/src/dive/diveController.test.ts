@@ -320,3 +320,78 @@ test('passing an encounter with the light on while breathing out finds it', asyn
   controller.stop();
   equal((stats as DiveStats | null)?.found.join(','), 'moon-jelly');
 });
+
+/** A scene with a boat: the roll in finishes when the test says so. */
+class BoatScene extends RecordingScene {
+  private finish: (() => void) | null = null;
+  private splash: (() => void) | undefined;
+  enterWater(onSplash?: () => void) {
+    this.calls.push('enter');
+    this.splash = onSplash;
+    return new Promise<void>((resolve) => (this.finish = resolve));
+  }
+  skipEntry() {
+    this.calls.push('skip');
+    this.land();
+  }
+  /** The diver goes through the waterline, then settles. */
+  land() {
+    this.splash?.();
+    this.splash = undefined;
+    const finish = this.finish;
+    this.finish = null;
+    finish?.();
+  }
+}
+
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+test('the breathing starts only once the diver is in the water', async () => {
+  const scene = new BoatScene();
+  const states: SessionState[] = [];
+  let splashed = 0;
+  const controller = new DiveController(
+    scene,
+    { onState: (s) => states.push(s), onPrompt: () => {}, onResult: () => {}, onSplash: () => (splashed += 1) },
+    factories(),
+  );
+  const started = await controller.start({ plan: 'quick', input: 'touch' });
+  assert(started !== null, 'the dive did not start');
+  await tick();
+  assert(scene.calls.includes('enter'), 'the diver never went in');
+  equal(states.length, 0, 'calibration began while the diver was still on the boat');
+  equal(controller.running, false, 'counted as running before the breathing began');
+
+  scene.land();
+  await tick();
+  equal(splashed, 1);
+  equal(states[0], 'calibrating');
+  equal(controller.running, true);
+  controller.stop();
+});
+
+test('leaving during the roll ends the dive as left early and releases the input', async () => {
+  const scene = new BoatScene();
+  let result: SessionResult | null = null;
+  const touch = new SpacebarBreathEngine({ target: quiet, calibrationMs: 20 });
+  let stopped = 0;
+  const stop = touch.stop.bind(touch);
+  touch.stop = () => {
+    stopped += 1;
+    stop();
+  };
+  const controller = new DiveController(
+    scene,
+    { onState: () => {}, onPrompt: () => {}, onResult: (r) => (result = r) },
+    factories({ touch: () => touch }),
+  );
+  await controller.start({ plan: 'quick', input: 'touch' });
+  await tick();
+  controller.stop();
+  await tick();
+  assert(scene.calls.includes('skip'), 'the roll was not cut short');
+  equal((result as SessionResult | null)?.ending, 'stopped');
+  equal((result as SessionResult | null)?.calibrated, false);
+  equal(controller.running, false);
+  assert(stopped >= 1, 'the input stayed open after leaving');
+});
