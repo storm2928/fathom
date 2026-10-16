@@ -80,12 +80,12 @@ export class Boat {
     this.flag
       .clear()
       .moveTo(mastX, -0.78 * L)
-      .lineTo(mastX, -1.42 * L)
+      .lineTo(mastX, -1.22 * L)
       .stroke({ width: 0.03 * L, color: DIVER.suit })
-      .rect(mastX, -1.42 * L, 0.36 * L, 0.24 * L)
+      .rect(mastX, -1.22 * L, 0.36 * L, 0.24 * L)
       .fill(FLAG)
-      .moveTo(mastX, -1.42 * L)
-      .lineTo(mastX + 0.36 * L, -1.18 * L)
+      .moveTo(mastX, -1.22 * L)
+      .lineTo(mastX + 0.36 * L, -0.98 * L)
       .stroke({ width: 0.05 * L, color: FLAG_STRIPE });
   }
 
