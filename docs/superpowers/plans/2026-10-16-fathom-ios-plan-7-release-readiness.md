@@ -38,7 +38,6 @@
 **Files:**
 - Create: `mobile/src/privacy/policy.ts`, `mobile/src/privacy/policy.test.ts`, `mobile/src/screens/PrivacySheet.tsx`
 - Create: `public/privacy.html`, `public/support.html` (served by the Render static site)
-- Create: `docs/app-store/privacy-policy.md`
 - Modify: `mobile/src/screens/SettingsSheet.tsx` (a "Privacy policy" button), `mobile/src/App.tsx`, `mobile/src/strings.ts`, `mobile/src/testing/run.ts`
 
 **Interfaces:**

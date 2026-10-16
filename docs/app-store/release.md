@@ -9,6 +9,11 @@ What is already done in the repo, and the steps that need your Apple account.
   alpha) and a launch screen in the app's own background colour.
 - Microphone usage string; `ITSAppUsesNonExemptEncryption = NO` (no
   export-compliance questions); `UIRequiredDeviceCapabilities = arm64`.
+- Apple Health: `App.entitlements` (HealthKit), `NSHealthUpdateUsageDescription`.
+  With automatic signing Xcode enables HealthKit on the App ID; if it asks,
+  confirm the HealthKit capability under Signing & Capabilities.
+- Privacy policy in the app (Settings → Privacy policy) and as
+  `public/privacy.html`; support page `public/support.html`.
 - `PrivacyInfo.xcprivacy`: no tracking, no collected data; UserDefaults
   (CA92.1) and file timestamps (C617.1) declared.
 - Store copy, privacy answers and review notes: `docs/app-store/listing.md`.
@@ -29,6 +34,14 @@ What is already done in the repo, and the steps that need your Apple account.
 Things to check on the phone that the simulator cannot show:
 - The microphone path in a quiet room, then with background noise.
 - Haptics (the simulator has no Taptic Engine).
+- **Microphone hint:** start a mic dive and stay silent for two prompted
+  breaths out — "Not hearing your breath out…" should appear above the ring,
+  and go as soon as you breathe out.
+- **Apple Health:** Settings → Apple Health → allow; take a Quick dive; check
+  Health → Mindfulness for a 90 s session. Then decline access on a fresh
+  install and confirm the switch stays off with a note.
+- **Large text:** iOS Settings → Accessibility → Display & Text Size → Larger
+  Text, at the largest size; settings, onboarding and journal should still fit.
 - **Speaker vs headphones:** with the phone speaker, the soundscape goes quiet
   while a breath out can be scored. Confirm a breath is still detected with
   the soundscape playing, and that the exhale rumble (touch dives only) feels

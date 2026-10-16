@@ -46,6 +46,7 @@ WHAT YOU GET
 • An underwater soundscape that muffles as you sink, and haptics you can feel
   with your eyes closed
 • Play with the microphone, or by holding a finger on the screen
+• Optional: save each dive to Apple Health as mindful minutes
 
 PRIVATE BY DESIGN
 • Your breath is measured on your iPhone. Nothing is recorded, uploaded or
@@ -69,16 +70,20 @@ breathing,breathwork,calm,cyclic sighing,diving,ocean,relax,focus,exhale,stress,
 
 ## Support and privacy URLs
 
-- **Support URL:** the project's GitHub page (or a simple page with contact).
-- **Privacy policy URL:** required even when nothing is collected — a one-page
-  policy saying exactly what `PrivacyInfo.xcprivacy` says: no data collected,
-  audio processed on device and never stored or transmitted, saved state stays
-  on the device.
+Both pages are in the website's `public/` folder and go live when that reaches
+`main` and Render deploys it. Use the site's address with:
+
+- **Support URL:** `/support.html`
+- **Privacy policy URL:** `/privacy.html` — the same text the app shows under
+  Settings → Privacy policy (`mobile/src/privacy/policy.ts`; a test keeps the
+  two in step). Contact is GitHub Issues until a support email is added.
 
 ## App Privacy ("nutrition label")
 
 - **Data collection:** "We do not collect data from this app." Nothing is
-  collected, linked or used for tracking.
+  collected, linked or used for tracking. Mindful minutes written to Apple
+  Health stay on the device under Apple's control and are not collected by the
+  developer, so they do not change this answer.
 
 ## Review notes (for App Review)
 
@@ -88,6 +93,10 @@ breathing,breathwork,calm,cyclic sighing,diving,ocean,relax,focus,exhale,stress,
 - Every dive can be played without the microphone: Settings → Breathing mode →
   Touch and hold.
 - No account, no network calls.
+- Apple Health (HealthKit) is optional and write-only: Settings → Apple Health
+  saves each dive of 30 s or more as a mindful session (start and end time).
+  Fathom never reads Health data. To test: turn it on, allow access, take a
+  Quick dive (touch and hold works), then look in Health → Mindfulness.
 - The app makes no medical claims. It shows breathing rate before and after a
   session and says plainly that it is not therapy or diagnosis, with crisis
   resources on the first-run safety card and on every results screen.
