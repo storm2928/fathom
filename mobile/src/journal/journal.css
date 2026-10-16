@@ -19,6 +19,7 @@
 }
 .journal__tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin: 16px 0 6px;
 }
