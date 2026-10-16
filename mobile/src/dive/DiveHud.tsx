@@ -157,7 +157,7 @@ export function DiveHud({
       )}
 
       {/* VoiceOver hears each breath prompt as it changes; the haptic taps carry the rhythm. */}
-      <p className="sr-only" aria-live="polite">
+      <p className="visually-hidden" aria-live="polite">
         {label}
       </p>
 
