@@ -73,6 +73,9 @@ const en = {
   off: 'Off',
   modeNextDive: 'This dive keeps its current mode. The change applies from your next dive.',
   privacyPolicy: 'Privacy policy',
+  appleHealth: 'Apple Health',
+  appleHealthHint: 'Save each dive as mindful minutes',
+  healthDeclined: 'Fathom may not write to Health. Allow it in Settings → Privacy & Security → Health → Fathom.',
   micUnheard: 'Not hearing your breath out. Bring the phone a little closer and breathe out through your mouth.',
 };
 
@@ -145,6 +148,9 @@ const fr: typeof en = {
   off: 'Désactivés',
   modeNextDive: 'Cette plongée garde son mode actuel. Le changement s’applique à la prochaine plongée.',
   privacyPolicy: 'Politique de confidentialité',
+  appleHealth: 'Apple Santé',
+  appleHealthHint: 'Enregistrer chaque plongée en minutes de pleine conscience',
+  healthDeclined: 'Fathom n’a pas le droit d’écrire dans Santé. Autorisez-le dans Réglages → Confidentialité et sécurité → Santé → Fathom.',
   micUnheard: 'Votre expiration ne s’entend pas. Rapprochez un peu le téléphone et expirez par la bouche.',
 };
 

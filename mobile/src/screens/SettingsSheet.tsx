@@ -13,6 +13,7 @@ export function SettingsSheet({
   input,
   diving,
   haptics,
+  health,
   onVolume,
   onInput,
   onHaptics,
@@ -25,6 +26,8 @@ export function SettingsSheet({
   volume: number;
   haptics: boolean;
   onHaptics: (on: boolean) => void;
+  /** null when this device has no Apple Health; `declined` after a refused request */
+  health: { on: boolean; declined: boolean; onChange: (on: boolean) => void } | null;
   input: InputChoice;
   diving: boolean;
   onVolume: (volume: number) => void;
@@ -67,6 +70,29 @@ export function SettingsSheet({
           </span>
           <span className="settings__switch" aria-hidden="true" />
         </button>
+
+        {health && (
+          <>
+            <button
+              type="button"
+              className="settings__toggle"
+              role="switch"
+              aria-checked={health.on}
+              onClick={() => health.onChange(!health.on)}
+            >
+              <span>
+                {a.appleHealth}
+                <span className="settings__hint">{a.appleHealthHint}</span>
+              </span>
+              <span className="settings__switch" aria-hidden="true" />
+            </button>
+            {health.declined && (
+              <p className="settings__note" role="status">
+                {a.healthDeclined}
+              </p>
+            )}
+          </>
+        )}
 
         <p className="settings__row">{a.breathingMode}</p>
         <div className="choice">

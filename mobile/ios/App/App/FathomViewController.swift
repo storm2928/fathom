@@ -8,5 +8,6 @@ class FathomViewController: CAPBridgeViewController {
     bridge?.registerPluginInstance(FathomMicPlugin())
     bridge?.registerPluginInstance(FathomSoundPlugin())
     bridge?.registerPluginInstance(FathomHapticsPlugin())
+    bridge?.registerPluginInstance(FathomHealthPlugin())
   }
 }

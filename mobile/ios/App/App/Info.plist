@@ -26,6 +26,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>When you turn on Apple Health in Fathom's settings, each dive is saved as mindful minutes: when it started and when it ended, nothing else.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Fathom listens to the sound of your breath out to guide the dive. Audio is processed on your iPhone and never recorded or sent anywhere.</string>
 	<key>UIApplicationSceneManifest</key>

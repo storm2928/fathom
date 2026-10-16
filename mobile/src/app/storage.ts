@@ -115,3 +115,24 @@ export function saveHaptics(on: boolean, store: KeyValueStore | null = defaultSt
     // Not remembered; the toggle still applies until the app closes.
   }
 }
+
+/** Writing dives to Apple Health. Off unless the player turned it on. */
+const HEALTH_KEY = 'fathom.app.health';
+
+export function loadHealth(store: KeyValueStore | null = defaultStore()): boolean {
+  if (!store) return false;
+  try {
+    return store.getItem(HEALTH_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
+export function saveHealth(on: boolean, store: KeyValueStore | null = defaultStore()): void {
+  if (!store) return;
+  try {
+    store.setItem(HEALTH_KEY, on ? 'on' : 'off');
+  } catch {
+    // Not remembered; the switch still applies until the app closes.
+  }
+}

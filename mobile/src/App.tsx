@@ -9,9 +9,11 @@ import type { FlowEvent, FlowState } from './app/flow';
 import {
   loadChoices,
   loadHaptics,
+  loadHealth,
   loadVolume,
   saveChoices,
   saveHaptics,
+  saveHealth,
   saveVolume,
 } from './app/storage';
 import type { InputChoice } from './app/flow';
@@ -38,6 +40,8 @@ import type { CreatureId } from './journal/catalogue';
 import { ZONE_HEX } from './journal/zoneColours';
 import { defaultStore } from './app/storage';
 import { haptics } from './native/fathomHaptics';
+import { health } from './native/fathomHealth';
+import { mindfulSession } from './app/health';
 import './styles/screens.css';
 
 /**
@@ -73,6 +77,15 @@ function Game() {
   // Read inside controller callbacks, which are built once.
   const hapticsRef = useRef(hapticsOn);
   hapticsRef.current = hapticsOn;
+  // Apple Health: offered only where it exists; written only when on.
+  const [healthAvailable, setHealthAvailable] = useState(false);
+  const [healthOn, setHealthOn] = useState(loadHealth);
+  const [healthDeclined, setHealthDeclined] = useState(false);
+  const healthRef = useRef(healthOn);
+  healthRef.current = healthOn;
+  useEffect(() => {
+    void health.available().then(setHealthAvailable);
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<SessionState>('idle');
@@ -135,6 +148,8 @@ function Game() {
                 if (hapticsRef.current) haptics.tap('discovery');
               },
               onResult: (finished, code, diveStats) => {
+                const mindful = healthRef.current ? mindfulSession(finished, new Date()) : null;
+                if (mindful) void health.saveMindful(mindful.start, mindful.end);
                 recordDive(defaultStore(), {
                   date: new Date().toISOString(),
                   plan: planRef.current,
@@ -269,6 +284,15 @@ function Game() {
     setVolume(next);
     saveVolume(next);
   };
+  const changeHealth = async (on: boolean) => {
+    setHealthDeclined(false);
+    if (on && !(await health.authorize())) {
+      setHealthDeclined(true);
+      on = false;
+    }
+    setHealthOn(on);
+    saveHealth(on);
+  };
   const changeInput = (input: InputChoice) => {
     saveChoices({ acknowledged: true, input });
     send({ type: 'set-input', input });
@@ -283,6 +307,15 @@ function Game() {
         setHapticsOn(on);
         saveHaptics(on);
       }}
+      health={
+        healthAvailable
+          ? {
+              on: healthOn,
+              declined: healthDeclined,
+              onChange: (on) => void changeHealth(on),
+            }
+          : null
+      }
       onVolume={changeVolume}
       onReread={() => {
         setSettingsOpen(false);
