@@ -105,8 +105,12 @@ Both pages are in the website's `public/` folder and go live when that reaches
 
 6.9-inch (iPhone 18 Pro Max, 1320 × 2868), in `docs/app-store/screenshots/`:
 
-1. Title — the dawn waterline and the diver
+1. Title — the diver on the boat at dawn
 2. Breathe to dive — the onboarding breath orb
-3. A dive in the twilight zone, with a find
-4. The end of a dive — depth, breathing before and after
-5. The field journal
+3. A dive in the twilight zone, as the zone card comes in
+4. A find
+5. The end of a dive — depth, breathing before and after
+6. The field journal
+7. Optional: the diver under the boat as the breathing starts
+
+French versions of the same seven are in `screenshots/fr/`.

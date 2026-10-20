@@ -73,5 +73,5 @@ Politique de confidentialité.
 
 ## Captures d'écran
 
-Take the five screenshots in `listing.md` again with the app set to Français
-(Réglages → Langue).
+In `screenshots/fr/`, taken on a French iPhone 18 Pro Max (6.9", 1320 × 2868),
+in the same order as the English set.
