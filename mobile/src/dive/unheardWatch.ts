@@ -1,3 +1,4 @@
+import type { BreathEngine } from '@fathom/breath/types';
 import type { PromptStep } from '@fathom/game/session/conductor';
 
 /**
@@ -5,9 +6,9 @@ import type { PromptStep } from '@fathom/game/session/conductor';
  * prompted and none arrived — twice in a row — so a quiet line can suggest
  * coming closer, instead of a dive that silently goes nowhere.
  *
- * Any breath out counts, wherever it falls: people start a little early, and
- * the point is only whether the microphone hears them at all. One breath out
- * heard clears the hint straight away.
+ * Any counted breath out counts, wherever it falls: people start a little
+ * early, and the point is only whether the microphone hears them at all. One
+ * breath out heard clears the hint straight away.
  */
 export class UnheardWatch {
   private readonly missesToWarn: number;
@@ -54,4 +55,27 @@ export class UnheardWatch {
     this.unheard = next;
     return next;
   }
+}
+
+/**
+ * Wire a watch to a dive: the prompt windows from the conductor, and the breaths
+ * out the engine actually counted (exhale-end). Not the start of any sound the
+ * detector hears: on the speaker the app's own breath-in swell, and an audible
+ * breath in through the nose, both start one every cycle, and they kept the
+ * hint from ever appearing. Returns a teardown.
+ */
+export function watchHearing(
+  engine: Pick<BreathEngine, 'on'>,
+  prompts: { on(handler: (window: { step: PromptStep }) => void): () => void },
+  report: (unheard: boolean) => void,
+  watch = new UnheardWatch(),
+): () => void {
+  const tell = (change: boolean | null) => {
+    if (change !== null) report(change);
+  };
+  const offs = [
+    prompts.on((window) => tell(watch.window(window.step))),
+    engine.on('exhale-end', () => tell(watch.heard())),
+  ];
+  return () => offs.forEach((off) => off());
 }
