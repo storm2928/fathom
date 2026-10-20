@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { DICTIONARIES } from './strings';
 import type { Language, Strings } from './strings';
 import { readLanguage, sessionLanguageStore, writeLanguage } from './languageStore';
+import type { LanguageStore } from './languageStore';
 
 interface LanguageContextValue {
   language: Language;
@@ -12,15 +13,29 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
+/**
+ * `store` is where the choice is remembered: the browser session on the
+ * website, the app's saved settings in the iOS app (which must survive the app
+ * being closed).
+ */
+export function LanguageProvider({
+  children,
+  store = sessionLanguageStore,
+}: {
+  children: ReactNode;
+  store?: () => LanguageStore | null;
+}) {
   const [language, setLanguageState] = useState<Language>(() =>
-    readLanguage(sessionLanguageStore(), navigator.language),
+    readLanguage(store(), navigator.language),
   );
 
-  const setLanguage = useCallback((next: Language) => {
-    writeLanguage(sessionLanguageStore(), next);
-    setLanguageState(next);
-  }, []);
+  const setLanguage = useCallback(
+    (next: Language) => {
+      writeLanguage(store(), next);
+      setLanguageState(next);
+    },
+    [store],
+  );
 
   // The document language follows the resolved language from the first
   // render, so a French browser gets <html lang="fr"> before any toggle.

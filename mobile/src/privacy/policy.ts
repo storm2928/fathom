@@ -19,11 +19,11 @@ export interface Policy {
 }
 
 /** Where privacy questions go. Shown in the policy and on the support page. */
-export const CONTACT_URL = 'https://github.com/storm2928/fathom/issues';
+export const CONTACT_EMAIL = 'support@jasindev.com';
 
 const en: Policy = {
   title: 'Privacy policy',
-  updated: 'Last updated 16 October 2026',
+  updated: 'Last updated 20 October 2026',
   sections: [
     {
       heading: 'The short version',
@@ -70,14 +70,14 @@ const en: Policy = {
     },
     {
       heading: 'Contact',
-      body: ['Questions about privacy: github.com/storm2928/fathom/issues'],
+      body: ['Questions about privacy: support@jasindev.com'],
     },
   ],
 };
 
 const fr: Policy = {
   title: 'Politique de confidentialité',
-  updated: 'Dernière mise à jour : 16 octobre 2026',
+  updated: 'Dernière mise à jour : 20 octobre 2026',
   sections: [
     {
       heading: 'En bref',
@@ -124,7 +124,7 @@ const fr: Policy = {
     },
     {
       heading: 'Contact',
-      body: ['Questions sur la confidentialité : github.com/storm2928/fathom/issues'],
+      body: ['Questions sur la confidentialité : support@jasindev.com'],
     },
   ],
 };

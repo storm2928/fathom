@@ -410,7 +410,7 @@ function Game() {
 
 export default function App() {
   return (
-    <LanguageProvider>
+    <LanguageProvider store={defaultStore}>
       <OceanStage>
         <Game />
       </OceanStage>

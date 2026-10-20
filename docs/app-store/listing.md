@@ -76,7 +76,7 @@ Both pages are in the website's `public/` folder and go live when that reaches
 - **Support URL:** `/support.html`
 - **Privacy policy URL:** `/privacy.html` — the same text the app shows under
   Settings → Privacy policy (`mobile/src/privacy/policy.ts`; a test keeps the
-  two in step). Contact is GitHub Issues until a support email is added.
+  two in step). Contact: support@jasindev.com.
 
 ## App Privacy ("nutrition label")
 
