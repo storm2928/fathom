@@ -72,7 +72,9 @@ public class FathomSoundPlugin: CAPPlugin, CAPBridgedPlugin {
         Float(beds.count > 2 ? beds[2] : 0)
       ),
       lowpassHz: Float(call.getDouble("lowpassHz") ?? 2400),
-      bubbles: Float(call.getDouble("bubbles") ?? 0),
+      swell: Float(call.getDouble("swell") ?? 0),
+      music: Float(call.getDouble("music") ?? 1),
+      musicZone: call.getInt("musicZone") ?? 0,
       highCut: call.getBool("highCut") ?? false)
     soundscape?.setMix(mix)
     call.resolve()

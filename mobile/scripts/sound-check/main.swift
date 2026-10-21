@@ -12,24 +12,29 @@ guard args.count == 2 else {
 
 func mix(_ changes: (inout SoundMixParams) -> Void) -> SoundMixParams {
   var m = SoundMixParams(
-    master: 1, surface: 1, beds: (1, 0, 0), lowpassHz: 2400, bubbles: 0, highCut: false)
+    master: 1, surface: 1, beds: (1, 0, 0), lowpassHz: 2400, swell: 0, music: 1, musicZone: 0,
+    highCut: false)
   changes(&m)
   return m
 }
 
 let scenarios: [String: SoundMixParams] = [
-  "silent": mix { $0.master = 0; $0.bubbles = 1 },
+  "silent": mix { $0.master = 0; $0.swell = 1 },
   "shallow": mix { _ in },
-  "deep": mix { $0.lowpassHz = 260; $0.surface = 0 },
-  "bubbles": mix { $0.bubbles = 1 },
-  // Worst case: bright, bubbling, and the cut alone must make it safe.
-  "speaker-window": mix { $0.bubbles = 1; $0.highCut = true },
+  "deep": mix { $0.lowpassHz = 260; $0.surface = 0; $0.musicZone = 2 },
+  // A breath out on headphones: everything lifts.
+  "swell": mix { $0.swell = 1 },
+  // Only the music: the surface and the beds silent.
+  "music": mix { $0.surface = 0; $0.beds = (0, 0, 0) },
+  "music-abyss": mix { $0.surface = 0; $0.beds = (0, 0, 0); $0.musicZone = 2 },
+  // Worst case: bright, swelling, music and bells, and the cut alone must make it safe.
+  "speaker-window": mix { $0.swell = 1; $0.highCut = true },
   "midnight": mix { $0.surface = 0; $0.beds = (0, 1, 0); $0.lowpassHz = 700 },
   "abyss": mix { $0.surface = 0; $0.beds = (0, 0, 1); $0.lowpassHz = 300 },
   // Nothing else playing: only the discovery ping, fired once after settling.
-  "ping": mix { $0.surface = 0; $0.beds = (0, 0, 0) },
+  "ping": mix { $0.surface = 0; $0.beds = (0, 0, 0); $0.music = 0 },
   // Nothing else playing: only the splash of going in off the boat.
-  "splash": mix { $0.surface = 0; $0.beds = (0, 0, 0) },
+  "splash": mix { $0.surface = 0; $0.beds = (0, 0, 0); $0.music = 0 },
 ]
 guard let params = scenarios[args[1]] else {
   FileHandle.standardError.write("unknown scenario \(args[1])\n".data(using: .utf8)!)

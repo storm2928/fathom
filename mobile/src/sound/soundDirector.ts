@@ -6,8 +6,8 @@
  * phone's speaker, the game must not be heard as breath. The detector wants
  * broadband energy above 1 kHz and judges it against the voice band
  * (100 Hz–1 kHz). So on the speaker:
- *   - bubbles never play on a microphone dive — an audible inhale often reads
- *     as a breath out, and bubbles answering it would keep it going;
+ *   - the mix never swells on a microphone dive — an audible inhale often
+ *     reads as a breath out, and a swell answering it would keep it going;
  *   - from the top-up beat (the window is about to open), through the breath
  *     out and rest, and whenever a breath out is under way, everything above
  *     SPEAKER_SAFE_HZ is cut and the rest is ducked to near-silence.
@@ -46,8 +46,15 @@ export interface SoundMix {
   beds: [number, number, number];
   /** underwater muffling on the surface and the beds */
   lowpassHz: number;
-  /** 0-1 bubble intensity */
-  bubbles: number;
+  /**
+   * 0-1: the music and the water lift gently while you breathe out — the
+   * answer to a breath, where there used to be bubbling.
+   */
+  swell: number;
+  /** 0-1 level of the generated music, which plays on every screen */
+  music: number;
+  /** which zone's music: brighter at the top, lower and slower further down */
+  musicZone: number;
   /** speaker safety: the synth removes everything above SPEAKER_SAFE_HZ */
   highCut: boolean;
 }
@@ -66,6 +73,8 @@ const SURFACE_GONE_METRES = 120;
 /** Depth over which the filter closes from bright to deep. */
 const FILTER_CLOSES_METRES = 300;
 
+/** The music sits under everything, the same on every screen; SCREEN_LEVEL does the rest. */
+const MUSIC_LEVEL = 1;
 /** How loud each screen is, before the settings volume. */
 const SCREEN_LEVEL: Record<SoundScreen, number> = {
   safety: 0.45,
@@ -94,12 +103,14 @@ export function mixFor(input: SoundInput): SoundMix {
   beds[zone] = 0.7 + 0.3 * (1 - surface);
 
   const listening = input.screen === 'dive' && input.micDive && !input.headphones;
-  let bubbles = input.exhaling && input.screen === 'dive' && !listening ? 1 : 0;
+  let swell = input.exhaling && input.screen === 'dive' && !listening ? 1 : 0;
+  // Off the dive the music is the surface's: you are back in the light.
+  const musicZone = input.screen === 'dive' ? zone : 0;
 
   const highCut = listening && (input.exhaleWindow || input.scoringSoon || input.exhaling);
   let master = clamp01(input.volume) * SCREEN_LEVEL[input.screen];
   if (highCut) {
-    bubbles = 0;
+    swell = 0;
     lowpassHz = Math.min(lowpassHz, SPEAKER_SAFE_HZ);
     master *= SPEAKER_DUCK;
   }
@@ -109,7 +120,9 @@ export function mixFor(input: SoundInput): SoundMix {
     surface,
     beds,
     lowpassHz,
-    bubbles,
+    swell,
+    music: MUSIC_LEVEL,
+    musicZone,
     highCut,
   };
 }

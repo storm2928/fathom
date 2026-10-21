@@ -20,12 +20,13 @@ execFileSync('swiftc', [
   '-o',
   bin,
   join(repo, 'mobile/ios/App/App/Soundscape.swift'),
+  join(repo, 'mobile/ios/App/App/AmbientMusic.swift'),
   join(here, 'main.swift'),
 ]);
 
 const measure = (scenario) => JSON.parse(execFileSync(bin, [scenario], { encoding: 'utf8' }));
 const m = Object.fromEntries(
-  ['silent', 'shallow', 'deep', 'bubbles', 'speaker-window', 'midnight', 'abyss', 'ping', 'splash'].map((s) => [s, measure(s)]),
+  ['silent', 'shallow', 'deep', 'swell', 'music', 'music-abyss', 'speaker-window', 'midnight', 'abyss', 'ping', 'splash'].map((s) => [s, measure(s)]),
 );
 
 let failures = 0;
@@ -46,9 +47,14 @@ check(
   `deep high ${m.deep.high} vs shallow ${m.shallow.high}`,
 );
 check(
-  'bubbles are bright',
-  m.bubbles.high > m.shallow.high * 1.5,
-  `bubbles high ${m.bubbles.high} vs ${m.shallow.high}`,
+  'a breath out lifts the mix a few decibels',
+  m.swell.rms > m.shallow.rms * 1.2 && m.swell.rms < m.shallow.rms * 2,
+  `swell rms ${m.swell.rms} vs ${m.shallow.rms}`,
+);
+check(
+  'abyss music is darker than twilight music',
+  m['music-abyss'].high < m.music.high,
+  `abyss music high ${m['music-abyss'].high} vs ${m.music.high}`,
 );
 check(
   'the speaker cut leaves nothing above 1 kHz for the microphone',

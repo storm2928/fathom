@@ -15,12 +15,24 @@
 
 import Foundation
 
+/// The ocean under the music: waves, wash and wind, kept light.
+private let OCEAN_LEVEL = 0.5
+/// The midnight drones and the abyss hum, quieter so the music leads.
+private let DEEP_BED_LEVEL = 0.5
+/// How much a breath out lifts the mix: about +3 dB at full swell.
+private let SWELL_LIFT = 0.45
+
 struct SoundMixParams {
   var master: Float
   var surface: Float
   var beds: (Float, Float, Float)
   var lowpassHz: Float
-  var bubbles: Float
+  /// 0-1: the music and water lift while a breath out is under way
+  var swell: Float
+  /// 0-1 level of the generated music (AmbientMusic.swift)
+  var music: Float
+  /// which zone's music: 0 twilight, 1 midnight, 2 abyss
+  var musicZone: Int
   var highCut: Bool
 }
 
@@ -76,7 +88,8 @@ final class Soundscape {
 
   // Parameters, written from outside, read per block.
   private var target = SoundMixParams(
-    master: 0, surface: 1, beds: (1, 0, 0), lowpassHz: 2400, bubbles: 0, highCut: false)
+    master: 0, surface: 1, beds: (1, 0, 0), lowpassHz: 2400, swell: 0, music: 1, musicZone: 0,
+    highCut: false)
   private var inhaleRequested = false
   private var pingRequested = false
   private var splashRequested = false
@@ -86,7 +99,9 @@ final class Soundscape {
   private var surface: Smooth
   private var bed0: Smooth, bed1: Smooth, bed2: Smooth
   private var cutoff: Smooth
-  private var bubbleLevel: Smooth
+  private var swellLevel: Smooth
+  private var musicLevel: Smooth
+  private var music: AmbientMusic
   private var cut: Smooth
 
   // Noise colours.
@@ -101,7 +116,6 @@ final class Soundscape {
 
   // Oscillator phases.
   private var time = 0.0
-  private var padPhase = (0.0, 0.0, 0.0)
   private var dronePhase = (0.0, 0.0)
   private var humPhase = (0.0, 0.0)
   private var whalePhase = 0.0
@@ -136,7 +150,10 @@ final class Soundscape {
     bed1 = Smooth(0, seconds: 2.0, rate: sampleRate)
     bed2 = Smooth(0, seconds: 2.0, rate: sampleRate)
     cutoff = Smooth(2400, seconds: 0.3, rate: sampleRate)
-    bubbleLevel = Smooth(0, seconds: 0.08, rate: sampleRate)
+    // Slow both ways: a swell, not a switch.
+    swellLevel = Smooth(0, seconds: 1.2, rate: sampleRate)
+    musicLevel = Smooth(1, seconds: 2.0, rate: sampleRate)
+    music = AmbientMusic(sampleRate: sampleRate)
     cut = Smooth(0, seconds: 0.08, rate: sampleRate)
     echoLength = Int(sampleRate * 0.45)
     echo = UnsafeMutablePointer<Double>.allocate(capacity: echoLength)
@@ -207,7 +224,8 @@ final class Soundscape {
       let g1 = bed1.step(Double(p.beds.1))
       let g2 = bed2.step(Double(p.beds.2))
       let fc = cutoff.step(Double(p.lowpassHz))
-      let bub = bubbleLevel.step(Double(p.bubbles))
+      let sw = swellLevel.step(Double(p.swell))
+      let mu = musicLevel.step(Double(p.music))
       let hc = cut.step(p.highCut ? 1 : 0)
 
       if tuneCountdown == 0 {
@@ -231,20 +249,14 @@ final class Soundscape {
         (0.55 + 0.45 * sin(twoPi * 0.11 * time)) * (0.65 + 0.35 * sin(twoPi * 0.037 * time + 1.3))
       let wash = washBand.step(pink).1 * swell * swell * 0.9
       let wind = windBand.step(pink).1 * (0.7 + 0.3 * sin(twoPi * 0.05 * time)) * 0.35
-      let surfaceSound = (brownOut * swell * 0.45 + wash + wind) * sGain
+      // Kept light: the music leads, the ocean sits under it.
+      let surfaceSound = (brownOut * swell * 0.45 + wash + wind) * sGain * OCEAN_LEVEL
 
-      // Twilight: an airy, slowly breathing pad.
+      // Twilight: open, airy water. (The music carries the harmony.)
       var bedSound = 0.0
       if g0 > 0.0005 {
-        padPhase.0 += 196.0 * dt
-        padPhase.1 += 293.66 * dt
-        padPhase.2 += 392.4 * dt
-        let pad =
-          sin(twoPi * padPhase.0) * (0.5 + 0.5 * sin(twoPi * 0.07 * time))
-          + sin(twoPi * padPhase.1) * (0.5 + 0.5 * sin(twoPi * 0.05 * time + 2))
-          + sin(twoPi * padPhase.2) * (0.5 + 0.5 * sin(twoPi * 0.031 * time + 4)) * 0.6
         let air = airLow.step(pink).0
-        bedSound += (pad * 0.045 + air * 0.35) * g0
+        bedSound += air * 0.2 * g0
       }
 
       // Midnight: a deep drone, and now and then a whale far off.
@@ -274,7 +286,7 @@ final class Soundscape {
         let delayed = echo[echoIndex]
         echo[echoIndex] = mid + delayed * 0.38
         echoIndex = (echoIndex + 1) % echoLength
-        bedSound += (mid + delayed * 0.3) * g1
+        bedSound += (mid + delayed * 0.3) * g1 * DEEP_BED_LEVEL
       }
 
       // Abyss: a low hum, and rare clicks out in the dark.
@@ -299,18 +311,18 @@ final class Soundscape {
             clickT = clicksLeft > 0 ? 0 : -1
           }
         }
-        bedSound += deep * g2
+        bedSound += deep * g2 * DEEP_BED_LEVEL
       }
 
       // Everything above is heard through the water.
       let ambient = surfaceSound + bedSound
       let muffled = muffle2.step(muffle.step(ambient).0).0
 
-      // Bubbles: short rising chirps, near the diver, barely muffled.
+      // The music, not heard through the water: it is the dive's own.
+      let musicSound = mu > 0.0005 ? music.next(zone: p.musicZone) * mu : 0
+
+      // Bubbles: short rising chirps — now only the splash going in.
       var bubbleSound = 0.0
-      if bub > 0.001 {
-        if Double(nextUnit()) < 12 * bub * dt { spawnBubble(gain: bub) }
-      }
       for j in 0..<bubbles.count where bubbles[j].active {
         var b = bubbles[j]
         let f = b.f0 * (1 + b.t * 9)
@@ -365,7 +377,9 @@ final class Soundscape {
         }
       }
 
-      var mix = muffled + bubbleSound + inhaleSound + pingSound + splashSound
+      // A breath out lifts the music and the water a few decibels, slowly.
+      let lift = 1 + SWELL_LIFT * sw
+      var mix = (muffled + musicSound) * lift + bubbleSound + inhaleSound + pingSound + splashSound
 
       // Speaker safety: crossfade into a 24 dB/oct 500 Hz low-pass.
       let safe = safety2.step(safety1.step(mix).0).0

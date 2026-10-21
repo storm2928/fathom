@@ -45,22 +45,32 @@ test('only the current zone is heard', () => {
   }
 });
 
-test('bubbles come with a breath out, and only then', () => {
-  equal(mixFor({ ...diving, exhaling: false }).bubbles, 0);
-  assert(mixFor({ ...diving, exhaling: true }).bubbles > 0);
+test('the mix swells with a breath out, and only then', () => {
+  equal(mixFor({ ...diving, exhaling: false }).swell, 0);
+  assert(mixFor({ ...diving, exhaling: true }).swell > 0);
+});
+
+test('music plays on every screen, and follows the dive down through the zones', () => {
+  for (const screen of ['safety', 'title', 'predive', 'dive', 'results', 'journal'] as const) {
+    assert(mixFor({ ...diving, screen }).music > 0, `no music on ${screen}`);
+  }
+  equal(mixFor({ ...diving, zone: 0 }).musicZone, 0);
+  equal(mixFor({ ...diving, zone: 2 }).musicZone, 2);
+  // Back at the surface the music is the twilight's again.
+  equal(mixFor({ ...diving, screen: 'title', zone: 2 }).musicZone, 0);
 });
 
 test('on the speaker, an open exhale window cuts everything the microphone could hear as breath', () => {
   const mix = mixFor({ ...diving, headphones: false, exhaleWindow: true, exhaling: true });
   equal(mix.highCut, true);
-  equal(mix.bubbles, 0, 'bubbles played into the microphone');
+  equal(mix.swell, 0, 'the mix swelled into the microphone');
   assert(mix.lowpassHz <= SPEAKER_SAFE_HZ, `filter at ${mix.lowpassHz} Hz on the speaker`);
 });
 
 test('on headphones the full mix plays through the exhale window', () => {
   const mix = mixFor({ ...diving, headphones: true, exhaleWindow: true, exhaling: true });
   equal(mix.highCut, false);
-  assert(mix.bubbles > 0);
+  assert(mix.swell > 0);
 });
 
 test('outside the exhale window the speaker plays the full mix', () => {
@@ -78,11 +88,11 @@ test('menus are quieter than the water', () => {
   assert(mixFor({ ...diving, screen: 'results' }).master < dive);
 });
 
-test('on the speaker a microphone dive never plays bubbles, even with the window closed', () => {
+test('on the speaker a microphone dive never swells, even with the window closed', () => {
   // An audible inhale often reads as a breath out while the window is closed;
-  // bubbles on the speaker would then keep that "breath" going.
+  // a swell on the speaker would then keep that "breath" going.
   const mix = mixFor({ ...diving, headphones: false, exhaling: true, exhaleWindow: false });
-  equal(mix.bubbles, 0, 'bubbles played into the microphone');
+  equal(mix.swell, 0, 'the mix swelled into the microphone');
   equal(mix.highCut, true, 'an exhale on the speaker was not cut');
 });
 
@@ -100,5 +110,5 @@ test('on the speaker the cut also ducks the low mix the detector hears as voice'
 test('a touch dive has no microphone to protect: full mix on the speaker', () => {
   const mix = mixFor({ ...diving, micDive: false, headphones: false, exhaling: true, exhaleWindow: true });
   equal(mix.highCut, false);
-  assert(mix.bubbles > 0);
+  assert(mix.swell > 0);
 });
