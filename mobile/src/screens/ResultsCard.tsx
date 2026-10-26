@@ -19,6 +19,7 @@ import { entryFor } from '../journal/catalogue';
 import type { CreatureId } from '../journal/catalogue';
 import { useCreatureWords } from '../journal/creatureStrings';
 import { ZONE_CSS } from '../journal/zoneColours';
+import { DEVICE } from '../app/device';
 import '../journal/journal.css';
 import './results.css';
 
@@ -55,7 +56,8 @@ export function ResultsCard({
   const { t } = useLanguage();
   const a = useAppStrings();
   const s = t.surface;
-  const inputLabel = INPUT_LABEL[input](t);
+  // The hold input is a touch on a phone, Space or the mouse on a desk.
+  const inputLabel = input === 'touch' && DEVICE === 'desktop' ? a.useTouch : INPUT_LABEL[input](t);
 
   const done = (
     <div className="sheet__actions">

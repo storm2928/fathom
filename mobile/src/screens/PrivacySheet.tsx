@@ -1,12 +1,13 @@
 import { useLanguage } from '@fathom/shell/i18n';
-import { POLICY } from '../privacy/policy';
+import { policyFor } from '../privacy/policy';
+import { IS_NATIVE } from '../app/device';
 import { useAppStrings } from '../strings';
 
 /** The privacy policy, from Settings. The same words as the public page. */
 export function PrivacySheet({ onClose }: { onClose: () => void }) {
   const { language } = useLanguage();
   const a = useAppStrings();
-  const policy = POLICY[language === 'fr' ? 'fr' : 'en'];
+  const policy = policyFor(IS_NATIVE)[language === 'fr' ? 'fr' : 'en'];
   return (
     <div className="safe settings fade-in" onPointerDown={(e) => e.stopPropagation()}>
       <div className="sheet privacy" role="dialog" aria-labelledby="privacy-title">

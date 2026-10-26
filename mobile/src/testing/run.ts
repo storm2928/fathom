@@ -9,6 +9,7 @@ import '../app/storage.test.ts';
 import '../app/persistentStore.test.ts';
 import '../app/health.test.ts';
 import '../app/typeScale.test.ts';
+import '../app/platform.test.ts';
 import '../dive/diveController.test.ts';
 import '../dive/unheardWatch.test.ts';
 import '../native/nativeMicCapture.test.ts';

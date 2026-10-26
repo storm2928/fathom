@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { InputChoice } from '../app/flow';
 import { useAppStrings } from '../strings';
+import { IS_NATIVE } from '../app/device';
 import { useLanguage } from '@fathom/shell/i18n';
 import { LANGUAGES } from '@fathom/shell/strings';
 
@@ -57,19 +58,21 @@ export function SettingsSheet({
           style={{ '--fill': `${volume * 100}%` } as CSSProperties}
         />
 
-        <button
-          type="button"
-          className="settings__toggle"
-          role="switch"
-          aria-checked={haptics}
-          onClick={() => onHaptics(!haptics)}
-        >
-          <span>
-            {a.haptics}
-            <span className="settings__hint">{a.hapticsHint}</span>
-          </span>
-          <span className="settings__switch" aria-hidden="true" />
-        </button>
+        {IS_NATIVE && (
+          <button
+            type="button"
+            className="settings__toggle"
+            role="switch"
+            aria-checked={haptics}
+            onClick={() => onHaptics(!haptics)}
+          >
+            <span>
+              {a.haptics}
+              <span className="settings__hint">{a.hapticsHint}</span>
+            </span>
+            <span className="settings__switch" aria-hidden="true" />
+          </button>
+        )}
 
         {health && (
           <>
