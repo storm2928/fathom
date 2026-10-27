@@ -42,4 +42,6 @@ const config = {
   },
   server: { fs: { allow: ['..'] } },
   build: { outDir: 'dist', target: 'es2022' },
+  // The soundscape worklet is loaded with audioWorklet.addModule, which wants an ES module.
+  worker: { format: 'es' as const },
 };

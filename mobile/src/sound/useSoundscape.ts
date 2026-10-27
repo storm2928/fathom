@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { FathomSound } from '../native/fathomSound';
+import { webSound } from './web/webSound';
 import { mixFor } from './soundDirector';
 import type { SoundScreen } from './soundDirector';
 
@@ -20,35 +21,43 @@ export interface SoundSource {
 /** How often the mix is re-sent. The synth smooths between updates. */
 const TICK_MS = 100;
 
+/** The native synth in the app; the same synth on Web Audio in a browser. */
+export function soundDriver(native: boolean) {
+  return native ? FathomSound : webSound;
+}
+
+const sound = soundDriver(Capacitor.isNativePlatform());
+
 /**
- * Keeps the native soundscape playing the mix the game state calls for. Runs
- * only in the app; in a browser (vite dev) there is no native synth and this
- * does nothing. Sound stops when the app goes to the background.
+ * Keeps the soundscape playing the mix the game state calls for: the native
+ * synth in the app, its Web Audio port in a browser. Sound stops when the app
+ * goes to the background or the tab is hidden.
  */
 export function useSoundscape(source: SoundSource): void {
-  const native = Capacitor.isNativePlatform();
   const latest = useRef(source);
   latest.current = source;
   const headphones = useRef(false);
 
   useEffect(() => {
-    if (!native) return;
     let routeListener: { remove: () => Promise<void> } | null = null;
-    void FathomSound.start().catch(() => {});
-    void FathomSound.getRoute()
+    void sound.start().catch(() => {});
+    void sound.getRoute()
       .then((route) => {
         headphones.current = route.headphones;
       })
       .catch(() => {});
-    void FathomSound.addListener('route', (route) => {
-      headphones.current = route.headphones;
-    }).then((listener) => {
-      routeListener = listener;
-    });
+    // Only the app hears about headphones coming and going.
+    if (sound === FathomSound) {
+      void FathomSound.addListener('route', (route) => {
+        headphones.current = route.headphones;
+      }).then((listener) => {
+        routeListener = listener;
+      });
+    }
 
     const tick = setInterval(() => {
       const s = latest.current;
-      void FathomSound.setMix(
+      void sound.setMix(
         mixFor({
           screen: s.screen,
           depth: s.depth(),
@@ -64,8 +73,8 @@ export function useSoundscape(source: SoundSource): void {
     }, TICK_MS);
 
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') void FathomSound.stop().catch(() => {});
-      else void FathomSound.start().catch(() => {});
+      if (document.visibilityState === 'hidden') void sound.stop().catch(() => {});
+      else void sound.start().catch(() => {});
     };
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -73,22 +82,22 @@ export function useSoundscape(source: SoundSource): void {
       clearInterval(tick);
       document.removeEventListener('visibilitychange', onVisibility);
       void routeListener?.remove();
-      void FathomSound.stop().catch(() => {});
+      void sound.stop().catch(() => {});
     };
-  }, [native]);
+  }, []);
 }
 
 /** The discovery ping. */
 export function playPing(): void {
-  if (Capacitor.isNativePlatform()) void FathomSound.ping().catch(() => {});
+  void sound.ping().catch(() => {});
 }
 
 /** Going in off the boat. */
 export function playSplash(): void {
-  if (Capacitor.isNativePlatform()) void FathomSound.splash().catch(() => {});
+  void sound.splash().catch(() => {});
 }
 
 /** The soft inhale swell, on each breath-in prompt. */
 export function playInhale(): void {
-  if (Capacitor.isNativePlatform()) void FathomSound.inhale().catch(() => {});
+  void sound.inhale().catch(() => {});
 }

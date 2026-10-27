@@ -16,6 +16,7 @@ import '../native/nativeMicCapture.test.ts';
 import '../screens/resultsFormat.test.ts';
 import '../sound/soundDirector.test.ts';
 import '../sound/web/soundscape.test.ts';
+import '../sound/web/webSound.test.ts';
 import '../haptics/hapticDirector.test.ts';
 import '../journal/discovery.test.ts';
 import '../journal/journalStore.test.ts';
