@@ -7,10 +7,12 @@
     "mobile"
   ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
+    "dev": "npm run dev -w mobile",
+    "build": "tsc -b && npm run build -w mobile",
+    "preview": "npm run preview -w mobile",
+    "test": "node --import ./src/game/testing/resolve.mjs src/game/testing/run.ts && npm test -w mobile",
+    "debug": "vite --open /debug.html",
+    "lint": "oxlint"
   },
   "dependencies": {
     "pixi.js": "^8.19.0",

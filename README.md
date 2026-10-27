@@ -53,15 +53,24 @@ Audio from the microphone is processed to a few numbers 50 times a second on the
 **We measure the breath out. We do not measure the breath in.** In comes like broadband noise and we cannot reliably differentiate in from out using just a few numbers. Instead, the app asks the user to breathe in according to a certain rate and then only listens to what happens afterwards. All breathing rates recorded by the app and described in this README are measured from the beginning of each exhalation. This is indicated on the front screen, the first screen and in the saved file. A caveat only described in this README will not be read by anyone.
 ### Where things live
 
+The game itself lives in `mobile/`. The website is that same app built for the
+browser: the iPhone app and the website ship from one codebase, and on a desktop
+screen the same screens are laid out for a bigger window. In a browser, "hold to
+breathe out" is the Space key or the mouse button; on a phone it is a finger on
+the screen.
+
 | Path | What's in there |
 |---|---|
+| `mobile/src/` | The game: title, onboarding, the dive, results, field journal, settings, sound |
+| `mobile/src/sound/web/` | The soundscape for the browser, the same synth as the iPhone's, on Web Audio |
+| `mobile/ios/` | The iPhone wrapper: native microphone, sound, haptics, Apple Health |
 | `src/breath/` | The signal engine: mic capture, band features, exhale detection, calibration, breathing-rate estimate |
 | `src/breath/types.ts` | The contract between the two halves of the project |
 | `src/game/input/` | Input sources: a scripted test fixture, the spacebar, the shared rate estimator |
 | `src/game/session/` | The prompt conductor, the breathing-cycle geometry, the session arc |
 | `src/game/scene/` | The descent model and the dive scene |
-| `src/game/surface/` | The surface screen and the dive-log export |
-| `src/shell/` | The first screen, the crisis rail, English and French text |
+| `src/game/surface/` | The dive-log export and the before/after verdict |
+| `src/shell/` | The crisis rail, shared UI pieces, English and French text |
 
 ## What the game rewards
 
@@ -121,13 +130,14 @@ There is a minimum that will not be reached.
 
 ```bash
 npm install
-npm run dev        # development server
-npm run build      # production build into dist/
-npx tsc -b         # typecheck
+npm run dev        # the game in a browser (add ?scripted to the URL to watch a dive play itself)
+npm run build      # typecheck, then the production build into mobile/dist/
+npm test           # both test suites — no build step
+npm run debug      # the signal engine's microphone debug page
 npx oxlint         # lint
-
-node --import ./src/game/testing/resolve.mjs src/game/testing/run.ts   # tests — no build step, no dependencies
 ```
+
+The iPhone build has its own scripts in `mobile/package.json` (`npm run ios -w mobile`).
 
 The tests cover the parts where being wrong would be both expensive and easy to
 miss: the breathing-rate estimate, the descent scoring that makes "slower always

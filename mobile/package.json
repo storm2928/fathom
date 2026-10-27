@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --import ../src/game/testing/resolve.mjs src/testing/run.ts",
     "sync": "npm run build && cap sync ios",

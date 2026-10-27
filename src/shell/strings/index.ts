@@ -11,16 +11,11 @@
  * a key added in English without its French twin fails the type check.
  */
 import { common } from './common';
-import { nav } from './nav';
 import { crisis } from './crisis';
 import { safety } from './safety';
 import { setup } from './setup';
 import { dive } from './dive';
 import { surface } from './surface';
-import { research } from './research';
-import { how } from './how';
-
-export type { ResearchCategory, StudyId } from './research';
 
 export type Language = 'en' | 'fr';
 
@@ -31,7 +26,6 @@ export const LANGUAGES: { code: Language; label: string }[] = [
 
 const en = {
   common: common.en,
-  nav: nav.en,
   crisis: crisis.en,
   safety: safety.en,
   setup: setup.en,
@@ -39,13 +33,10 @@ const en = {
   state: dive.en.state,
   signal: dive.en.signal,
   surface: surface.en,
-  research: research.en,
-  how: how.en,
 };
 
 const fr: typeof en = {
   common: common.fr,
-  nav: nav.fr,
   crisis: crisis.fr,
   safety: safety.fr,
   setup: setup.fr,
@@ -53,8 +44,6 @@ const fr: typeof en = {
   state: dive.fr.state,
   signal: dive.fr.signal,
   surface: surface.fr,
-  research: research.fr,
-  how: how.fr,
 };
 
 /** The shape every language must satisfy. */

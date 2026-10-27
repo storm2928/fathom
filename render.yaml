@@ -1,4 +1,6 @@
-# Render deployment for the static build.
+# Render deployment for the static build. The site is the Fathom app (mobile/)
+# built for the web: the same game as the iPhone app, laid out for a desktop
+# screen. The root build typechecks the shared code and builds mobile/dist.
 #
 # Connecting the repository to a Render account is a one-time manual step that
 # has to be done by a human with the account. This file is what makes everything
@@ -16,7 +18,7 @@ services:
     # `npm ci` rather than `npm install`, so a deploy builds the dependency tree
     # the lockfile pins instead of quietly resolving something newer.
     buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
+    staticPublishPath: ./mobile/dist
     pullRequestPreviewsEnabled: false
     headers:
       # The microphone is same-origin only. Nothing here embeds anything, and
