@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { test, assert, equal } from '@fathom/game/testing/harness.ts';
 import { deviceKind } from './platform.ts';
 import { APP_STRINGS, stringsFor } from '../appStrings.ts';
@@ -50,4 +51,11 @@ test('a touch screen in a browser keeps touch, but has no phone to bring closer'
     assert(!/\bphone|téléphone/i.test(s.micUnheard), `${language}.micUnheard mentions a phone`);
     equal(s.useTouch, APP_STRINGS[language].useTouch);
   }
+});
+
+test('the desktop scale uses only arithmetic every browser supports', () => {
+  const css = readFileSync(new URL('../styles/desktop.css', import.meta.url), 'utf8');
+  // Dividing a length by a length (typed arithmetic) is Chromium-only: Firefox
+  // would drop the whole scale and show the phone-sized layout.
+  assert(!/\/\s*[\d.]+px\s*\)/.test(css), 'desktop.css divides by a length');
 });

@@ -143,7 +143,7 @@ const webEn: Policy = {
     {
       heading: 'The short version',
       body: [
-        'Fathom collects nothing. There is no account, no server, no analytics, no advertising and no tracking. Everything Fathom knows stays in this browser, on this device.',
+        'Fathom collects nothing. There is no account, no analytics, no advertising and no tracking. The site’s host serves the game’s files to your browser and, like any website host, sees those requests; nothing you do in the game is ever sent to it or to anyone else. Everything Fathom knows stays in this browser, on this device.',
       ],
     },
     {
@@ -179,7 +179,7 @@ const webFr: Policy = {
     {
       heading: 'En bref',
       body: [
-        'Fathom ne collecte rien. Pas de compte, pas de serveur, pas de statistiques, pas de publicité, pas de pistage. Tout ce que Fathom sait reste dans ce navigateur, sur cet appareil.',
+        'Fathom ne collecte rien. Pas de compte, pas de statistiques, pas de publicité, pas de pistage. L’hébergeur du site transmet les fichiers du jeu à votre navigateur et, comme tout hébergeur, voit ces requêtes ; rien de ce que vous faites dans le jeu ne lui est envoyé, ni à personne d’autre. Tout ce que Fathom sait reste dans ce navigateur, sur cet appareil.',
       ],
     },
     {

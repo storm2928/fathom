@@ -14,70 +14,77 @@ import type { SoundMessage } from './soundscape.worklet';
 
 type WebSound = Pick<FathomSoundPlugin, 'start' | 'stop' | 'setMix' | 'inhale' | 'ping' | 'splash' | 'getRoute'>;
 
-let context: AudioContext | null = null;
-let node: AudioWorkletNode | null = null;
-let loading: Promise<void> | null = null;
-let wanted = false;
-/** The latest mix, held until the worklet is ready to take it. */
-let pendingMix: SoundMix | null = null;
-
 const hasWebAudio = () => typeof globalThis.AudioContext === 'function';
 
-function post(message: SoundMessage): void {
-  node?.port.postMessage(message);
-}
+/** `workletUrl` loads the bundled worklet's URL; tests pass their own. */
+export function createWebSound(workletUrl: () => Promise<string>): WebSound {
+  let context: AudioContext | null = null;
+  let node: AudioWorkletNode | null = null;
+  let loading: Promise<void> | null = null;
+  let wanted = false;
+  /** The latest mix, held until the worklet is ready to take it. */
+  let pendingMix: SoundMix | null = null;
 
-function resumeIfWanted(): void {
-  if (wanted && context?.state === 'suspended') void context.resume().catch(() => {});
-}
+  const post = (message: SoundMessage) => node?.port.postMessage(message);
 
-async function load(): Promise<void> {
-  const { default: url } = await import('./soundscape.worklet.ts?worker&url');
-  const ctx = new AudioContext();
-  context = ctx;
-  await ctx.audioWorklet.addModule(url);
-  node = new AudioWorkletNode(ctx, 'fathom-soundscape', { outputChannelCount: [2] });
-  node.connect(ctx.destination);
-  if (pendingMix) post({ type: 'mix', mix: pendingMix });
-  if (typeof window !== 'undefined') {
-    // Any gesture unlocks audio; the listeners are cheap and stay for the page.
-    window.addEventListener('pointerdown', resumeIfWanted, true);
-    window.addEventListener('keydown', resumeIfWanted, true);
-  }
-}
+  // Anything not running counts: suspended, or Safari's 'interrupted'.
+  const resumeIfWanted = () => {
+    if (wanted && context && context.state !== 'running') void context.resume().catch(() => {});
+  };
 
-export const webSound: WebSound = {
-  async start() {
-    if (!hasWebAudio()) return;
-    wanted = true;
-    try {
-      loading ??= load();
-      await loading;
-      if (wanted) resumeIfWanted();
-    } catch {
-      // No sound in this browser; the game does not depend on it.
+  async function load(): Promise<void> {
+    const url = await workletUrl();
+    const ctx = new AudioContext();
+    context = ctx;
+    await ctx.audioWorklet.addModule(url);
+    node = new AudioWorkletNode(ctx, 'fathom-soundscape', { outputChannelCount: [2] });
+    node.connect(ctx.destination);
+    if (pendingMix) post({ type: 'mix', mix: pendingMix });
+    if (typeof window !== 'undefined') {
+      // Any gesture unlocks audio; the listeners are cheap and stay for the page.
+      window.addEventListener('pointerdown', resumeIfWanted, true);
+      window.addEventListener('keydown', resumeIfWanted, true);
     }
-  },
-  async stop() {
-    wanted = false;
-    if (context?.state === 'running') await context.suspend().catch(() => {});
-  },
-  async setMix(mix) {
-    pendingMix = mix;
-    post({ type: 'mix', mix });
-  },
-  async inhale() {
-    post({ type: 'inhale' });
-  },
-  async ping() {
-    post({ type: 'ping' });
-  },
-  async splash() {
-    post({ type: 'splash' });
-  },
-  // A browser cannot tell headphones from speakers, so it assumes speakers:
-  // the speaker safety cut then holds on every microphone dive.
-  async getRoute() {
-    return { headphones: false };
-  },
-};
+  }
+
+  return {
+    async start() {
+      if (!hasWebAudio()) return;
+      wanted = true;
+      try {
+        loading ??= load();
+        await loading;
+        resumeIfWanted();
+      } catch {
+        // No sound in this browser; the game does not depend on it.
+      }
+    },
+    async stop() {
+      wanted = false;
+      if (context?.state !== 'running') return;
+      await context.suspend().catch(() => {});
+      // Shown again while the suspend was landing (a quick alt-tab): play on.
+      resumeIfWanted();
+    },
+    async setMix(mix) {
+      pendingMix = mix;
+      post({ type: 'mix', mix });
+    },
+    async inhale() {
+      post({ type: 'inhale' });
+    },
+    async ping() {
+      post({ type: 'ping' });
+    },
+    async splash() {
+      post({ type: 'splash' });
+    },
+    // A browser cannot tell headphones from speakers, so it assumes speakers:
+    // the speaker safety cut then holds on every microphone dive.
+    async getRoute() {
+      return { headphones: false };
+    },
+  };
+}
+
+export const webSound = createWebSound(async () => (await import('./soundscape.worklet.ts?worker&url')).default);

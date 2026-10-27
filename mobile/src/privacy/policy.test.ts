@@ -57,3 +57,11 @@ test('the app shows the iPhone policy, a browser the web one', () => {
   equal(policyFor(true), POLICY);
   equal(policyFor(false), WEB_POLICY);
 });
+
+test('the web policy does not claim there is no server: a host serves the site', () => {
+  for (const language of ['en', 'fr'] as const) {
+    const all = allText(WEB_POLICY[language]);
+    assert(!/no server,|pas de serveur,/i.test(all), `the ${language} web policy says there is no server`);
+  }
+  assert(/host/i.test(allText(WEB_POLICY.en)), 'the web policy does not mention the host');
+});

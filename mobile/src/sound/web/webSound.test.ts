@@ -1,5 +1,5 @@
 import { test, assert, equal } from '@fathom/game/testing/harness.ts';
-import { webSound } from './webSound.ts';
+import { createWebSound, webSound } from './webSound.ts';
 
 /**
  * Where there is no Web Audio (or before the first click lets it start), the
@@ -30,4 +30,50 @@ test('every call is safe without Web Audio', async () => {
 test('a browser always reports the speaker', async () => {
   const route = await webSound.getRoute();
   equal(route.headphones, false);
+});
+
+/** A stand-in for the browser's AudioContext: suspend and resume take a tick, as they do. */
+class FakeContext {
+  static made: FakeContext[] = [];
+  state: 'suspended' | 'running' = 'suspended';
+  destination = {};
+  audioWorklet = { addModule: async () => {} };
+  constructor() {
+    FakeContext.made.push(this);
+  }
+  async resume() {
+    await Promise.resolve();
+    this.state = 'running';
+  }
+  async suspend() {
+    // The audio thread takes a moment to stop.
+    await new Promise((r) => setTimeout(r, 5));
+    this.state = 'suspended';
+  }
+}
+class FakeNode {
+  port = { postMessage: () => {} };
+  connect() {}
+}
+
+test('hiding and showing the tab quickly leaves the sound playing', async () => {
+  const g = globalThis as Record<string, unknown>;
+  g.AudioContext = FakeContext;
+  g.AudioWorkletNode = FakeNode;
+  try {
+    const sound = createWebSound(async () => 'worklet.js');
+    await sound.start();
+    const ctx = FakeContext.made.at(-1)!;
+    await ctx.resume(); // the first click
+    equal(ctx.state, 'running');
+    // Hidden, then shown again before the suspend has landed.
+    const stopping = sound.stop();
+    const starting = sound.start();
+    await Promise.all([stopping, starting]);
+    await new Promise((r) => setTimeout(r, 20));
+    equal(ctx.state, 'running');
+  } finally {
+    delete g.AudioContext;
+    delete g.AudioWorkletNode;
+  }
 });
