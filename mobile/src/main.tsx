@@ -6,6 +6,8 @@ import '@fathom/index.css';
 import '@fathom/shell/ui/ui.css';
 import './styles/app.css';
 import App from './App';
+// Last, so the desktop layer sits over every screen's own styles.
+import './styles/desktop.css';
 import { Preferences } from '@capacitor/preferences';
 import { hydrate } from './app/persistentStore';
 import { LEGACY_KEYS, setAppStore } from './app/storage';
